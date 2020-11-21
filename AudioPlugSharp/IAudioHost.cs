@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AudioPlugSharp
 {
-    public interface IPluginHost
+    public interface IAudioHost
     {
         double SampleRate { get; }
         double BPM { get; }

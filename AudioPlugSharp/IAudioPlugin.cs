@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AudioPlugSharp
 {
-    public interface IAudioPluginInfo
+    public interface IAudioPlugin
     {
         string Company { get; }
         string Website { get; }
@@ -14,5 +14,8 @@ namespace AudioPlugSharp
         string PluginVerstion { get; }
         string ProcessorGuid { get; }
         string ControllerGuid { get; }
+
+        IAudioProcessor CreateProcessor();
+        IAudioController CreateController();
     }
 }

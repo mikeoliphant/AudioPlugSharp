@@ -21,10 +21,13 @@
     <ClCompile Include="AudioPlugSharp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AudioPlugSharpFactory.cpp">
+    <ClCompile Include="AssemblyResolver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AssemblyResolver.cpp">
+    <ClCompile Include="AudioPlugSharpEntryPoints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioPlugSharpFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -36,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AssemblyResolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioPlugSharpFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

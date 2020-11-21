@@ -3,7 +3,7 @@ using AudioPlugSharp;
 
 namespace ExamplePlugin
 {
-    public class ExamplePlugin : IAudioPluginInfo
+    public class ExamplePlugin : IAudioPlugin
     {
         public string Company
         {
@@ -50,6 +50,16 @@ namespace ExamplePlugin
 
         public ExamplePlugin()
         {
+        }
+
+        public IAudioProcessor CreateProcessor()
+        {
+            return new ExampleProcessor();
+        }
+
+        public IAudioController CreateController()
+        {
+            return new ExampleController();
         }
     }
 }
