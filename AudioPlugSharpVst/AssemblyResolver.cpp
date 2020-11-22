@@ -21,8 +21,10 @@ System::Reflection::Assembly^ AssemblyResolver::LoadAssembly(System::String^ ass
 {
 	try
 	{
+		Logger::Log("Executing assembly: " + Reflection::Assembly::GetExecutingAssembly()->FullName);
+
 		String^ executingAseemblyPath = Path::GetDirectoryName(Reflection::Assembly::GetExecutingAssembly()->Location);
-		
+
 		Assembly^ assembly = AssemblyLoadContext::GetLoadContext(Reflection::Assembly::GetExecutingAssembly())->LoadFromAssemblyPath(
 			Path::Combine(executingAseemblyPath, (gcnew Reflection::AssemblyName(assemblyName))->Name + ".dll"));
 
@@ -30,6 +32,7 @@ System::Reflection::Assembly^ AssemblyResolver::LoadAssembly(System::String^ ass
 	}
 	catch (System::Exception^ ex)
 	{
+		Logger::Log("Unable to load assembly: " + assemblyName);
 	}
 
 	return nullptr;
@@ -43,13 +46,13 @@ System::Object^ AssemblyResolver::GetObjectByInterface(System::Reflection::Assem
 
 	for each (System::Type^ type in assembly->GetTypes())
 	{
-		AudioPlugSharp::Logger::Log("Found type: " + type->Name);
+		Logger::Log("Found type: " + type->Name);
 
 		if (type->IsPublic)
 		{
 			for each (System::Type^ iType in type->GetInterfaces())
 			{
-				AudioPlugSharp::Logger::Log("Found interface: " + iType->AssemblyQualifiedName);
+				Logger::Log("Found interface: " + iType->AssemblyQualifiedName);
 
 				if (iType == interfaceType)
 				{

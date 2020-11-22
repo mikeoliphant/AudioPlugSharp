@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AudioPlugSharpController.cpp">
+    <ClCompile Include="AssemblyResolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioPlugSharpEntryPoints.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AudioPlugSharp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AssemblyResolver.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AudioPlugSharpEntryPoints.cpp">
+    <ClCompile Include="AudioPlugSharpController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AudioPlugSharpFactory.cpp">
@@ -32,13 +32,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AssemblyResolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="AudioPlugSharp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AudioPlugSharpController.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AssemblyResolver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AudioPlugSharpFactory.h">
@@ -49,5 +49,8 @@
     <None Include="AudioPlugSharp.def">
       <Filter>Source Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="Ijwhost.xml" />
   </ItemGroup>
 </Project>

@@ -7,6 +7,10 @@
 
 #include "AudioPlugSharp.h"
 #include "AudioPlugSharpController.h"
+#include "AudioPlugSharpFactory.h"
+
+using namespace System;
+using namespace System::Runtime::InteropServices;
 
 using namespace AudioPlugSharp;
 
@@ -30,9 +34,35 @@ tresult PLUGIN_API AudioPlugSharpProcessor::initialize(FUnknown* context)
 		return result;
 	}
 
-	// Mono in/out
-	addAudioInput(STR16("Mono In"), SpeakerArr::kMono);
-	addAudioOutput(STR16("Mono Out"), SpeakerArr::kMono);
+	try
+	{
+		managedProcessor = plugin->CreateProcessor();
+		managedProcessor->Initialize();
+	}
+	catch (Exception^ ex)
+	{
+		Logger::Log("Unable to create managed processor: " + ex->ToString());
+	}
+
+	// Add audio inputs
+	for each (auto port in managedProcessor->InputPorts)
+	{
+		TChar* portName = (TChar*)(void*)Marshal::StringToHGlobalUni(plugin->Company);
+
+		addAudioInput(portName, port->ChannelConfiguration == EAudioChannelConfiguration::Mono ? SpeakerArr::kMono : SpeakerArr::kStereo);
+
+		Marshal::FreeHGlobal((IntPtr)portName);
+	}
+
+	// Add audio outputs
+	for each (auto port in managedProcessor->OutputPorts)
+	{
+		TChar* portName = (TChar*)(void*)Marshal::StringToHGlobalUni(plugin->Company);
+
+		addAudioOutput(portName, port->ChannelConfiguration == EAudioChannelConfiguration::Mono ? SpeakerArr::kMono : SpeakerArr::kStereo);
+
+		Marshal::FreeHGlobal((IntPtr)portName);
+	}
 
 	// Set up a MIDI event intput as an example, even though we aren't going to use it
 	addEventInput(STR16("Event In"), 1);
@@ -47,6 +77,15 @@ tresult PLUGIN_API AudioPlugSharpProcessor::terminate()
 
 tresult PLUGIN_API AudioPlugSharpProcessor::setActive(TBool state)
 {
+	if (state)
+	{
+		managedProcessor->Start();
+	}
+	else
+	{
+		managedProcessor->Stop();
+	}
+
 	return AudioEffect::setActive(state);
 }
 
@@ -72,6 +111,11 @@ tresult PLUGIN_API AudioPlugSharpProcessor::getState(IBStream* state)
 	return kResultOk;
 }
 
+tresult PLUGIN_API AudioPlugSharpProcessor::canProcessSampleSize(int32 symbolicSampleSize)
+{
+	return kResultTrue;
+}
+
 tresult PLUGIN_API AudioPlugSharpProcessor::setBusArrangements(SpeakerArrangement* inputs, int32 numIns, SpeakerArrangement* outputs, int32 numOuts)
 {
 	// We should be ok with any arrangement
@@ -81,6 +125,8 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setBusArrangements(SpeakerArrangemen
 
 tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSetup)
 {
+	Logger::Log("Setup Processing. " + (newSetup.symbolicSampleSize == kSample32) ? "32bit" : "64bit");
+
 	return AudioEffect::setupProcessing(newSetup);
 }
 
@@ -141,71 +187,19 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 		return kResultOk;
 	}
 
-	// We've said we're mono, but...
-	uint32 numChannels = data.inputs[0].numChannels;
-
-	uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples);
-	void** in = getChannelBuffersPointer(processSetup, data.inputs[0]);
-	void** out = getChannelBuffersPointer(processSetup, data.outputs[0]);
-
-	if (data.inputs[0].silenceFlags != 0)
+	for (int input = 0; input < managedProcessor->InputPorts->Length; input++)
 	{
-		// Propogate silence from input to output
-		data.outputs[0].silenceFlags = data.inputs[0].silenceFlags;
-
-		for (int32 i = 0; i < numChannels; i++)
-		{
-			// Clear the output, if it doesn't point to the same buffer as the input
-			if (in[i] != out[i])
-			{
-				memset(out[i], 0, sampleFramesSize);
-			}
-		}
-
-		return kResultOk;
-	}
-	
-	// We are silent if our gain is zero
-	if (gain == 0)
-	{
-		// Set silence flags
-		data.outputs[0].silenceFlags = (uint64(1) << numChannels) - 1;
-
-		// Clear the output
-		for (int32 i = 0; i < numChannels; i++)
-		{
-			memset(out[i], 0, sampleFramesSize);
-		}
-
-		return kResultOk;
+		managedProcessor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]),
+			(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
 	}
 
-	data.outputs[0].silenceFlags = 0;
-
-	// Apply the gain
-	for (int32 i = 0; i < numChannels; i++)
+	for (int output = 0; output < managedProcessor->OutputPorts->Length; output++)
 	{
-		if (data.symbolicSampleSize == kSample32)
-		{
-			Sample32* inSamples = ((Sample32**)in)[i];
-			Sample32* outSamples = ((Sample32**)out)[i];
-
-			for (uint32 sample = 0; sample < data.numSamples; sample++)
-			{
-				outSamples[sample] = inSamples[sample] * gain;
-			}
-		}
-		else
-		{
-			Sample64* inSamples = ((Sample64**)in)[i];
-			Sample64* outSamples = ((Sample64**)out)[i];
-
-			for (uint32 sample = 0; sample < data.numSamples; sample++)
-			{
-				outSamples[sample] = inSamples[sample] * gain;
-			}
-		}
+		managedProcessor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]),
+			(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
 	}
+
+	managedProcessor->Process();
 
 	// Handle any output parameter changes (such as volume meter output)
 	// We don't have any

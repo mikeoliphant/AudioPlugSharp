@@ -7,31 +7,43 @@ namespace ExamplePlugin
 {
     public class ExampleProcessor : IAudioProcessor
     {
-        public List<AudioIOPort> InputPorts { get; private set; }
+        public AudioIOPort[] InputPorts { get; private set; }
+        public AudioIOPort[] OutputPorts { get; private set; }
 
-        public List<AudioIOPort> OutputPorts { get; private set; }
+        AudioIOPort monoInput;
+        AudioIOPort monoOutput;
 
         public void Initialize()
         {
-            InputPorts = new List<AudioIOPort>();
+            Logger.Log("Initializing processor");
 
-            InputPorts.Add(new AudioIOPort { Name = "Mono Input", ChannelConfiguration = EAudioChannelConfiguration.Mono });
-            OutputPorts.Add(new AudioIOPort { Name = "Mono Output", ChannelConfiguration = EAudioChannelConfiguration.Mono });
-        }
-
-        public void Process(IntPtr inputs, IntPtr outputs, uint numSamples)
-        {
-            throw new NotImplementedException();
+            InputPorts = new AudioIOPort[] { monoInput = new AudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
+            OutputPorts = new AudioIOPort[] { monoOutput = new AudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
         }
 
         public void Start()
         {
-            throw new NotImplementedException();
+            Logger.Log("Start Processor");
         }
 
         public void Stop()
         {
-            throw new NotImplementedException();
+            Logger.Log("Stop Processor");
+        }
+
+        public void Process()
+        {
+            monoInput.ReadData();
+
+            double[] inSamples = monoInput.GetAudioBuffers()[0];
+            double[] outSamples = monoOutput.GetAudioBuffers()[0];
+
+            for (int i = 0; i < inSamples.Length; i++)
+            {
+                outSamples[i] = inSamples[i] * 0.5;
+            }
+
+            monoOutput.WriteData();
         }
     }
 }

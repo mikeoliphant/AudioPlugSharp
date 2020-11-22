@@ -5,8 +5,14 @@
 #include "base/source/fstring.h"
 #include "pluginterfaces/base/funknown.h"
 
+#include <msclr/gcroot.h>
+
+using namespace msclr;
+
 using namespace Steinberg;
 using namespace Steinberg::Vst;
+
+using namespace AudioPlugSharp;
 
 // Parameter enumeration
 enum
@@ -33,9 +39,11 @@ public:
 	tresult PLUGIN_API process(ProcessData& data);
 	tresult PLUGIN_API setState(IBStream* state);
 	tresult PLUGIN_API getState(IBStream* state);
+	tresult PLUGIN_API canProcessSampleSize(int32 symbolicSampleSize) SMTG_OVERRIDE;
 	tresult PLUGIN_API setBusArrangements(SpeakerArrangement* inputs, int32 numIns, SpeakerArrangement* outputs, int32 numOuts);
 	~AudioPlugSharpProcessor(void);
 
 private:
 	float gain = 0.5;
+	gcroot<AudioPlugSharp::IAudioProcessor^> managedProcessor = nullptr;
 };

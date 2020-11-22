@@ -52,10 +52,10 @@ namespace AudioPlugSharp
             {
                 Thread.Sleep(1000);
 
-                if (logQueue.Count == 0)
-                    continue;
-
-                WriteLogs();
+                if (logQueue.Count > 0)
+                {
+                    WriteLogs();
+                }
             }
             while (true);
         }

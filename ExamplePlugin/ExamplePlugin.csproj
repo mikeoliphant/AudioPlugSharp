@@ -4,6 +4,18 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy $(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.vst3 $(TargetDir)$(TargetName)Vst.vst3&#xD;&#xA;copy $(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.runtimeconfig.json $(TargetDir)$(TargetName)Vst.runtimeconfig.json&#xD;&#xA;copy $(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.deps.json $(TargetDir)$(TargetName)Vst.deps.json&#xD;&#xA;copy $(SolutionDir)x64\$(ConfigurationName)\Ijwhost.dll $(TargetDir)" />
+  </Target>
+
   <ItemGroup>
     <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
   </ItemGroup>
