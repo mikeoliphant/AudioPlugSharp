@@ -10,6 +10,7 @@
 #include "AudioPlugSharpFactory.h"
 
 using namespace System;
+using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 
 using namespace AudioPlugSharp;
@@ -36,16 +37,15 @@ tresult PLUGIN_API AudioPlugSharpProcessor::initialize(FUnknown* context)
 
 	try
 	{
-		managedProcessor = plugin->CreateProcessor();
-		managedProcessor->Initialize();
+		plugin->Processor->Initialize();
 	}
 	catch (Exception^ ex)
 	{
-		Logger::Log("Unable to create managed processor: " + ex->ToString());
+		Logger::Log("Unable to initialize managed processor: " + ex->ToString());
 	}
 
 	// Add audio inputs
-	for each (auto port in managedProcessor->InputPorts)
+	for each (auto port in plugin->Processor->InputPorts)
 	{
 		TChar* portName = (TChar*)(void*)Marshal::StringToHGlobalUni(plugin->Company);
 
@@ -55,7 +55,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::initialize(FUnknown* context)
 	}
 
 	// Add audio outputs
-	for each (auto port in managedProcessor->OutputPorts)
+	for each (auto port in plugin->Processor->OutputPorts)
 	{
 		TChar* portName = (TChar*)(void*)Marshal::StringToHGlobalUni(plugin->Company);
 
@@ -79,11 +79,11 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setActive(TBool state)
 {
 	if (state)
 	{
-		managedProcessor->Start();
+		plugin->Processor->Start();
 	}
 	else
 	{
-		managedProcessor->Stop();
+		plugin->Processor->Stop();
 	}
 
 	return AudioEffect::setActive(state);
@@ -91,23 +91,11 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setActive(TBool state)
 
 tresult PLUGIN_API AudioPlugSharpProcessor::setState(IBStream* state)
 {
-	IBStreamer streamer(state, kLittleEndian);
-
-	float savedGain = 0;
-	if (streamer.readFloat(savedGain) == false)
-		return kResultFalse;
-
-	gain = savedGain;
-
 	return kResultOk;
 }
 
 tresult PLUGIN_API AudioPlugSharpProcessor::getState(IBStream* state)
 {
-	IBStreamer streamer(state, kLittleEndian);
-
-	streamer.writeFloat(gain);
-
 	return kResultOk;
 }
 
@@ -149,15 +137,12 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 				int32 sampleOffset;
 				int32 numPoints = paramQueue->getPointCount();
 
-				switch (paramQueue->getParameterId())
+				ParamID paramID = paramQueue->getParameterId();
+
+				// Only getting the last value - probably should get them all and pass them on with sample offsets...
+				if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==	kResultTrue)
 				{
-					case (kGainId):
-						// There could be multiple changes to the parameter - we only care about the last one
-						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==	kResultTrue)
-						{
-							gain = (float)value;
-						}
-						break;
+					plugin->Processor->Parameters[paramID - RESERVED_PARAMCOUNT]->NormalizedValue = value;
 				}
 			}
 		}
@@ -187,19 +172,19 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 		return kResultOk;
 	}
 
-	for (int input = 0; input < managedProcessor->InputPorts->Length; input++)
+	for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)
 	{
-		managedProcessor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]),
+		plugin->Processor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]),
 			(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
 	}
 
-	for (int output = 0; output < managedProcessor->OutputPorts->Length; output++)
+	for (int output = 0; output < plugin->Processor->OutputPorts->Length; output++)
 	{
-		managedProcessor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]),
+		plugin->Processor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]),
 			(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
 	}
 
-	managedProcessor->Process();
+	plugin->Processor->Process();
 
 	// Handle any output parameter changes (such as volume meter output)
 	// We don't have any

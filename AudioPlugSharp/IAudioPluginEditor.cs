@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 
 namespace AudioPlugSharp
 {
-    public interface IAudioController
+    public interface IAudioPluginEditor
     {
-        void Initialize();
+        void InitializeEditor();
     }
 }

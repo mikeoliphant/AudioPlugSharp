@@ -22,6 +22,8 @@ public:
 
 	tresult PLUGIN_API setComponentState(IBStream* state);
 
+	tresult PLUGIN_API getParamStringByValue(ParamID tag, ParamValue valueNormalized, String128 string);
+
 	// Uncomment to add a GUI
 	// IPlugView * PLUGIN_API createView (const char * name);
 
@@ -29,9 +31,11 @@ public:
 	// tresult PLUGIN_API setState(IBStream* state);
 	// tresult PLUGIN_API getState(IBStream* state);
 	// tresult PLUGIN_API setParamNormalized(ParamID tag, ParamValue value);
-	// tresult PLUGIN_API getParamStringByValue(ParamID tag, ParamValue valueNormalized, String128 string);
 	// tresult PLUGIN_API getParamValueByString(ParamID tag, TChar* string, ParamValue& valueNormalized);
 
 	~AudioPlugSharpController(void);
+
+private:
+
 };
 

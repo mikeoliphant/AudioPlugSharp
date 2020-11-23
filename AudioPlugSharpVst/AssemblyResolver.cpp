@@ -56,12 +56,17 @@ System::Object^ AssemblyResolver::GetObjectByInterface(System::Reflection::Assem
 
 				if (iType == interfaceType)
 				{
+					Logger::Log("Matched");
+
 					matchedType = type;
 
 					break;
 				}
 			}
 		}
+
+		if (matchedType != nullptr)
+			break;
 	}
 
 	if (matchedType == nullptr)

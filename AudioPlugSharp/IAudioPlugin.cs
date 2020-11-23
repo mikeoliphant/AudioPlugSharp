@@ -11,11 +11,10 @@ namespace AudioPlugSharp
         string Contact { get; }
         string PluginName { get; }
         string PluginCategory { get; }
-        string PluginVerstion { get; }
-        string ProcessorGuid { get; }
-        string ControllerGuid { get; }
+        string PluginVersion { get; }
+        ulong PluginID { get; }
 
-        IAudioProcessor CreateProcessor();
-        IAudioController CreateController();
+        IAudioPluginProcessor Processor { get; }
+        IAudioPluginEditor Editor { get; }
     }
 }

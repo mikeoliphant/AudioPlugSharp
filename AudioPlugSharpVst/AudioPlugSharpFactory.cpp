@@ -44,12 +44,10 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 	char* contactChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->Contact);
 	char* pluginNameChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->PluginName);
 	char* pluginCategoryChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->PluginCategory);
-	char* pluginVersionChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->PluginVerstion);
-	char* processorGuidChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->ProcessorGuid);
-	char* controllerGuidChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->ControllerGuid);
+	char* pluginVersionChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->PluginVersion);
 
-	AudioPlugSharpProcessor::AudioPlugSharpProcessorUID.fromString(processorGuidChars);
-	AudioPlugSharpController::AudioPlugSharpControllerUID.fromString(controllerGuidChars);
+	AudioPlugSharpProcessor::AudioPlugSharpProcessorUID = FUID(AUDIO_PLUG_SHARP_ID, AUDIO_PLUG_SHARP_PROCESSOR_ID, plugin->PluginID >> 32, plugin->PluginID & 0x00000000ffffffff);
+	AudioPlugSharpController::AudioPlugSharpControllerUID= FUID(AUDIO_PLUG_SHARP_ID, AUDIO_PLUG_SHARP_CONTROLLER_ID, plugin->PluginID >> 32, plugin->PluginID & 0x00000000ffffffff);
 
 	factoryInfo = PFactoryInfo(companyChars, websiteChars, contactChars, Vst::kDefaultFactoryFlags);
 
@@ -87,8 +85,6 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 	Marshal::FreeHGlobal((IntPtr)pluginNameChars);
 	Marshal::FreeHGlobal((IntPtr)pluginCategoryChars);
 	Marshal::FreeHGlobal((IntPtr)pluginVersionChars);
-	Marshal::FreeHGlobal((IntPtr)processorGuidChars);
-	Marshal::FreeHGlobal((IntPtr)controllerGuidChars);
 
 	registerClass(&controllerClass, AudioPlugSharpController::createInstance);
 }

@@ -14,11 +14,7 @@ using namespace Steinberg::Vst;
 
 using namespace AudioPlugSharp;
 
-// Parameter enumeration
-enum
-{
-	kGainId = 0
-};
+#define RESERVED_PARAMCOUNT 16
 
 class AudioPlugSharpProcessor : public AudioEffect
 {
@@ -44,6 +40,4 @@ public:
 	~AudioPlugSharpProcessor(void);
 
 private:
-	float gain = 0.5;
-	gcroot<AudioPlugSharp::IAudioProcessor^> managedProcessor = nullptr;
 };

@@ -149,15 +149,14 @@
     <ClCompile Include="AudioPlugSharpController.cpp" />
     <ClCompile Include="AudioPlugSharpEntryPoints.cpp" />
     <ClCompile Include="AudioPlugSharpFactory.cpp" />
+    <ClCompile Include="AudioPlugSharpParameter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyResolver.h" />
     <ClInclude Include="AudioPlugSharp.h" />
     <ClInclude Include="AudioPlugSharpController.h" />
     <ClInclude Include="AudioPlugSharpFactory.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="AudioPlugSharp.def" />
+    <ClInclude Include="AudioPlugSharpParameter.h" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="Ijwhost.xml" />

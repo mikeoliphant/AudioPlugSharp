@@ -30,6 +30,9 @@
     <ClCompile Include="AudioPlugSharpFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AudioPlugSharpParameter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyResolver.h">
@@ -44,11 +47,9 @@
     <ClInclude Include="AudioPlugSharpFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="AudioPlugSharp.def">
-      <Filter>Source Files</Filter>
-    </None>
+    <ClInclude Include="AudioPlugSharpParameter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="Ijwhost.xml" />

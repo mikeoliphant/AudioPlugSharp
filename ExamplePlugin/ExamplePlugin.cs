@@ -3,63 +3,79 @@ using AudioPlugSharp;
 
 namespace ExamplePlugin
 {
-    public class ExamplePlugin : IAudioPlugin
+    public class ExamplePlugin : AudioPluginBase
     {
-        public string Company
-        {
-            get { return "My Company"; }
-        }
-
-        public string Website
-        {
-            get { return "www.mywebsite.com"; }
-        }
-
-        public string Contact
-        {
-            get { return "contact@my.email"; }
-        }
-
-        public string PluginName
-        {
-            get { return "Example Plugin"; }
-        }
-
-        public string PluginCategory
-        {
-            get { return "Fx"; }
-        }
-
-        public string PluginVerstion
-        {
-            get { return "1.0.0"; }
-        }
-
-        public string ProcessorGuid
-        {
-            get { return "F57703946AFC4EF8BBAFF5DB6DFC9066"; }
-        }
-
-        public string ControllerGuid
-        {
-            get
-            {
-                return "50E3241D5B754A2B8F85AF829AC758C6";
-            }
-        }
-
         public ExamplePlugin()
         {
+            Company = "My Company";
+            Website = "www.mywebsite.com";
+            Contact = "contact@my.email";
+            PluginName = "Example Plugin";
+            PluginCategory = "Fx";
+            PluginVersion = "1.0.0";
+
+            // Unique 64bit ID for the plugin
+            PluginID = 0xF57703946AFC4EF8;
         }
 
-        public IAudioProcessor CreateProcessor()
+        AudioIOPort monoInput;
+        AudioIOPort monoOutput;
+
+        public override void Initialize()
         {
-            return new ExampleProcessor();
+            base.Initialize();
+
+            InputPorts = new AudioIOPort[] { monoInput = new AudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
+            OutputPorts = new AudioIOPort[] { monoOutput = new AudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
+
+            AddParameter(new AudioPluginParameter
+            {
+                ID = "gain",
+                Name = "Gain",
+                Type = EAudioPluginParameterType.Float,
+                MinValue = -20,
+                MaxValue = 20,
+                DefaultValue = 0,
+                ValueFormat = "{0:0.0}dB"
+            });
         }
 
-        public IAudioController CreateController()
+        public override void InitializeEditor()
         {
-            return new ExampleController();
+            base.InitializeEditor();
+        }
+
+        public override void Start()
+        {
+            base.Start();
+        }
+
+        public override void Stop()
+        {
+            base.Stop();
+        }
+
+        public override void Process()
+        {
+            base.Process();
+
+            double gain = GetParameter("gain").Value;
+
+            Logger.Log("gain is: " + gain);
+
+            double linearGain = Math.Pow(10.0, 0.05 * gain);
+
+            monoInput.ReadData();
+
+            double[] inSamples = monoInput.GetAudioBuffers()[0];
+            double[] outSamples = monoOutput.GetAudioBuffers()[0];
+
+            for (int i = 0; i < inSamples.Length; i++)
+            {
+                outSamples[i] = inSamples[i] * linearGain;
+            }
+
+            monoOutput.WriteData();
         }
     }
 }
