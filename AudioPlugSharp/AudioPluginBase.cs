@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace AudioPlugSharp
 {
     public class AudioPluginBase : IAudioPlugin, IAudioPluginProcessor, IAudioPluginEditor
     {
+        //
         // IAudioPlugin Properties
+        //
+
         public string Company { get; protected set; }
         public string Website { get; protected set; }
         public string Contact { get; protected set; }
@@ -17,7 +22,11 @@ namespace AudioPlugSharp
         public IAudioPluginProcessor Processor { get { return this; } }
         public IAudioPluginEditor Editor { get { return this; } }
 
+
+        //
         // IAudioPluginProcessor Properties
+        //
+
         public AudioIOPort[] InputPorts { get; protected set; }
         public AudioIOPort[] OutputPorts { get; protected set; }
         public IReadOnlyList<AudioPluginParameter> Parameters { get; private set; }
@@ -25,11 +34,17 @@ namespace AudioPlugSharp
         List<AudioPluginParameter> parameterList = new List<AudioPluginParameter>();
         Dictionary<string, AudioPluginParameter> parameterDict = new Dictionary<string, AudioPluginParameter>();
 
+        public AudioPluginSaveState SaveStateData { get; protected set; }
+
         public AudioPluginBase()
         {
+            SaveStateData = new AudioPluginSaveState();
         }
 
+
+        //
         // IAudioPluginProcessor Methods
+        //
 
         public virtual void Initialize()
         {
@@ -54,6 +69,51 @@ namespace AudioPlugSharp
             return parameterDict[paramID];
         }
 
+        public virtual byte[] SaveState()
+        {
+            SaveStateData.SaveParameterValues(Parameters);
+
+            XmlSerializer serializer = new XmlSerializer(SaveStateData.GetType());
+
+            try
+            {
+                using (MemoryStream memoryStream = new MemoryStream())
+                {
+                    serializer.Serialize(memoryStream, SaveStateData);
+
+                    return memoryStream.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Save state serialization failed with: " + ex.ToString());
+            }
+
+            return null;
+        }
+
+        public virtual void RestoreState(byte[] stateData)
+        {
+            if (stateData != null)
+            {
+                XmlSerializer serializer = new XmlSerializer(SaveStateData.GetType());
+
+                try
+                {
+                    using (MemoryStream memoryStream = new MemoryStream(stateData))
+                    {
+                        SaveStateData = serializer.Deserialize(memoryStream) as AudioPluginSaveState;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Save state deserialization failed with: " + ex.ToString());
+                }
+
+                SaveStateData.RestoreParameterValues(Parameters);
+            }
+        }
+
         public virtual void Start()
         {
             Logger.Log("Start Processor");
@@ -68,10 +128,19 @@ namespace AudioPlugSharp
         {
         }
 
+
+        //
         // IAudioPluginEditor Methods
+        //
 
         public virtual void InitializeEditor()
         {
+            Logger.Log("Initialize Editor");
+        }
+
+        public virtual bool ShowEditor(IntPtr parentWindow)
+        {
+            return false;
         }
     }
 }

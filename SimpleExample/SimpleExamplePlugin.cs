@@ -1,16 +1,16 @@
 ﻿using System;
 using AudioPlugSharp;
 
-namespace ExamplePlugin
+namespace SimpleExample
 {
-    public class ExamplePlugin : AudioPluginBase
+    public class SimpleExamplePlugin : AudioPluginBase
     {
-        public ExamplePlugin()
+        public SimpleExamplePlugin()
         {
             Company = "My Company";
             Website = "www.mywebsite.com";
             Contact = "contact@my.email";
-            PluginName = "Example Plugin";
+            PluginName = "Simple Gain Plugin";
             PluginCategory = "Fx";
             PluginVersion = "1.0.0";
 
@@ -40,29 +40,11 @@ namespace ExamplePlugin
             });
         }
 
-        public override void InitializeEditor()
-        {
-            base.InitializeEditor();
-        }
-
-        public override void Start()
-        {
-            base.Start();
-        }
-
-        public override void Stop()
-        {
-            base.Stop();
-        }
-
         public override void Process()
         {
             base.Process();
 
             double gain = GetParameter("gain").Value;
-
-            Logger.Log("gain is: " + gain);
-
             double linearGain = Math.Pow(10.0, 0.05 * gain);
 
             monoInput.ReadData();

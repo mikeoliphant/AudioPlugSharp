@@ -25,6 +25,8 @@
     <RootNamespace>AudioPlugSharpVst</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <TargetFramework>net5.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -150,6 +152,7 @@
     <ClCompile Include="AudioPlugSharpEntryPoints.cpp" />
     <ClCompile Include="AudioPlugSharpFactory.cpp" />
     <ClCompile Include="AudioPlugSharpParameter.cpp" />
+    <ClCompile Include="AudioPlugSharpEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyResolver.h" />
@@ -157,9 +160,15 @@
     <ClInclude Include="AudioPlugSharpController.h" />
     <ClInclude Include="AudioPlugSharpFactory.h" />
     <ClInclude Include="AudioPlugSharpParameter.h" />
+    <ClInclude Include="AudioPlugSharpEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="Ijwhost.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wpf.runtimeconfig.json">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -33,6 +33,9 @@
     <ClCompile Include="AudioPlugSharpParameter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AudioPlugSharpEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyResolver.h">
@@ -50,8 +53,14 @@
     <ClInclude Include="AudioPlugSharpParameter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AudioPlugSharpEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="Ijwhost.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wpf.runtimeconfig.json" />
   </ItemGroup>
 </Project>

@@ -8,5 +8,6 @@ namespace AudioPlugSharp
     public interface IAudioPluginEditor
     {
         void InitializeEditor();
+        bool ShowEditor(IntPtr parentWindow);
     }
 }

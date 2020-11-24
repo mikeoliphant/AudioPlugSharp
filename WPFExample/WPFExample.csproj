@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy $(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.vst3 $(TargetDir)$(TargetName)Vst.vst3&#xD;&#xA;copy $(SolutionDir)x64\$(ConfigurationName)\wpf.runtimeconfig.json $(TargetDir)$(TargetName)Vst.runtimeconfig.json&#xD;&#xA;copy $(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.deps.json $(TargetDir)$(TargetName)Vst.deps.json&#xD;&#xA;copy $(SolutionDir)x64\$(ConfigurationName)\Ijwhost.dll $(TargetDir)" />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AudioPlugSharpWPF\AudioPlugSharpWPF.csproj" />
+    <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
+  </ItemGroup>
+
+</Project>

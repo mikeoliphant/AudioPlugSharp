@@ -28,13 +28,13 @@ public:
 		return (IAudioProcessor*) new AudioPlugSharpProcessor();
 	}
 
-	tresult PLUGIN_API initialize(FUnknown* context);
-	tresult PLUGIN_API terminate();
-	tresult PLUGIN_API setActive(TBool state);
-	tresult PLUGIN_API setupProcessing(ProcessSetup& newSetup);
-	tresult PLUGIN_API process(ProcessData& data);
-	tresult PLUGIN_API setState(IBStream* state);
-	tresult PLUGIN_API getState(IBStream* state);
+	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
+	tresult PLUGIN_API terminate() SMTG_OVERRIDE;
+	tresult PLUGIN_API setActive(TBool state) SMTG_OVERRIDE;
+	tresult PLUGIN_API setupProcessing(ProcessSetup& newSetup) SMTG_OVERRIDE;
+	tresult PLUGIN_API process(ProcessData& data) SMTG_OVERRIDE;
+	tresult PLUGIN_API setState(IBStream* state) SMTG_OVERRIDE;
+	tresult PLUGIN_API getState(IBStream* state) SMTG_OVERRIDE;
 	tresult PLUGIN_API canProcessSampleSize(int32 symbolicSampleSize) SMTG_OVERRIDE;
 	tresult PLUGIN_API setBusArrangements(SpeakerArrangement* inputs, int32 numIns, SpeakerArrangement* outputs, int32 numOuts);
 	~AudioPlugSharpProcessor(void);

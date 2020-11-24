@@ -61,6 +61,20 @@ tresult PLUGIN_API AudioPlugSharpController::terminate()
 	return EditController::terminate();
 }
 
+tresult PLUGIN_API AudioPlugSharpController::setParamNormalized(ParamID tag, ParamValue value)
+{
+	plugin->Processor->Parameters[tag - RESERVED_PARAMCOUNT]->NormalizedValue = value;
+
+	Logger::Log("Host set param");
+
+	return kResultOk;
+}
+
+ParamValue PLUGIN_API AudioPlugSharpController::getParamNormalized(ParamID tag)
+{
+	return plugin->Processor->Parameters[tag - RESERVED_PARAMCOUNT]->NormalizedValue;
+}
+
 tresult PLUGIN_API AudioPlugSharpController::getParamStringByValue(ParamID tag, ParamValue valueNormalized, String128 string)
 {
 	TChar* paramStr = (TChar*)(void*)Marshal::StringToHGlobalUni(plugin->Processor->Parameters[tag - RESERVED_PARAMCOUNT]->DisplayValue);
@@ -74,6 +88,8 @@ tresult PLUGIN_API AudioPlugSharpController::getParamStringByValue(ParamID tag, 
 
 tresult PLUGIN_API AudioPlugSharpController::setComponentState(IBStream* state)
 {
+	Logger::Log("Controller setComponentState");
+
 	if (!state)
 		return kResultFalse;
 
@@ -87,3 +103,11 @@ tresult PLUGIN_API AudioPlugSharpController::setComponentState(IBStream* state)
 
 	return kResultOk;
 }
+
+IPlugView* PLUGIN_API AudioPlugSharpController::createView(const char* name)
+{
+	editor = new AudioPlugSharpEditor(this);
+
+	return editor;
+}
+

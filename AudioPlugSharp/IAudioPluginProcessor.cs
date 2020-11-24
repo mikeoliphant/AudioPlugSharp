@@ -13,6 +13,8 @@ namespace AudioPlugSharp
         void Initialize();
         void AddParameter(AudioPluginParameter parameter);
         AudioPluginParameter GetParameter(string paramID);
+        byte[] SaveState();
+        void RestoreState(byte[] stateData);
         void Start();
         void Stop();
         void Process();

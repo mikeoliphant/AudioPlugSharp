@@ -5,6 +5,8 @@
 #include "pluginterfaces/base/ibstream.h"
 #include "base/source/fstreamer.h"
 
+#include <sstream>
+
 #include "AudioPlugSharp.h"
 #include "AudioPlugSharpController.h"
 #include "AudioPlugSharpFactory.h"
@@ -91,11 +93,52 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setActive(TBool state)
 
 tresult PLUGIN_API AudioPlugSharpProcessor::setState(IBStream* state)
 {
+	Logger::Log("Restore State");
+
+	if (state != nullptr)
+	{
+		std::stringstream stringStream;
+
+		char readBuf[1024];
+
+		int32 numRead;
+
+		do
+		{
+			state->read(readBuf, 1024, &numRead);
+
+			stringStream.write(readBuf, numRead);
+		} while (numRead == 1024);
+
+		std::string dataString = stringStream.str();
+
+		array<Byte>^ byteArray = gcnew array<Byte>(dataString.size());
+
+		Marshal::Copy((IntPtr)&dataString[0], byteArray, 0, byteArray->Length);
+
+		plugin->Processor->RestoreState(byteArray);
+	}
+
 	return kResultOk;
 }
 
 tresult PLUGIN_API AudioPlugSharpProcessor::getState(IBStream* state)
 {
+	Logger::Log("Save State");
+
+	auto data = plugin->Processor->SaveState();
+
+	if (data != nullptr)
+	{
+		unsigned char* dataChars = new unsigned char[data->Length];
+
+		Marshal::Copy(data, 0, (IntPtr)dataChars, data->Length);
+
+		state->write(dataChars, data->Length, 0);
+
+		delete[] dataChars;
+	}
+
 	return kResultOk;
 }
 
