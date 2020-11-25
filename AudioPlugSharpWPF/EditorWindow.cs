@@ -18,7 +18,9 @@ namespace AudioPlugSharpWPF
         {
             this.Editor = editor;
 
-            EditorView = new EditorView() { Width = 400, Height = 200 };
+            DataContext = Editor.Processor;
+
+            EditorView = new EditorView() { Width = editor.EditorWidth, Height = editor.EditorHeight };
         }
 
         public void Show(IntPtr parentWindow)

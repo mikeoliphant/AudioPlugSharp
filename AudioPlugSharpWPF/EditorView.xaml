@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:AudioPlugSharpWPF"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Background ="Red">
-            
+    <Grid Background ="#aaaaaa">
+        <local:ParameterDisplay HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
     </Grid>
 </UserControl>

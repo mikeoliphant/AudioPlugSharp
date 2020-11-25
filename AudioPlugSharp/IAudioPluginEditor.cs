@@ -7,6 +7,10 @@ namespace AudioPlugSharp
 {
     public interface IAudioPluginEditor
     {
+        uint EditorWidth { get; }
+        uint EditorHeight { get; }
+        IAudioPluginProcessor Processor { get; }
+
         void InitializeEditor();
         bool ShowEditor(IntPtr parentWindow);
     }

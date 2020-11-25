@@ -10,8 +10,8 @@ AudioPlugSharpEditor::AudioPlugSharpEditor(AudioPlugSharpController* controller)
 {
 	this->controller = controller;
 
-	rect.right = 860;
-	rect.bottom = 450;
+	rect.right = plugin->Editor->EditorWidth;
+	rect.bottom = plugin->Editor->EditorHeight;
 }
 
 AudioPlugSharpEditor::~AudioPlugSharpEditor(void)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 
 namespace AudioPlugSharp
@@ -12,8 +13,10 @@ namespace AudioPlugSharp
         Enum
     }
 
-    public class AudioPluginParameter
+    public class AudioPluginParameter : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public string ID { get; set; }
         public string Name { get; set; }
         public EAudioPluginParameterType Type { get; set; }
@@ -21,13 +24,26 @@ namespace AudioPlugSharp
         public double MaxValue { get; set; }
         public double DefaultValue { get; set; }
         public string ValueFormat { get; set; }
-        public double Value { get; set; }
+        public double Value
+        {
+            get { return value; }
+            set
+            {
+                this.value = value;
+
+                OnPropertyChanged("Value");
+                OnPropertyChanged("DisplayValue");
+                OnPropertyChanged("NormalizedValue");
+            }
+        }
         public string DisplayValue { get { return String.Format(ValueFormat, Value); } }
         public double NormalizedValue
         {
             get { return GetValueNormalized(Value); }
             set { Value = GetValueDenormalized(value); }
         }
+
+        double value;
 
         public AudioPluginParameter()
         {
@@ -45,6 +61,15 @@ namespace AudioPlugSharp
         public double GetValueDenormalized(double value)
         {
             return MinValue + ((MaxValue - MinValue) * value);
+        }
+
+        public void OnPropertyChanged(string name)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(name));
+            }
         }
     }
 }

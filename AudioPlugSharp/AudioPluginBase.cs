@@ -36,6 +36,14 @@ namespace AudioPlugSharp
 
         public AudioPluginSaveState SaveStateData { get; protected set; }
 
+        //
+        // IAudioPluginEditor Properties
+        //
+
+        public uint EditorWidth { get; protected set; }
+        public uint EditorHeight { get; protected set; }
+
+
         public AudioPluginBase()
         {
             SaveStateData = new AudioPluginSaveState();
@@ -51,6 +59,9 @@ namespace AudioPlugSharp
             Logger.Log("Initializing processor");
 
             Parameters = parameterList;
+
+            EditorWidth = 400;
+            EditorHeight = 200;
         }
 
         public void AddParameter(AudioPluginParameter parameter)
