@@ -4,20 +4,26 @@
 
 class AudioPlugSharpController;
 
+using namespace System;
+
 using namespace Steinberg;
 using namespace Steinberg::Vst;
 
-using namespace System;
+#include <msclr/gcroot.h>
+using namespace msclr;
+
+using namespace AudioPlugSharp;
 
 public class AudioPlugSharpEditor : public EditorView
 {
 public:
-	AudioPlugSharpEditor(AudioPlugSharpController* controller);
+	AudioPlugSharpEditor(AudioPlugSharpController* controller, IAudioPlugin^ plugin);
 	~AudioPlugSharpEditor(void);
 
 	tresult PLUGIN_API isPlatformTypeSupported(FIDString type) SMTG_OVERRIDE;
 	void attachedToParent() SMTG_OVERRIDE;
 private:
 	AudioPlugSharpController* controller = nullptr;
+	gcroot<AudioPlugSharp::IAudioPlugin^> plugin;
 };
 

@@ -1,7 +1,7 @@
 #include "pluginterfaces/base/ibstream.h"
 #include "base/source/fstreamer.h"
 
-#include "AudioPlugSharp.h"
+#include "AudioPlugSharpProcessor.h"
 #include "AudioPlugSharpController.h"
 #include "AudioPlugSharpFactory.h"
 
@@ -16,6 +16,16 @@ AudioPlugSharpController::AudioPlugSharpController(void)
 
 AudioPlugSharpController::~AudioPlugSharpController(void)
 {
+}
+
+FUnknown* AudioPlugSharpController::createInstance(void* factory)
+{
+	Logger::Log("Create controller instance");
+
+	AudioPlugSharpController* controller = new AudioPlugSharpController();
+	controller->plugin = ((AudioPlugSharpFactory*)factory)->plugin;
+
+	return (IAudioProcessor*)controller;
 }
 
 tresult PLUGIN_API AudioPlugSharpController::initialize(FUnknown* context)
@@ -104,10 +114,47 @@ tresult PLUGIN_API AudioPlugSharpController::setComponentState(IBStream* state)
 	return kResultOk;
 }
 
+void AudioPlugSharpController::sendIntMessage(const char* idTag, const Steinberg::int64 value)
+{
+	if (auto* message = allocateMessage())
+	{
+		const FReleaser releaser(message);
+
+		message->setMessageID(idTag);
+		message->getAttributes()->setInt(idTag, value);
+
+		sendMessage(message);
+	}
+}
+
+tresult PLUGIN_API AudioPlugSharpController::connect(IConnectionPoint* other)
+{
+	tresult result = EditController::connect(other);
+
+	Logger::Log("Connect controller to processor");
+
+	sendIntMessage("AudioPlugSharpControllerPtr", (Steinberg::int64)this);
+
+	return result;
+}
+
+void AudioPlugSharpController::setProcessor(AudioPlugSharpProcessor* processor, IAudioPlugin^ plugin)
+{
+	this->processor = processor;
+	this->plugin = plugin;
+}
+
+
+
 IPlugView* PLUGIN_API AudioPlugSharpController::createView(const char* name)
 {
-	editor = new AudioPlugSharpEditor(this);
+	if (!plugin->Editor->HasUserInterface)
+	{
+		return nullptr;
+	}
 
-	return editor;
+	editorView = new AudioPlugSharpEditor(this, plugin);
+
+	return editorView;
 }
 

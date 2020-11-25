@@ -7,6 +7,6 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Background ="#aaaaaa">
-        <local:ParameterDisplay HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <local:ParameterDisplay HorizontalAlignment="Center" VerticalAlignment="Center"/>
     </Grid>
 </UserControl>

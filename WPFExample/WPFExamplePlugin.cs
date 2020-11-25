@@ -17,6 +17,10 @@ namespace WPFExample
 
             // Unique 64bit ID for the plugin
             PluginID = 0x1E92758E710B4947;
+
+            HasUserInterface = true;
+            EditorWidth = 200;
+            EditorHeight = 100;
         }
 
         AudioIOPort monoInput;

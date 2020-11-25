@@ -16,6 +16,9 @@ using namespace AudioPlugSharp;
 
 #define RESERVED_PARAMCOUNT 16
 
+class AudioPlugSharpFactory;
+class AudioPlugSharpController;
+
 class AudioPlugSharpProcessor : public AudioEffect
 {
 public:
@@ -23,10 +26,7 @@ public:
 
 	static FUID AudioPlugSharpProcessorUID;
 
-	static FUnknown* createInstance(void* context)
-	{
-		return (IAudioProcessor*) new AudioPlugSharpProcessor();
-	}
+	static FUnknown* createInstance(void* factory);
 
 	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
 	tresult PLUGIN_API terminate() SMTG_OVERRIDE;
@@ -37,7 +37,11 @@ public:
 	tresult PLUGIN_API getState(IBStream* state) SMTG_OVERRIDE;
 	tresult PLUGIN_API canProcessSampleSize(int32 symbolicSampleSize) SMTG_OVERRIDE;
 	tresult PLUGIN_API setBusArrangements(SpeakerArrangement* inputs, int32 numIns, SpeakerArrangement* outputs, int32 numOuts);
+	tresult PLUGIN_API notify(Vst::IMessage* message) SMTG_OVERRIDE;
 	~AudioPlugSharpProcessor(void);
 
+	gcroot<AudioPlugSharp::IAudioPlugin^> plugin;
+
 private:
+	AudioPlugSharpController* controller = nullptr;
 };

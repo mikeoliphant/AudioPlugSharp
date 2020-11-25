@@ -1,14 +1,15 @@
 #include "AudioPlugSharpEditor.h"
-#include "AudioPlugSharp.h"
+#include "AudioPlugSharpProcessor.h"
 #include "AudioPlugSharpController.h";
 #include "AudioPlugSharpFactory.h"
 
 using namespace AudioPlugSharp;
 
-AudioPlugSharpEditor::AudioPlugSharpEditor(AudioPlugSharpController* controller)
+AudioPlugSharpEditor::AudioPlugSharpEditor(AudioPlugSharpController* controller, IAudioPlugin^ plugin)
 	: EditorView(controller, nullptr)
 {
 	this->controller = controller;
+	this->plugin = plugin;
 
 	rect.right = plugin->Editor->EditorWidth;
 	rect.bottom = plugin->Editor->EditorHeight;

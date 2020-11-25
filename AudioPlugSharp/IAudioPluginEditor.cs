@@ -12,6 +12,7 @@ namespace AudioPlugSharp
         IAudioPluginProcessor Processor { get; }
 
         void InitializeEditor();
+        bool HasUserInterface { get; }
         bool ShowEditor(IntPtr parentWindow);
     }
 }

@@ -9,8 +9,6 @@ using namespace AudioPlugSharp;
 
 using namespace msclr;
 
-gcroot<AudioPlugSharp::IAudioPlugin^> plugin;
-
 AudioPlugSharpFactory::AudioPlugSharpFactory()
 	: CPluginFactory(PFactoryInfo())
 {
@@ -64,7 +62,7 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 		kVstVersionString
 	);
 
-	registerClass(&componentClass, AudioPlugSharpProcessor::createInstance);
+	registerClass(&componentClass, AudioPlugSharpProcessor::createInstance, this);
 
 	static const PClassInfo2 controllerClass
 	(
@@ -86,5 +84,5 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 	Marshal::FreeHGlobal((IntPtr)pluginCategoryChars);
 	Marshal::FreeHGlobal((IntPtr)pluginVersionChars);
 
-	registerClass(&controllerClass, AudioPlugSharpController::createInstance);
+	registerClass(&controllerClass, AudioPlugSharpController::createInstance, this);
 }

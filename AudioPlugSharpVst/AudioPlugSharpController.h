@@ -7,6 +7,11 @@
 using namespace Steinberg;
 using namespace Steinberg::Vst;
 
+#include <msclr/gcroot.h>
+using namespace msclr;
+
+class AudioPlugSharpProcessor;
+
 class AudioPlugSharpController : public EditController
 {
 public:
@@ -14,10 +19,7 @@ public:
 
 	static FUID AudioPlugSharpControllerUID;
 
-	static FUnknown* createInstance(void* context)
-	{
-		return (IEditController*) new AudioPlugSharpController;
-	}
+	static FUnknown* createInstance(void* factory);
 
 	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
 	tresult PLUGIN_API terminate() SMTG_OVERRIDE;
@@ -36,10 +38,16 @@ public:
 	// tresult PLUGIN_API getState(IBStream* state) SMTG_OVERRIDE;
 	// tresult PLUGIN_API getParamValueByString(ParamID tag, TChar* string, ParamValue& valueNormalized) SMTG_OVERRIDE;
 
+	 tresult PLUGIN_API connect(IConnectionPoint* other) SMTG_OVERRIDE;
+
+	 void sendIntMessage(const char* idTag, const Steinberg::int64 value);
+	 void setProcessor(AudioPlugSharpProcessor* processor, IAudioPlugin^ plugin);
+
 	~AudioPlugSharpController(void);
 
 private:
-	AudioPlugSharpEditor* editor = nullptr;
-
+	AudioPlugSharpProcessor* processor = nullptr;
+	AudioPlugSharpEditor* editorView = nullptr;
+	gcroot<AudioPlugSharp::IAudioPlugin^> plugin;
 };
 

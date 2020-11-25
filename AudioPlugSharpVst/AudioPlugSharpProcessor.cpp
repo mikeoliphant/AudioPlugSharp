@@ -7,7 +7,7 @@
 
 #include <sstream>
 
-#include "AudioPlugSharp.h"
+#include "AudioPlugSharpProcessor.h"
 #include "AudioPlugSharpController.h"
 #include "AudioPlugSharpFactory.h"
 
@@ -26,6 +26,16 @@ AudioPlugSharpProcessor::AudioPlugSharpProcessor(void)
 
 AudioPlugSharpProcessor::~AudioPlugSharpProcessor(void)
 {
+}
+
+FUnknown* AudioPlugSharpProcessor::createInstance(void* factory)
+{
+	Logger::Log("Create processor instance");
+
+	AudioPlugSharpProcessor* processor = new AudioPlugSharpProcessor();
+	processor->plugin = ((AudioPlugSharpFactory *)factory)->plugin;
+
+	return (IAudioProcessor*)processor;
 }
 
 tresult PLUGIN_API AudioPlugSharpProcessor::initialize(FUnknown* context)
@@ -153,6 +163,28 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setBusArrangements(SpeakerArrangemen
 
 	return kResultOk;
 }
+
+tresult PLUGIN_API AudioPlugSharpProcessor::notify(Vst::IMessage* message)
+{
+	Logger::Log("Got message from controller");
+
+	if (message != nullptr)
+	{
+		Steinberg::int64 value = 0;
+
+		if (message->getAttributes()->getInt("GuitarSimVstControllerPtr", value) == kResultTrue)
+		{
+			Logger::Log("Got controller pointer");
+
+			controller = (AudioPlugSharpController*)value;
+
+			controller->setProcessor(this, plugin);
+		}
+	}
+
+	return kResultTrue;
+}
+
 
 tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSetup)
 {

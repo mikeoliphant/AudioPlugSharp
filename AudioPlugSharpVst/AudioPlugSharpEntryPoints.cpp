@@ -11,8 +11,8 @@ IPluginFactory* PLUGIN_API GetPluginFactory()
 
 	AudioPlugSharp::Logger::Log("GetPluginFactory");
 
-	if (!gPluginFactory)
-	{
+	//if (!gPluginFactory)
+	//{
 		try
 		{
 			gPluginFactory = new AudioPlugSharpFactory();
@@ -21,7 +21,7 @@ IPluginFactory* PLUGIN_API GetPluginFactory()
 		{
 			Logger::Log("Error creating plugin factory: " + ex->ToString());
 		}
-	}
+	//}
 
 	return gPluginFactory;
 }
