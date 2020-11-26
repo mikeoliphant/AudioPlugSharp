@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using AudioPlugSharp;
 
 namespace AudioPlugSharpWPF
@@ -12,15 +13,14 @@ namespace AudioPlugSharpWPF
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
         public IAudioPluginEditor Editor { get; private set; }
-        public EditorView EditorView { get; private set; }
+        public UserControl EditorView { get; private set; }
 
-        public EditorWindow(IAudioPluginEditor editor)
+        public EditorWindow(IAudioPluginEditor editor, UserControl editorView)
         {
             this.Editor = editor;
+            this.EditorView = editorView;
 
             DataContext = Editor.Processor;
-
-            EditorView = new EditorView() { Width = editor.EditorWidth, Height = editor.EditorHeight };
         }
 
         public void Show(IntPtr parentWindow)

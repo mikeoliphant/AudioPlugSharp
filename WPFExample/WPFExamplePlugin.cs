@@ -58,7 +58,11 @@ namespace WPFExample
 
         public override bool ShowEditor(IntPtr parentWindow)
         {
-            EditorWindow window = new EditorWindow(this);
+            EditorWindow window = new EditorWindow(this, new EditorView()
+            {
+                Width = EditorWidth,
+                Height = EditorHeight
+            });
 
             window.Show(parentWindow);
 

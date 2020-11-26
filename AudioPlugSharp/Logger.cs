@@ -12,38 +12,44 @@ namespace AudioPlugSharp
     public class Logger
     {
         static ConcurrentQueue<string> logQueue;
-        static StreamWriter logWriter;
+        static StreamWriter logWriter = null;
 
         static Logger()
         {
             logQueue = new ConcurrentQueue<string>();
 
-            string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AudioPlugSharp");
-
-            if (!Directory.Exists(logPath))
-                Directory.CreateDirectory(logPath);
-
-            string logFile = Path.Combine(logPath, "AudioPlugSharp.log");
-
-            if (File.Exists(logFile))
+            try
             {
-                string oldLogFile = Path.Combine(logPath, "AudioPlugSharp.log.old");
+                string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AudioPlugSharp");
 
-                if (File.Exists(oldLogFile))
-                    File.Delete(oldLogFile);
+                if (!Directory.Exists(logPath))
+                    Directory.CreateDirectory(logPath);
 
-                File.Move(logFile, oldLogFile);
+                string logFile = Path.Combine(logPath, "AudioPlugSharp.log");
+
+                if (File.Exists(logFile))
+                {
+                    string oldLogFile = Path.Combine(logPath, "AudioPlugSharp.log.old");
+
+                    if (File.Exists(oldLogFile))
+                        File.Delete(oldLogFile);
+
+                    File.Move(logFile, oldLogFile);
+                }
+
+                logWriter = new StreamWriter(logFile);
+
+                Thread logThread = new Thread(() => DoLogging());
+
+                logThread.Priority = ThreadPriority.Lowest;
+                logThread.IsBackground = true;
+                logThread.Start();
+
+                AppDomain.CurrentDomain.ProcessExit += (s, e) => WriteLogs();
             }
-
-            logWriter = new StreamWriter(logFile);
-
-            Thread logThread = new Thread(() => DoLogging());
-
-            logThread.Priority = ThreadPriority.Lowest;
-            logThread.IsBackground = true;
-            logThread.Start();
-
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => WriteLogs();
+            catch
+            {
+            }
         }
 
         static void DoLogging()

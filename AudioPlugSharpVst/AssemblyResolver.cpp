@@ -10,11 +10,33 @@ void AssemblyResolver::RegisterResolver()
 {
 	AssemblyLoadContext::GetLoadContext(Reflection::Assembly::GetExecutingAssembly())->Resolving +=
 		gcnew System::Func<System::Runtime::Loader::AssemblyLoadContext^, System::Reflection::AssemblyName^, System::Reflection::Assembly^>(&ResolveAssembly);
+
+	AppDomain::CurrentDomain->AssemblyResolve +=
+		gcnew ResolveEventHandler(ResolveDomainAssembly);
 }
 
 System::Reflection::Assembly^ AssemblyResolver::ResolveAssembly(AssemblyLoadContext^ assemblyLoadContext, AssemblyName^ assemblyName)
 {
 	return LoadAssembly(assemblyName->Name);
+}
+
+System::Reflection::Assembly^ AssemblyResolver::ResolveDomainAssembly(Object^ appDomain, System::ResolveEventArgs^ args)
+{
+	Logger::Log("Resolve domain assembly " + args->Name);
+
+	AppDomain^ domain = (AppDomain^)appDomain;
+
+	for each(auto assembly in domain->GetAssemblies())
+	{
+		if (assembly->FullName == args->Name)
+		{
+			Logger::Log("Assembly found");
+
+			return assembly;
+		}
+	}
+
+	return nullptr;
 }
 
 System::Reflection::Assembly^ AssemblyResolver::LoadAssembly(System::String^ assemblyName)
@@ -46,14 +68,10 @@ System::Object^ AssemblyResolver::GetObjectByInterface(System::Reflection::Assem
 
 	for each (System::Type^ type in assembly->GetTypes())
 	{
-		Logger::Log("Found type: " + type->Name);
-
 		if (type->IsPublic)
 		{
 			for each (System::Type^ iType in type->GetInterfaces())
 			{
-				Logger::Log("Found interface: " + iType->AssemblyQualifiedName);
-
 				if (iType == interfaceType)
 				{
 					Logger::Log("Matched");

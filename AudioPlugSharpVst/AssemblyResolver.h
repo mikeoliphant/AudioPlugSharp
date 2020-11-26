@@ -9,6 +9,7 @@ public ref class AssemblyResolver
 public:
 	static void RegisterResolver();
 	static System::Reflection::Assembly^ ResolveAssembly(AssemblyLoadContext^ assemblyLoadContext, AssemblyName^ assemblyName);
+	static System::Reflection::Assembly^ ResolveDomainAssembly(Object^ appDomain, System::ResolveEventArgs^ args);
 	static System::Reflection::Assembly^ LoadAssembly(System::String^ assemblyName);
 	static System::Object^ GetObjectByInterface(System::Reflection::Assembly^ assembly, System::Type^ interfaceType);
 };
