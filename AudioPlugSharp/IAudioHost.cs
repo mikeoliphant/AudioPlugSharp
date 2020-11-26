@@ -9,6 +9,9 @@ namespace AudioPlugSharp
     public interface IAudioHost
     {
         double SampleRate { get; }
+        UInt32 MaxAudioBufferSize { get; }
+        EAudioBitsPerSample BitsPerSample { get; }
+
         double BPM { get; }
     }
 }

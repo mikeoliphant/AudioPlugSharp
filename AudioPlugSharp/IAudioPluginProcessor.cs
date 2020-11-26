@@ -15,8 +15,12 @@ namespace AudioPlugSharp
         AudioPluginParameter GetParameter(string paramID);
         byte[] SaveState();
         void RestoreState(byte[] stateData);
+
+        void InitializeProcessing();
+
         void Start();
         void Stop();
+
         void Process();
     }
 }

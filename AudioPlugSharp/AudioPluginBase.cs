@@ -19,6 +19,9 @@ namespace AudioPlugSharp
         public string PluginCategory { get; protected set; }
         public string PluginVersion { get; protected set; }
         public ulong PluginID { get; protected set; }
+
+        public IAudioHost Host { get; set; }
+
         public IAudioPluginProcessor Processor { get { return this; } }
         public IAudioPluginEditor Editor { get { return this; } }
 
@@ -124,6 +127,12 @@ namespace AudioPlugSharp
 
                 SaveStateData.RestoreParameterValues(Parameters);
             }
+        }
+
+
+        public virtual void InitializeProcessing()
+        {
+            Logger.Log("Initialize Processing");
         }
 
         public virtual void Start()

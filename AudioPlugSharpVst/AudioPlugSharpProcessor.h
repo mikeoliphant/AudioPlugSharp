@@ -4,6 +4,7 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "base/source/fstring.h"
 #include "pluginterfaces/base/funknown.h"
+#include "AudioPlugSharpHost.h"
 
 #include <msclr/gcroot.h>
 
@@ -44,4 +45,6 @@ public:
 
 private:
 	AudioPlugSharpController* controller = nullptr;
+	gcroot<AudioPlugSharpHost^> audioPlugHost = nullptr;
+
 };

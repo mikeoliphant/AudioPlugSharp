@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyResolver.cpp" />
+    <ClCompile Include="AudioPlugSharpHost.cpp" />
     <ClCompile Include="AudioPlugSharpProcessor.cpp" />
     <ClCompile Include="AudioPlugSharpController.cpp" />
     <ClCompile Include="AudioPlugSharpEntryPoints.cpp" />
@@ -156,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyResolver.h" />
+    <ClInclude Include="AudioPlugSharpHost.h" />
     <ClInclude Include="AudioPlugSharpProcessor.h" />
     <ClInclude Include="AudioPlugSharpController.h" />
     <ClInclude Include="AudioPlugSharpFactory.h" />

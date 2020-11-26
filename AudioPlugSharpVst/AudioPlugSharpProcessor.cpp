@@ -49,6 +49,10 @@ tresult PLUGIN_API AudioPlugSharpProcessor::initialize(FUnknown* context)
 
 	try
 	{
+		audioPlugHost = gcnew AudioPlugSharpHost();
+
+		plugin->Host = audioPlugHost;
+
 		plugin->Processor->Initialize();
 	}
 	catch (Exception^ ex)
@@ -188,7 +192,13 @@ tresult PLUGIN_API AudioPlugSharpProcessor::notify(Vst::IMessage* message)
 
 tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSetup)
 {
-	Logger::Log("Setup Processing. " + (newSetup.symbolicSampleSize == kSample32) ? "32bit" : "64bit");
+	Logger::Log("Setup Processing. " + ((newSetup.symbolicSampleSize == kSample32) ? "32bit" : "64bit"));
+
+	audioPlugHost->SampleRate = newSetup.sampleRate;
+	audioPlugHost->BitsPerSample = (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64;
+	audioPlugHost->MaxAudioBufferSize = newSetup.maxSamplesPerBlock;
+
+	plugin->Processor->InitializeProcessing();
 
 	return AudioEffect::setupProcessing(newSetup);
 }
