@@ -30,7 +30,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AudioPlugSharpWPF", "AudioP
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExamplePlugins", "ExamplePlugins", "{F427CAA0-B75D-4186-9B6D-3E97BB729B4C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFExample", "WPFExample\WPFExample.csproj", "{E3D78C8F-93BB-43B4-8774-0A3F08594024}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPFExample", "WPFExample\WPFExample.csproj", "{E3D78C8F-93BB-43B4-8774-0A3F08594024}"
+	ProjectSection(ProjectDependencies) = postProject
+		{99BCC0C3-3295-4AF3-A7CF-5ED582D2FD30} = {99BCC0C3-3295-4AF3-A7CF-5ED582D2FD30}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
