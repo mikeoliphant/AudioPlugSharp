@@ -14,8 +14,8 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 {
 	System::String^ assemblyName = Path::GetFileNameWithoutExtension(Assembly::GetExecutingAssembly()->Location);
 
-	// Our plugin should be our name but without the 'Vst' at the end
-	assemblyName = assemblyName->Substring(0, assemblyName->Length - 3);
+	// Our plugin should be our name but without the 'Bridge' at the end
+	assemblyName = assemblyName->Substring(0, assemblyName->Length - 6);
 
 	Logger::Log("Plugin assembly name: " + assemblyName);
 
