@@ -13,6 +13,7 @@ namespace AudioPlugSharp
 
         void InitializeEditor();
         bool HasUserInterface { get; }
+        void ResizeEditor(uint newWidth, uint newHeight);
         bool ShowEditor(IntPtr parentWindow);
     }
 }

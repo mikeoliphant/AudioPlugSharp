@@ -159,6 +159,12 @@ namespace AudioPlugSharp
             Logger.Log("Initialize Editor");
         }
 
+        public virtual void ResizeEditor(uint newWidth, uint newHeight)
+        {
+            EditorWidth = newWidth;
+            EditorHeight = newHeight;
+        }
+
         public virtual bool ShowEditor(IntPtr parentWindow)
         {
             return false;

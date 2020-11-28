@@ -29,8 +29,6 @@ namespace AudioPlugSharpWPF
 
             Top = 0;
             Left = 0;
-            Width = EditorView.Width;
-            Height = EditorView.Height;
             ShowInTaskbar = false;
             WindowStyle = System.Windows.WindowStyle.None;
             ResizeMode = System.Windows.ResizeMode.NoResize;

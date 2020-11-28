@@ -21,6 +21,8 @@ public:
 	~AudioPlugSharpEditor(void);
 
 	tresult PLUGIN_API isPlatformTypeSupported(FIDString type) SMTG_OVERRIDE;
+	tresult PLUGIN_API canResize() SMTG_OVERRIDE { return kResultTrue; }
+	tresult PLUGIN_API onSize(ViewRect* newSize) SMTG_OVERRIDE;
 	void attachedToParent() SMTG_OVERRIDE;
 private:
 	AudioPlugSharpController* controller = nullptr;

@@ -35,6 +35,16 @@ tresult PLUGIN_API AudioPlugSharpEditor::isPlatformTypeSupported(FIDString type)
 	return kResultFalse;
 }
 
+tresult PLUGIN_API AudioPlugSharpEditor::onSize(ViewRect* newSize)
+{
+	if (newSize)
+		rect = *newSize;
+
+	plugin->Editor->ResizeEditor(newSize->getWidth(), newSize->getHeight());
+
+	return kResultTrue;
+}
+
 void AudioPlugSharpEditor::attachedToParent()
 {
 	Logger::Log("Attach");

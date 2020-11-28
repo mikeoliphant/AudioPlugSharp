@@ -6,6 +6,10 @@ namespace WPFExample
 {
     public class WPFExamplePlugin : AudioPluginBase
     {
+        AudioIOPort monoInput;
+        AudioIOPort stereoOutput;
+        EditorWindow editorWindow;
+
         public WPFExamplePlugin()
         {
             Company = "My Company";
@@ -22,9 +26,6 @@ namespace WPFExample
             EditorWidth = 200;
             EditorHeight = 100;
         }
-
-        AudioIOPort monoInput;
-        AudioIOPort stereoOutput;
 
         public override void Initialize()
         {
@@ -56,15 +57,26 @@ namespace WPFExample
             });
         }
 
+        public override void ResizeEditor(uint newWidth, uint newHeight)
+        {
+            base.ResizeEditor(newWidth, newHeight);
+
+            if (editorWindow != null)
+            {
+                editorWindow.Width = EditorWidth;
+                editorWindow.Height = EditorHeight;
+            }
+        }
+
         public override bool ShowEditor(IntPtr parentWindow)
         {
-            EditorWindow window = new EditorWindow(this, new EditorView()
+            editorWindow = new EditorWindow(this, new EditorView())
             {
                 Width = EditorWidth,
                 Height = EditorHeight
-            });
+            };
 
-            window.Show(parentWindow);
+            editorWindow.Show(parentWindow);
 
             return true;
         }
