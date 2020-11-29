@@ -10,12 +10,12 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:Dial}">
-                    <Viewbox Width="32" Height="32">
+                    <Viewbox Width="40" Height="40">
                         <Grid>
-                            <Image Name="BackgroundImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackground.png" Width="21" Height="21"/>
-                            <Image Name="PointerImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointer.png" Width="21" Height="21">
+                            <Image Name="BackgroundImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackground.png" />
+                            <Image Name="PointerImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointer.png" RenderTransformOrigin="0.5, 0.5">
                                 <Image.RenderTransform>
-                                    <RotateTransform CenterX="10.5" CenterY="10.5">
+                                    <RotateTransform>
                                         <RotateTransform.Angle>
                                             <MultiBinding Converter="{StaticResource DialToAngleConverter}">
                                                 <Binding RelativeSource="{RelativeSource TemplatedParent}" />
@@ -42,10 +42,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:Dial}">
-                    <Viewbox Width="32" Height="32">
+                    <Viewbox Width="40" Height="40">
                         <Grid>
-                            <Image Name="BackgroundImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackgroundWhite.png" Width="21" Height="21"/>
-                            <Image Name="PointerImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointerBlack.png" Width="21" Height="21">
+                            <Image Name="BackgroundImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackgroundWhite.png" />
+                            <Image Name="PointerImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointerBlack.png" RenderTransformOrigin="0.5, 0.5">
                                 <Image.RenderTransform>
                                     <RotateTransform CenterX="10.5" CenterY="10.5">
                                         <RotateTransform.Angle>
