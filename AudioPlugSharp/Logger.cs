@@ -95,7 +95,7 @@ namespace AudioPlugSharp
         {
             do
             {
-                //Thread.Sleep(1000);
+                Thread.Sleep(250);
 
                 if (logQueue.Count > 0)
                 {
