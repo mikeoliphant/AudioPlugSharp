@@ -9,10 +9,12 @@ namespace AudioPlugSharp
         Stereo
     }
 
+    [Flags]
     public enum EAudioBitsPerSample
     {
-        Bits32,
-        Bits64
+        BitsNone = 0,
+        Bits32 = 1,
+        Bits64 = 2,
     }
 
     /// <summary>

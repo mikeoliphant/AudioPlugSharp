@@ -8,6 +8,7 @@ namespace AudioPlugSharp
     {
         AudioIOPort[] InputPorts { get; }
         AudioIOPort[] OutputPorts { get; }
+        EAudioBitsPerSample SampleFormatsSupported { get; }
         IReadOnlyList<AudioPluginParameter> Parameters { get; }
 
         void Initialize();

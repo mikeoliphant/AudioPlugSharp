@@ -32,6 +32,7 @@ namespace AudioPlugSharp
 
         public AudioIOPort[] InputPorts { get; protected set; }
         public AudioIOPort[] OutputPorts { get; protected set; }
+        public EAudioBitsPerSample SampleFormatsSupported { get; protected set; }
         public IReadOnlyList<AudioPluginParameter> Parameters { get; private set; }
 
         List<AudioPluginParameter> parameterList = new List<AudioPluginParameter>();
@@ -53,6 +54,8 @@ namespace AudioPlugSharp
 
             InputPorts = new AudioIOPort[0];
             OutputPorts = new AudioIOPort[0];
+
+            SampleFormatsSupported = EAudioBitsPerSample.Bits32 | EAudioBitsPerSample.Bits64;
 
             HasUserInterface = false;
             EditorWidth = 400;

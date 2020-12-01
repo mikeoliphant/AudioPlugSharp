@@ -158,7 +158,23 @@ tresult PLUGIN_API AudioPlugSharpProcessor::getState(IBStream* state)
 
 tresult PLUGIN_API AudioPlugSharpProcessor::canProcessSampleSize(int32 symbolicSampleSize)
 {
-	return kResultTrue;
+	if (symbolicSampleSize == kSample32)
+	{
+		if ((plugin->Processor->SampleFormatsSupported & EAudioBitsPerSample::Bits32) == EAudioBitsPerSample::Bits32)
+		{
+			return kResultTrue;
+		}
+	}
+
+	if (symbolicSampleSize == kSample64)
+	{
+		if ((plugin->Processor->SampleFormatsSupported & EAudioBitsPerSample::Bits64) == EAudioBitsPerSample::Bits64)
+		{
+			return kResultTrue;
+		}
+	}
+
+	return kResultFalse;
 }
 
 tresult PLUGIN_API AudioPlugSharpProcessor::setBusArrangements(SpeakerArrangement* inputs, int32 numIns, SpeakerArrangement* outputs, int32 numOuts)
@@ -193,6 +209,13 @@ tresult PLUGIN_API AudioPlugSharpProcessor::notify(Vst::IMessage* message)
 tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSetup)
 {
 	Logger::Log("Setup Processing. " + ((newSetup.symbolicSampleSize == kSample32) ? "32bit" : "64bit"));
+
+	if (canProcessSampleSize(newSetup.symbolicSampleSize) == kResultFalse)
+	{
+		Logger::Log("Can't setup processing. Invalid sample format: " + ((newSetup.symbolicSampleSize == kSample32) ? "32bit" : "64bit"));
+
+		return kResultFalse;
+	}
 
 	audioPlugHost->SampleRate = newSetup.sampleRate;
 	audioPlugHost->BitsPerSample = (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64;
