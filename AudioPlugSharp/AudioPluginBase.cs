@@ -51,11 +51,13 @@ namespace AudioPlugSharp
         {
             SaveStateData = new AudioPluginSaveState();
 
+            InputPorts = new AudioIOPort[0];
+            OutputPorts = new AudioIOPort[0];
+
             HasUserInterface = false;
             EditorWidth = 400;
             EditorHeight = 200;
         }
-
 
         //
         // IAudioPluginProcessor Methods
@@ -63,7 +65,7 @@ namespace AudioPlugSharp
 
         public virtual void Initialize()
         {
-            Logger.Log("Initializing processor");
+            Logger.Log("Initializing processor");            
 
             Parameters = parameterList;
         }
