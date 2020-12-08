@@ -46,7 +46,7 @@ tresult PLUGIN_API AudioPlugSharpController::initialize(FUnknown* context)
 		Logger::Log("Unable to initialize managed editor: " + ex->ToString());
 	}
 
-	uint16 paramID = RESERVED_PARAMCOUNT;
+	uint16 paramID = PLUGIN_PARAMETER_USER_START;
 
 	for each (auto parameter in plugin->Processor->Parameters)
 	{
@@ -73,21 +73,34 @@ tresult PLUGIN_API AudioPlugSharpController::terminate()
 
 tresult PLUGIN_API AudioPlugSharpController::setParamNormalized(ParamID tag, ParamValue value)
 {
-	plugin->Processor->Parameters[tag - RESERVED_PARAMCOUNT]->NormalizedValue = value;
+	if (tag < PLUGIN_PARAMETER_USER_START)
+	{
+		return kResultFalse;
+	}
 
-	Logger::Log("Host set param");
+	plugin->Processor->Parameters[tag - PLUGIN_PARAMETER_USER_START]->NormalizedValue = value;
 
 	return kResultOk;
 }
 
 ParamValue PLUGIN_API AudioPlugSharpController::getParamNormalized(ParamID tag)
 {
-	return plugin->Processor->Parameters[tag - RESERVED_PARAMCOUNT]->NormalizedValue;
+	if (tag < PLUGIN_PARAMETER_USER_START)
+	{
+		return 0;
+	}
+
+	return plugin->Processor->Parameters[tag - PLUGIN_PARAMETER_USER_START]->NormalizedValue;
 }
 
 tresult PLUGIN_API AudioPlugSharpController::getParamStringByValue(ParamID tag, ParamValue valueNormalized, String128 string)
 {
-	TChar* paramStr = (TChar*)(void*)Marshal::StringToHGlobalUni(plugin->Processor->Parameters[tag - RESERVED_PARAMCOUNT]->DisplayValue);
+	if (tag < PLUGIN_PARAMETER_USER_START)
+	{
+		return kResultFalse;
+	}
+
+	TChar* paramStr = (TChar*)(void*)Marshal::StringToHGlobalUni(plugin->Processor->Parameters[tag - PLUGIN_PARAMETER_USER_START]->DisplayValue);
 
 	strcpy16(string, paramStr);
 
@@ -157,4 +170,37 @@ IPlugView* PLUGIN_API AudioPlugSharpController::createView(const char* name)
 
 	return editorView;
 }
+
+tresult PLUGIN_API AudioPlugSharpController::getMidiControllerAssignment(int32 busIndex, int16 channel,
+	CtrlNumber midiControllerNumber,
+	ParamID& tag /*out*/)
+{
+	if (busIndex == 0)
+	{
+		AudioPluginParameter^ parameter = plugin->Processor->GetParameterByMidiController(midiControllerNumber);
+
+		if (parameter != nullptr)
+		{
+			for (int i = 0; i < plugin->Processor->Parameters->Count; i++)
+			{
+				if (plugin->Processor->Parameters[i] == parameter)
+				{
+					tag = PLUGIN_PARAMETER_USER_START + i;
+
+					return kResultTrue;
+				}
+			}
+		}
+	}
+
+	return kResultFalse;
+}
+
+
+tresult PLUGIN_API AudioPlugSharpController::queryInterface(const char* iid, void** obj)
+{
+	QUERY_INTERFACE(iid, obj, IMidiMapping::iid, IMidiMapping)
+		return EditController::queryInterface(iid, obj);
+}
+
 

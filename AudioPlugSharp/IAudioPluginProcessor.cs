@@ -14,6 +14,7 @@ namespace AudioPlugSharp
         void Initialize();
         void AddParameter(AudioPluginParameter parameter);
         AudioPluginParameter GetParameter(string paramID);
+        AudioPluginParameter GetParameterByMidiController(uint ccNumber);
         byte[] SaveState();
         void RestoreState(byte[] stateData);
 
@@ -21,6 +22,9 @@ namespace AudioPlugSharp
 
         void Start();
         void Stop();
+
+        void HandleNoteOn(int noteNumber, float velocity);
+        void HandleNoteOff(int noteNumber, float velocity);
 
         void Process();
     }

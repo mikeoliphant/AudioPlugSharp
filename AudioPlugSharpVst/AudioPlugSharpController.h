@@ -12,7 +12,7 @@ using namespace msclr;
 
 class AudioPlugSharpProcessor;
 
-class AudioPlugSharpController : public EditController
+class AudioPlugSharpController : public EditController, public IMidiMapping
 {
 public:
 	AudioPlugSharpController(void);
@@ -33,6 +33,8 @@ public:
 	// Uncomment to add a GUI
 	 IPlugView * PLUGIN_API createView (const char * name) SMTG_OVERRIDE;
 
+	 tresult PLUGIN_API getMidiControllerAssignment(int32 busIndex, int16 channel, CtrlNumber midiControllerNumber, ParamID& tag/*out*/) SMTG_OVERRIDE;
+
 	// Uncomment to override default EditController behavior
 	// tresult PLUGIN_API setState(IBStream* state) SMTG_OVERRIDE;
 	// tresult PLUGIN_API getState(IBStream* state) SMTG_OVERRIDE;
@@ -44,6 +46,9 @@ public:
 	 void setProcessor(AudioPlugSharpProcessor* processor, IAudioPlugin^ plugin);
 
 	~AudioPlugSharpController(void);
+
+	DELEGATE_REFCOUNT(EditController)
+		tresult PLUGIN_API queryInterface(const char* iid, void** obj) SMTG_OVERRIDE;
 
 private:
 	AudioPlugSharpProcessor* processor = nullptr;

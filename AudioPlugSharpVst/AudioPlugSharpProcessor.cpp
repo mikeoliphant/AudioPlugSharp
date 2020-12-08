@@ -80,7 +80,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::initialize(FUnknown* context)
 		Marshal::FreeHGlobal((IntPtr)portName);
 	}
 
-	// Set up a MIDI event intput as an example, even though we aren't going to use it
+	// Set up an event intput
 	addEventInput(STR16("Event In"), 1);
 
 	return kResultOk;
@@ -210,11 +210,13 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSet
 {
 	Logger::Log("Setup Processing. " + ((newSetup.symbolicSampleSize == kSample32) ? "32bit" : "64bit"));
 
-	if (canProcessSampleSize(newSetup.symbolicSampleSize) == kResultFalse)
-	{
-		Logger::Log("Can't setup processing. Invalid sample format: " + ((newSetup.symbolicSampleSize == kSample32) ? "32bit" : "64bit"));
+	tresult result = AudioEffect::setupProcessing(newSetup);
 
-		return kResultFalse;
+	if (result != kResultOk)
+	{
+		Logger::Log("Setup processing failed");
+
+		return result;
 	}
 
 	audioPlugHost->SampleRate = newSetup.sampleRate;
@@ -223,7 +225,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSet
 
 	plugin->Processor->InitializeProcessing();
 
-	return AudioEffect::setupProcessing(newSetup);
+	return kResultOk;
 }
 
 tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
@@ -250,7 +252,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 				// Only getting the last value - probably should get them all and pass them on with sample offsets...
 				if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==	kResultTrue)
 				{
-					plugin->Processor->Parameters[paramID - RESERVED_PARAMCOUNT]->NormalizedValue = value;
+					plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START]->NormalizedValue = value;
 				}
 			}
 		}
@@ -269,15 +271,21 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 			{
 				switch (event.type)
 				{
-					// case statements for handling MIDI events go here
+					case Event::kNoteOnEvent:
+					{
+						plugin->Processor->HandleNoteOn(event.noteOn.pitch, event.noteOn.velocity);
+
+						break;
+					}
+					case Event::kNoteOffEvent:
+					{
+						plugin->Processor->HandleNoteOff(event.noteOff.pitch, event.noteOff.velocity);
+
+						break;
+					}
 				}
 			}
 		}
-	}
-
-	if (data.numInputs == 0 || data.numOutputs == 0)
-	{
-		return kResultOk;
 	}
 
 	for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)

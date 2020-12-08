@@ -41,6 +41,14 @@ namespace AudioPlugSharp
         }
 
         /// <summary>
+        /// The current number of bits per sample
+        /// </summary>
+        public EAudioBitsPerSample BitsPerSample
+        {
+            get { return bitsPerSample; }
+        }
+
+        /// <summary>
         /// Create an audio I/O port
         /// </summary>
         /// <param name="name">The port name</param>

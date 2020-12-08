@@ -37,6 +37,7 @@ namespace AudioPlugSharp
 
         List<AudioPluginParameter> parameterList = new List<AudioPluginParameter>();
         Dictionary<string, AudioPluginParameter> parameterDict = new Dictionary<string, AudioPluginParameter>();
+        Dictionary<uint, AudioPluginParameter> parameterCCDict = new Dictionary<uint, AudioPluginParameter>();
 
         public AudioPluginSaveState SaveStateData { get; protected set; }
 
@@ -88,6 +89,20 @@ namespace AudioPlugSharp
         {
             return parameterDict[paramID];
         }
+
+        public void AddMidiControllerMapping(AudioPluginParameter parameter, uint ccNumber)
+        {
+            parameterCCDict[ccNumber] = parameter;
+        }
+
+        public AudioPluginParameter GetParameterByMidiController(uint ccNumber)
+        {
+            if (!parameterCCDict.ContainsKey(ccNumber))
+                return null;
+
+            return parameterCCDict[ccNumber];
+        }
+
 
         public virtual byte[] SaveState()
         {
@@ -148,6 +163,14 @@ namespace AudioPlugSharp
         public virtual void Stop()
         {
             Logger.Log("Stop Processor");
+        }
+
+        public virtual void HandleNoteOn(int noteNumber, float velocity)
+        {
+        }
+
+        public virtual void HandleNoteOff(int noteNumber, float velocity)
+        {
         }
 
         public virtual void Process()

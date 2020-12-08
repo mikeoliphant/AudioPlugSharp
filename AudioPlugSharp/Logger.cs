@@ -11,6 +11,13 @@ namespace AudioPlugSharp
     {
         const int NumLogsToRetain = 10;
 
+        /// <summary>
+        /// Write log entries immediately - should not be used in normal operation
+        /// </summary>
+        public static bool ImmediateMode { get; set; }
+
+        public static bool WriteToStdErr { get; set; }
+
         static ConcurrentQueue<string> logQueue;
         static StreamWriter logWriter = null;
         static string logPath;
@@ -55,7 +62,15 @@ namespace AudioPlugSharp
 
         public static void Log(string logEntry)
         {
+            logEntry = string.Format("[{0:yyyy/MM/dd HH:mm:ss:ffff}] {1}", DateTime.Now, logEntry);
+
             logQueue.Enqueue(logEntry);
+
+            if (ImmediateMode)
+                WriteLogs();
+
+            if (WriteToStdErr)
+                Console.Error.WriteLine(logEntry);
         }
 
         static void DeleteOldLogs()
@@ -112,9 +127,7 @@ namespace AudioPlugSharp
 
             while (logQueue.TryDequeue(out logEntry))
             {
-                string logLine = string.Format("[{0:yyyy/MM/dd HH:mm:ss:ffff}] {1}", DateTime.Now, logEntry);
-
-                logWriter.WriteLine(logLine);
+                logWriter.WriteLine(logEntry);
 
                 wroteEntries = true;
             }

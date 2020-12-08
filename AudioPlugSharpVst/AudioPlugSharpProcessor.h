@@ -15,7 +15,7 @@ using namespace Steinberg::Vst;
 
 using namespace AudioPlugSharp;
 
-#define RESERVED_PARAMCOUNT 16
+#define PLUGIN_PARAMETER_USER_START 128
 
 class AudioPlugSharpFactory;
 class AudioPlugSharpController;
