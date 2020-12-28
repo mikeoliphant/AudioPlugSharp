@@ -251,7 +251,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 
 				// Only getting the last value - probably should get them all and pass them on with sample offsets...
 				if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==	kResultTrue)
-				{
+				{					
 					plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START]->NormalizedValue = value;
 				}
 			}
@@ -283,6 +283,10 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 
 						break;
 					}
+					case Event::kPolyPressureEvent:
+						plugin->Processor->HandlePolyPressure(event.polyPressure.pitch, event.polyPressure.pressure);
+
+						break;
 				}
 			}
 		}

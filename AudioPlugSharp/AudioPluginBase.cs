@@ -173,6 +173,10 @@ namespace AudioPlugSharp
         {
         }
 
+        public virtual void HandlePolyPressure(int noteNumber, float pressure)
+        {
+        }
+
         public virtual void Process()
         {
         }

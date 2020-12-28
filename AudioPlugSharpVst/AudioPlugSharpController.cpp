@@ -78,6 +78,8 @@ tresult PLUGIN_API AudioPlugSharpController::setParamNormalized(ParamID tag, Par
 		return kResultFalse;
 	}
 
+	Logger::Log("Set Param Normalized: " + plugin->Processor->Parameters[tag - PLUGIN_PARAMETER_USER_START]->Name + " " + value);
+
 	plugin->Processor->Parameters[tag - PLUGIN_PARAMETER_USER_START]->NormalizedValue = value;
 
 	return kResultOk;

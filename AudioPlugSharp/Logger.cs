@@ -31,6 +31,9 @@ namespace AudioPlugSharp
 
             try
             {
+                if (!Directory.Exists(logPath))
+                    Directory.CreateDirectory(logPath);
+
                 DeleteOldLogs();
             }
             catch (Exception ex)
@@ -40,9 +43,6 @@ namespace AudioPlugSharp
 
             try
             {
-                if (!Directory.Exists(logPath))
-                    Directory.CreateDirectory(logPath);
-
                 string filename = string.Format("{0:" + logFileDateFormat + "}.log", DateTime.Now);
 
                 string logFile = Path.Combine(logPath, filename);
