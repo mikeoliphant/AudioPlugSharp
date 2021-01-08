@@ -11,8 +11,10 @@ AudioPlugSharpEditor::AudioPlugSharpEditor(AudioPlugSharpController* controller,
 	this->controller = controller;
 	this->plugin = plugin;
 
-	rect.right = plugin->Editor->EditorWidth;
-	rect.bottom = plugin->Editor->EditorHeight;
+	double scale = plugin->Editor->GetDpiScale();
+
+	rect.right = plugin->Editor->EditorWidth * scale;
+	rect.bottom = plugin->Editor->EditorHeight * scale;
 }
 
 AudioPlugSharpEditor::~AudioPlugSharpEditor(void)
@@ -40,7 +42,9 @@ tresult PLUGIN_API AudioPlugSharpEditor::onSize(ViewRect* newSize)
 	if (newSize)
 		rect = *newSize;
 
-	plugin->Editor->ResizeEditor(newSize->getWidth(), newSize->getHeight());
+	double scale = plugin->Editor->GetDpiScale();
+
+	plugin->Editor->ResizeEditor(newSize->getWidth() / scale, newSize->getHeight() / scale);
 
 	return kResultTrue;
 }

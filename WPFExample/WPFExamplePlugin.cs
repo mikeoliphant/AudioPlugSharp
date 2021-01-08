@@ -1,14 +1,14 @@
 ﻿using System;
+using System.Windows.Controls;
 using AudioPlugSharp;
 using AudioPlugSharpWPF;
 
 namespace WPFExample
 {
-    public class WPFExamplePlugin : AudioPluginBase
+    public class WPFExamplePlugin : AudioPluginWPF
     {
         AudioIOPort monoInput;
         AudioIOPort stereoOutput;
-        EditorWindow editorWindow;
 
         public WPFExamplePlugin()
         {
@@ -55,30 +55,6 @@ namespace WPFExample
                 DefaultValue = 0,
                 ValueFormat = "{0:0.0}"
             });
-        }
-
-        public override void ResizeEditor(uint newWidth, uint newHeight)
-        {
-            base.ResizeEditor(newWidth, newHeight);
-
-            if (editorWindow != null)
-            {
-                editorWindow.Width = EditorWidth;
-                editorWindow.Height = EditorHeight;
-            }
-        }
-
-        public override bool ShowEditor(IntPtr parentWindow)
-        {
-            editorWindow = new EditorWindow(this, new EditorView())
-            {
-                Width = EditorWidth,
-                Height = EditorHeight
-            };
-
-            editorWindow.Show(parentWindow);
-
-            return true;
         }
 
         public override void Process()

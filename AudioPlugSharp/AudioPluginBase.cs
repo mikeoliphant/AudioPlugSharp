@@ -186,6 +186,11 @@ namespace AudioPlugSharp
         // IAudioPluginEditor Methods
         //
 
+        public virtual double GetDpiScale()
+        {
+            return 1.0;
+        }
+
         public virtual void InitializeEditor()
         {
             Logger.Log("Initialize Editor");

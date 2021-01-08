@@ -11,8 +11,10 @@ namespace AudioPlugSharp
         uint EditorHeight { get; }
         IAudioPluginProcessor Processor { get; }
 
-        void InitializeEditor();
         bool HasUserInterface { get; }
+
+        double GetDpiScale();
+        void InitializeEditor();
         void ResizeEditor(uint newWidth, uint newHeight);
         bool ShowEditor(IntPtr parentWindow);
     }

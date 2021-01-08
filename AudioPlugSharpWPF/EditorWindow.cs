@@ -42,6 +42,12 @@ namespace AudioPlugSharpWPF
             DataContext = Editor.Processor;
         }
 
+        public void SetSize(uint width, uint height)
+        {
+            Width = width;
+            Height = height;
+        }
+
         public void Show(IntPtr parentWindow)
         {
             this.parentWindow = parentWindow;
