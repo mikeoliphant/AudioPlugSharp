@@ -12,8 +12,8 @@
                 <ControlTemplate TargetType="{x:Type local:Dial}">
                     <Viewbox Width="40" Height="40">
                         <Grid>
-                            <Image Name="BackgroundImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackground.png" />
-                            <Image Name="PointerImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointer.png" RenderTransformOrigin="0.5, 0.5">
+                            <Image Name="BackgroundImage" RenderOptions.BitmapScalingMode="Fant" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackground.png" />
+                            <Image Name="PointerImage" RenderOptions.BitmapScalingMode="Fant" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointer.png" RenderTransformOrigin="0.5, 0.5">
                                 <Image.RenderTransform>
                                     <RotateTransform>
                                         <RotateTransform.Angle>
@@ -44,8 +44,8 @@
                 <ControlTemplate TargetType="{x:Type local:Dial}">
                     <Viewbox Width="40" Height="40">
                         <Grid>
-                            <Image Name="BackgroundImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackgroundWhite.png" />
-                            <Image Name="PointerImage" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointerBlack.png" RenderTransformOrigin="0.5, 0.5">
+                            <Image Name="BackgroundImage" RenderOptions.BitmapScalingMode="Fant" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialBackgroundWhite.png" />
+                            <Image Name="PointerImage" RenderOptions.BitmapScalingMode="Fant" Source="pack://application:,,,/AudioPlugSharpWPF;component/Images/DialPointerBlack.png" RenderTransformOrigin="0.5, 0.5">
                                 <Image.RenderTransform>
                                     <RotateTransform CenterX="10.5" CenterY="10.5">
                                         <RotateTransform.Angle>
