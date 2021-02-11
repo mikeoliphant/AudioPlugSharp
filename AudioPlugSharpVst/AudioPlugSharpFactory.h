@@ -20,6 +20,6 @@ class AudioPlugSharpFactory : public CPluginFactory
 public:
 	AudioPlugSharpFactory();
 
-	gcroot<AudioPlugSharp::IAudioPlugin^> plugin;
+	gcroot<AudioPlugSharp::IAudioPlugin^> plugin = nullptr;
 };
 

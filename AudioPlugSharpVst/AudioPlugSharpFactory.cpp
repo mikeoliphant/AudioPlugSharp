@@ -17,14 +17,16 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 	// Our plugin should be our name but without the 'Bridge' at the end
 	assemblyName = assemblyName->Substring(0, assemblyName->Length - 6);
 
+	System::String^ assemblyPath = Path::GetDirectoryName(Assembly::GetExecutingAssembly()->Location);
+
+	AssemblyResolver::RegisterResolver(Path::Combine(assemblyPath, assemblyName) + ".dll");
+
 	Logger::Log("Plugin assembly name: " + assemblyName);
 
 	Assembly^ pluginAssembly = AssemblyResolver::LoadAssembly(assemblyName);
 
 	if (pluginAssembly == nullptr)
 		return;
-
-	plugin = nullptr;
 
 	try
 	{

@@ -292,19 +292,26 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 		}
 	}
 
-	for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)
+	if ((data.numInputs == 0) && (data.numOutputs == 0))
 	{
-		plugin->Processor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]),
-			(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
+		// The host is just flushing events without sending audio data
 	}
-
-	for (int output = 0; output < plugin->Processor->OutputPorts->Length; output++)
+	else
 	{
-		plugin->Processor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]),
-			(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
-	}
+		for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)
+		{
+			plugin->Processor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]),
+				(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
+		}
 
-	plugin->Processor->Process();
+		for (int output = 0; output < plugin->Processor->OutputPorts->Length; output++)
+		{
+			plugin->Processor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]),
+				(data.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, data.numSamples);
+		}
+
+		plugin->Processor->Process();
+	}
 
 	// Handle any output parameter changes (such as volume meter output)
 	// We don't have any

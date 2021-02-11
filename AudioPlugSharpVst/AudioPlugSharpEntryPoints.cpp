@@ -1,5 +1,4 @@
 #include "AudioPlugSharpFactory.h"
-#include "AssemblyResolver.h"
 
 #include "public.sdk/source/main/pluginfactory.h"
 
@@ -7,8 +6,6 @@ using namespace Steinberg;
 
 IPluginFactory* PLUGIN_API GetPluginFactory()
 {
-	AssemblyResolver::RegisterResolver();
-
 	AudioPlugSharp::Logger::Log("GetPluginFactory");
 
 	//if (!gPluginFactory)

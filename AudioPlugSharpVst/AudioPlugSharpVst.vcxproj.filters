@@ -39,6 +39,9 @@
     <ClCompile Include="AudioPlugSharpHost.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PluginLoadContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblyResolver.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AudioPlugSharpHost.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PluginLoadContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
