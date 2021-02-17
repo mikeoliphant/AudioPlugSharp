@@ -9,7 +9,19 @@ Framework support is .NET Core only. By default, it is configured to use .NET 5.
 
 See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/SimpleExample/SimpleExamplePlugin.cs) and [WPFExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/WPFExample/WPFExamplePlugin.cs) projects for example usage.
 
-# Building Instructions
+# Current Release
+
+The current [binary release is 0.2](https://github.com/mikeoliphant/AudioPlugSharp/releases/tag/v0.2). If you just want to build a plugin, you can download this rather than building from source.
+
+# Plugin Project Setup and Deployment
+
+Your plugin project will need an assembly dependency on AudioPlugSharp.dll (and AudioPlugSharpWPF.dll if you are using it).
+
+For deployment, you need to copy "AudioPlugSharpVst.vst3" to your output folder, and rename it to be "<YourPluginDllName>Bridge.vst3". So if your plugin dll is called "MyPlugin.dll", then you would rename "AudioPlugSharpVst.vst3" to "MyPluginBridge.vst3". You also need to copy "AudioPlugSharpVst.runtimeconfig.json" (or "wpf.runtimeconfig.json" if you are using WPF in your plugin) to your output folder as "<YourPluginDllName>Bridge.runtimeconfig.json". You also need to copy "Ijwhost.dll" to your output folder.
+  
+These steps can be done using a Post-build event. Have a look at the included sample plugins for examples - keep in mind you may need to change the source folder of the "copy" commands depending on where your copy of AudioPlugSharp is.
+
+# AudioPlugSharp Building Instructions
 
 You will need to have CMake (https://cmake.org) installed.
 
