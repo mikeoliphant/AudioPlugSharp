@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using AudioPlugSharp;
 
+[assembly: System.Windows.ThemeInfo(
+        System.Windows.ResourceDictionaryLocation.None,
+        System.Windows.ResourceDictionaryLocation.SourceAssembly
+    )]
+
 namespace AudioPlugSharpWPF
-{
+{    
     public class AudioPluginWPF : AudioPluginBase
     {
         [DllImport("User32.dll")]
