@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "WPFExample": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\REAPER (x64)\\reaper.exe",
+      "nativeDebugging": true
+    }
+  }
+}
