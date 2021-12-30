@@ -25,6 +25,8 @@ namespace AudioPlugSharp
 
         static Logger()
         {
+            //ImmediateMode = true;
+
             logQueue = new ConcurrentQueue<string>();
 
             logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AudioPlugSharp");

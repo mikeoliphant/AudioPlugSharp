@@ -29,13 +29,20 @@ namespace AudioPlugSharp
             get { return value; }
             set
             {
-                this.value = value;
+                if (this.value != value)
+                {
+                    this.value = value;
 
-                OnPropertyChanged("Value");
-                OnPropertyChanged("DisplayValue");
-                OnPropertyChanged("NormalizedValue");
+                    if (ValueChanged != null)
+                        ValueChanged(value);
+
+                    OnPropertyChanged("Value");
+                    OnPropertyChanged("DisplayValue");
+                    OnPropertyChanged("NormalizedValue");
+                }
             }
         }
+        public Action<double> ValueChanged { get; set; }
         public string DisplayValue { get { return String.Format(ValueFormat, Value); } }
         public double NormalizedValue
         {

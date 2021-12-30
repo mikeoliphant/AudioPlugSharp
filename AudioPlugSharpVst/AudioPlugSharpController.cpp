@@ -161,6 +161,8 @@ void AudioPlugSharpController::setProcessor(AudioPlugSharpProcessor* processor, 
 
 IPlugView* PLUGIN_API AudioPlugSharpController::createView(const char* name)
 {
+	Logger::Log("Create Editor View");
+
 	if (!plugin->Editor->HasUserInterface)
 	{
 		return nullptr;

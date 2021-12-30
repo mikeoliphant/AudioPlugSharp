@@ -16,6 +16,7 @@ namespace AudioPlugSharp
         double GetDpiScale();
         void InitializeEditor();
         void ResizeEditor(uint newWidth, uint newHeight);
-        bool ShowEditor(IntPtr parentWindow);
+        void ShowEditor(IntPtr parentWindow);
+        void HideEditor();
     }
 }

@@ -24,6 +24,7 @@ public:
 	tresult PLUGIN_API canResize() SMTG_OVERRIDE { return kResultTrue; }
 	tresult PLUGIN_API onSize(ViewRect* newSize) SMTG_OVERRIDE;
 	void attachedToParent() SMTG_OVERRIDE;
+	void removedFromParent() SMTG_OVERRIDE;
 private:
 	AudioPlugSharpController* controller = nullptr;
 	gcroot<AudioPlugSharp::IAudioPlugin^> plugin;

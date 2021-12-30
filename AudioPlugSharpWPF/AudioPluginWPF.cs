@@ -59,7 +59,7 @@ namespace AudioPlugSharpWPF
             }
         }
 
-        public override bool ShowEditor(IntPtr parentWindow)
+        public override void ShowEditor(IntPtr parentWindow)
         {
             if (EditorView == null)
                 EditorView = GetEditorView();
@@ -69,8 +69,6 @@ namespace AudioPlugSharpWPF
             EditorWindow.SetSize(EditorWidth, EditorHeight);
 
             EditorWindow.Show(parentWindow);
-
-            return true;
         }
 
     }

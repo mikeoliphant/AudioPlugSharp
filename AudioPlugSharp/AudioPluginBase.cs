@@ -202,9 +202,12 @@ namespace AudioPlugSharp
             EditorHeight = newHeight;
         }
 
-        public virtual bool ShowEditor(IntPtr parentWindow)
+        public virtual void ShowEditor(IntPtr parentWindow)
         {
-            return false;
+        }
+
+        public virtual void HideEditor()
+        {
         }
     }
 }

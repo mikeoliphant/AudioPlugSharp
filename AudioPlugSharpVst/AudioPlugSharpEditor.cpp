@@ -51,8 +51,14 @@ tresult PLUGIN_API AudioPlugSharpEditor::onSize(ViewRect* newSize)
 
 void AudioPlugSharpEditor::attachedToParent()
 {
-	Logger::Log("Attach");
+	Logger::Log("Show Editor");
 
 	plugin->Editor->ShowEditor((IntPtr)systemWindow);
 }
 
+void AudioPlugSharpEditor::removedFromParent()
+{
+	Logger::Log("Hide Editor");
+
+	plugin->Editor->HideEditor();
+}

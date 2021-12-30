@@ -14,7 +14,7 @@ void AssemblyResolver::RegisterResolver(String^ pluginPath)
 
 	Logger::Log("Assembly resolution path is: " + pluginPath);
 
-	if (loadContext == nullptr)
+	//if (loadContext == nullptr)
 		loadContext = gcnew PluginLoadContext(pluginPath);
 
 	//AssemblyLoadContext::GetLoadContext(Reflection::Assembly::GetExecutingAssembly())->Resolving +=
