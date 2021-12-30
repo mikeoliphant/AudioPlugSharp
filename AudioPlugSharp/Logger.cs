@@ -25,7 +25,7 @@ namespace AudioPlugSharp
 
         static Logger()
         {
-            //ImmediateMode = true;
+            ImmediateMode = true;
 
             logQueue = new ConcurrentQueue<string>();
 

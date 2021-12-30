@@ -1,7 +1,7 @@
 #include "AudioPlugSharpFactory.h"
-#include "AssemblyResolver.h"
 
 using namespace System::IO;
+using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
 using namespace AudioPlugSharp;
 
@@ -17,27 +17,9 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 	// Our plugin should be our name but without the 'Bridge' at the end
 	assemblyName = assemblyName->Substring(0, assemblyName->Length - 6);
 
-	System::String^ assemblyPath = Path::GetDirectoryName(Assembly::GetExecutingAssembly()->Location);
-
-	AssemblyResolver::RegisterResolver(Path::Combine(assemblyPath, assemblyName) + ".dll");
-
 	Logger::Log("Plugin assembly name: " + assemblyName);
 
-	Assembly^ pluginAssembly = AssemblyResolver::LoadAssembly(assemblyName);
-
-	if (pluginAssembly == nullptr)
-		return;
-
-	try
-	{
-		plugin = safe_cast<IAudioPlugin^>(AssemblyResolver::GetObjectByInterface(pluginAssembly, IAudioPlugin::typeid));
-	}
-	catch (Exception^ ex)
-	{
-		Logger::Log("Failed to cast pluginInfo: " + ex->ToString());
-
-		return;
-	}
+	plugin = PluginLoader::LoadPluginFromAssembly(assemblyName);
 
 	char* companyChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->Company);
 	char* websiteChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->Website);

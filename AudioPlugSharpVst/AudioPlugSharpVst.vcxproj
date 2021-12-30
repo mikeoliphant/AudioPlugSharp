@@ -157,7 +157,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AssemblyResolver.cpp" />
     <ClCompile Include="AudioPlugSharpHost.cpp" />
     <ClCompile Include="AudioPlugSharpProcessor.cpp" />
     <ClCompile Include="AudioPlugSharpController.cpp" />
@@ -165,17 +164,14 @@
     <ClCompile Include="AudioPlugSharpFactory.cpp" />
     <ClCompile Include="AudioPlugSharpParameter.cpp" />
     <ClCompile Include="AudioPlugSharpEditor.cpp" />
-    <ClCompile Include="PluginLoadContext.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AssemblyResolver.h" />
     <ClInclude Include="AudioPlugSharpHost.h" />
     <ClInclude Include="AudioPlugSharpProcessor.h" />
     <ClInclude Include="AudioPlugSharpController.h" />
     <ClInclude Include="AudioPlugSharpFactory.h" />
     <ClInclude Include="AudioPlugSharpParameter.h" />
     <ClInclude Include="AudioPlugSharpEditor.h" />
-    <ClInclude Include="PluginLoadContext.h" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="Ijwhost.xml" />
