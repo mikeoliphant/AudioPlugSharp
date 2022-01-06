@@ -13,9 +13,9 @@ The current [binary release is 0.2](https://github.com/mikeoliphant/AudioPlugSha
 
 # Plugin Project Setup and Deployment
 
-Your plugin project will need an assembly dependency on AudioPlugSharp.dll (and AudioPlugSharpWPF.dll if you are using it).
+Your plugin project will need an assembly dependency on **AudioPlugSharp.dll** (and **AudioPlugSharpWPF.dll** if you are using it).
 
-For deployment, you need to copy "AudioPlugSharpVst.vst3" to your output folder, and rename it to be "<YourPluginDllName>Bridge.vst3". So if your plugin dll is called "MyPlugin.dll", then you would rename "AudioPlugSharpVst.vst3" to "MyPluginBridge.vst3". You also need to copy "AudioPlugSharpVst.runtimeconfig.json" (or "wpf.runtimeconfig.json" if you are using WPF in your plugin) to your output folder as "<YourPluginDllName>Bridge.runtimeconfig.json". You also need to copy "Ijwhost.dll" to your output folder.
+For deployment, you need to copy **"AudioPlugSharpVst.vst3"** to your output folder, and rename it to be **"YourPluginDllNameBridge.vst3"**. So if your plugin dll is called **"MyPlugin.dll"**, then you would rename **"AudioPlugSharpVst.vst3"** to **"MyPluginBridge.vst3"**. You also need to copy **"AudioPlugSharpVst.runtimeconfig.json"** (or **"wpf.runtimeconfig.json"** if you are using WPF in your plugin) to your output folder as **"YourPluginDllNameBridge.runtimeconfig.json"**. You also need to copy **"Ijwhost.dll"** to your output folder.
   
 These steps can be done using a Post-build event. Have a look at the included sample plugins for examples - keep in mind you may need to change the source folder of the "copy" commands depending on where your copy of AudioPlugSharp is.
 
