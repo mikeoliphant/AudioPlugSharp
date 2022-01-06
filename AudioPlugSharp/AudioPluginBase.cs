@@ -78,6 +78,8 @@ namespace AudioPlugSharp
         {
             parameterList.Add(parameter);
             parameterDict[parameter.ID] = parameter;
+
+            parameter.Value = parameter.DefaultValue;
         }
 
         public IReadOnlyCollection<AudioPluginParameter> EnumerateParameters()
