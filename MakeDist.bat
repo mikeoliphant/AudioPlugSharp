@@ -1,7 +1,8 @@
 del /S /Q Dist
 mkdir Dist
 mkdir Dist\x64
-echo !.gitignore > Dist\.gitignore
+echo * > Dist\.gitignore
+echo !.gitignore >> Dist\.gitignore
 copy x64\Release\*.dll Dist\x64
 copy x64\Release\*.json Dist\x64
 copy x64\Release\*.vst3 Dist\x64
