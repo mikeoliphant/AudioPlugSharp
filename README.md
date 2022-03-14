@@ -19,6 +19,12 @@ For deployment, you need to copy **"AudioPlugSharpVst.vst3"** to your output fol
   
 These steps can be done using a Post-build event. Have a look at the included sample plugins for examples - keep in mind you may need to change the source folder of the "copy" commands depending on where your copy of AudioPlugSharp is.
 
+# Examples
+
+For an example of how to create your own plugin in its own solution, have a look at the LiveSpice VST plugin here:
+
+https://github.com/dsharlet/LiveSPICE/tree/master/LiveSPICEVst
+
 # AudioPlugSharp Building Instructions
 
 You will need to have CMake (https://cmake.org) installed.
