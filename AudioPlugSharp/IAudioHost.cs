@@ -11,7 +11,10 @@ namespace AudioPlugSharp
         double SampleRate { get; }
         UInt32 MaxAudioBufferSize { get; }
         EAudioBitsPerSample BitsPerSample { get; }
-
         double BPM { get; }
+
+        void SendNoteOn(int noteNumber, float velocity);
+        void SendNoteOff(int noteNumber, float velocity);
+        void SendPolyPressure(int noteNumber, float pressure);
     }
 }

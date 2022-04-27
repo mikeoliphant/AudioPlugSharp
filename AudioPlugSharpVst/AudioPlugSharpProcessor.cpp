@@ -83,6 +83,9 @@ tresult PLUGIN_API AudioPlugSharpProcessor::initialize(FUnknown* context)
 	// Set up an event intput
 	addEventInput(STR16("Event In"), 1);
 
+	// Set up an event output
+	addEventOutput(STR16("Event Out"), 1);
+
 	return kResultOk;
 }
 
@@ -260,6 +263,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 
 	// Handle MIDI events
 	IEventList* eventList = data.inputEvents;
+	audioPlugHost->OutputEventList = data.outputEvents;
 
 	if (eventList)
 	{
