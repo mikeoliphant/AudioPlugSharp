@@ -71,20 +71,18 @@ namespace AudioPlugSharp
         {
             Logger.Log("Initializing processor");            
 
-            Parameters = parameterList;
+            Parameters = parameterList.AsReadOnly();
         }
 
         public void AddParameter(AudioPluginParameter parameter)
         {
+            parameter.Editor = this;
+            parameter.ParameterIndex = parameterList.Count;
+
             parameterList.Add(parameter);
             parameterDict[parameter.ID] = parameter;
 
             parameter.Value = parameter.DefaultValue;
-        }
-
-        public IReadOnlyCollection<AudioPluginParameter> EnumerateParameters()
-        {
-            return parameterList.AsReadOnly();
         }
 
         public AudioPluginParameter GetParameter(string paramID)

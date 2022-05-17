@@ -10,6 +10,8 @@ using namespace Steinberg::Vst;
 #include <msclr/gcroot.h>
 using namespace msclr;
 
+#define PLUGIN_PARAMETER_USER_START 128
+
 class AudioPlugSharpProcessor;
 
 class AudioPlugSharpController : public EditController, public IMidiMapping

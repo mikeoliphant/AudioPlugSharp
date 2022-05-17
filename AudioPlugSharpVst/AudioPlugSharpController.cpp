@@ -61,8 +61,6 @@ tresult PLUGIN_API AudioPlugSharpController::initialize(FUnknown* context)
 		paramID++;
 	}
 
-	//parameters.addParameter(STR16("Gain"), nullptr, 0, 0.5, ParameterInfo::kCanAutomate, kGainId);
-
 	return result;
 }
 
@@ -77,6 +75,8 @@ tresult PLUGIN_API AudioPlugSharpController::setParamNormalized(ParamID tag, Par
 	{
 		return kResultFalse;
 	}
+
+	//Logger::Log("Set param normalized " + tag + " to " + value);
 
 	plugin->Processor->Parameters[tag - PLUGIN_PARAMETER_USER_START]->NormalizedValue = value;
 

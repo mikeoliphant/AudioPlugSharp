@@ -195,13 +195,15 @@ tresult PLUGIN_API AudioPlugSharpProcessor::notify(Vst::IMessage* message)
 	{
 		Steinberg::int64 value = 0;
 
-		if (message->getAttributes()->getInt("GuitarSimVstControllerPtr", value) == kResultTrue)
+		if (message->getAttributes()->getInt("AudioPlugSharpControllerPtr", value) == kResultTrue)
 		{
 			Logger::Log("Got controller pointer");
 
 			controller = (AudioPlugSharpController*)value;
 
 			controller->setProcessor(this, plugin);
+
+			audioPlugHost->Controller = controller;
 		}
 	}
 
@@ -255,6 +257,8 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 				// Only getting the last value - probably should get them all and pass them on with sample offsets...
 				if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==	kResultTrue)
 				{					
+					//Logger::Log("*** processor set param: " + paramID + " to " + value);
+
 					plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START]->NormalizedValue = value;
 				}
 			}
@@ -263,7 +267,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 
 	// Handle MIDI events
 	IEventList* eventList = data.inputEvents;
-	audioPlugHost->OutputEventList = data.outputEvents;
+	audioPlugHost->outputEventList = data.outputEvents;
 
 	if (eventList)
 	{

@@ -61,6 +61,8 @@ namespace AudioPlugSharpWPF
 
         public override void ShowEditor(IntPtr parentWindow)
         {
+            Logger.Log("Open editor. Thread ID is: " + AppDomain.GetCurrentThreadId());
+
             if (EditorView == null)
                 EditorView = GetEditorView();
 

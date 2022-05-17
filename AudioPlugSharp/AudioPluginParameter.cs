@@ -15,8 +15,11 @@ namespace AudioPlugSharp
 
     public class AudioPluginParameter : INotifyPropertyChanged
     {
+        public IAudioPluginEditor Editor { get; internal set; } 
+
         public event PropertyChangedEventHandler PropertyChanged;
 
+        public int ParameterIndex { get; internal set; }
         public string ID { get; set; }
         public string Name { get; set; }
         public EAudioPluginParameterType Type { get; set; }
@@ -24,6 +27,7 @@ namespace AudioPlugSharp
         public double MaxValue { get; set; }
         public double DefaultValue { get; set; }
         public string ValueFormat { get; set; }
+
         public double Value
         {
             get { return value; }
@@ -37,13 +41,34 @@ namespace AudioPlugSharp
                         ValueChanged(value);
 
                     OnPropertyChanged("Value");
+                    OnPropertyChanged("EditValue");
                     OnPropertyChanged("DisplayValue");
                     OnPropertyChanged("NormalizedValue");
                 }
             }
         }
+
+        // To be used by UI controls to change the value
+        public double EditValue
+        {
+            get
+            {
+                return value;
+            }
+            set
+            {
+                this.Value = value;
+
+                // This should really be exposed to UI controls so multiple edits can be inside a begin/end edit
+                Editor.Host.BeginEdit(ParameterIndex);
+                Editor.Host.PerformEdit(ParameterIndex, GetValueNormalized(value));
+                Editor.Host.EndEdit(ParameterIndex);
+            }
+        }
+
         public Action<double> ValueChanged { get; set; }
         public string DisplayValue { get { return String.Format(ValueFormat, Value); } }
+
         public double NormalizedValue
         {
             get { return GetValueNormalized(Value); }
