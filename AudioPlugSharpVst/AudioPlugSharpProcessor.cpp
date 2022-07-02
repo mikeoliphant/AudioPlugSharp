@@ -281,18 +281,18 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 				{
 					case Event::kNoteOnEvent:
 					{
-						plugin->Processor->HandleNoteOn(event.noteOn.pitch, event.noteOn.velocity);
+						plugin->Processor->HandleNoteOn(event.noteOn.pitch, event.noteOn.velocity, event.sampleOffset);
 
 						break;
 					}
 					case Event::kNoteOffEvent:
 					{
-						plugin->Processor->HandleNoteOff(event.noteOff.pitch, event.noteOff.velocity);
+						plugin->Processor->HandleNoteOff(event.noteOff.pitch, event.noteOff.velocity, event.sampleOffset);
 
 						break;
 					}
 					case Event::kPolyPressureEvent:
-						plugin->Processor->HandlePolyPressure(event.polyPressure.pitch, event.polyPressure.pressure);
+						plugin->Processor->HandlePolyPressure(event.polyPressure.pitch, event.polyPressure.pressure, event.sampleOffset);
 
 						break;
 				}

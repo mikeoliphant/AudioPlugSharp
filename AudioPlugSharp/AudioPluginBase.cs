@@ -165,15 +165,15 @@ namespace AudioPlugSharp
             Logger.Log("Stop Processor");
         }
 
-        public virtual void HandleNoteOn(int noteNumber, float velocity)
+        public virtual void HandleNoteOn(int noteNumber, float velocity, int sampleOffset)
         {
         }
 
-        public virtual void HandleNoteOff(int noteNumber, float velocity)
+        public virtual void HandleNoteOff(int noteNumber, float velocity, int sampleOffset)
         {
         }
 
-        public virtual void HandlePolyPressure(int noteNumber, float pressure)
+        public virtual void HandlePolyPressure(int noteNumber, float pressure, int sampleOffset)
         {
         }
 
