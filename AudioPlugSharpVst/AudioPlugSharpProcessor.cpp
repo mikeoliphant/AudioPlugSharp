@@ -254,12 +254,14 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 
 				ParamID paramID = paramQueue->getParameterId();
 
-				// Only getting the last value - probably should get them all and pass them on with sample offsets...
-				if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==	kResultTrue)
-				{					
-					//Logger::Log("*** processor set param: " + paramID + " to " + value);
+				for (int32 i = 0; i < numPoints; i++)
+				{
+					if (paramQueue->getPoint(i, sampleOffset, value) == kResultTrue)
+					{
+						//Logger::Log("*** processor set param: " + paramID + " to " + value);
 
-					plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START]->NormalizedValue = value;
+						plugin->Processor->HandleParameterChange(plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START], value, sampleOffset);
+					}
 				}
 			}
 		}
@@ -272,9 +274,11 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 	if (eventList)
 	{
 		int32 numEvent = eventList->getEventCount();
+
 		for (int32 i = 0; i < numEvent; i++)
 		{
 			Event event;
+
 			if (eventList->getEvent(i, event) == kResultOk)
 			{
 				switch (event.type)

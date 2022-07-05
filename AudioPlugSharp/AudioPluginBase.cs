@@ -165,6 +165,11 @@ namespace AudioPlugSharp
             Logger.Log("Stop Processor");
         }
 
+        public virtual void HandleParameterChange(AudioPluginParameter parameter, double newValue, int sampleOffset)
+        {
+            parameter.NormalizedValue = newValue;
+        }
+
         public virtual void HandleNoteOn(int noteNumber, float velocity, int sampleOffset)
         {
         }
