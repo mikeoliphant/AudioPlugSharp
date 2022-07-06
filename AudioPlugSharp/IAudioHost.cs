@@ -13,9 +13,9 @@ namespace AudioPlugSharp
         EAudioBitsPerSample BitsPerSample { get; }
         double BPM { get; }
 
-        void SendNoteOn(int noteNumber, float velocity);
-        void SendNoteOff(int noteNumber, float velocity);
-        void SendPolyPressure(int noteNumber, float pressure);
+        void SendNoteOn(int noteNumber, float velocity, int sampleOffset);
+        void SendNoteOff(int noteNumber, float velocity, int sampleOffset);
+        void SendPolyPressure(int noteNumber, float pressure, int sampleOffset);
 
         void BeginEdit(int parameter);
         void PerformEdit(int parameter, double normalizedValue);

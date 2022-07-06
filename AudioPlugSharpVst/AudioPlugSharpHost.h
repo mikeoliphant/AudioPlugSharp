@@ -21,7 +21,7 @@ public:
 
 	AudioPlugSharpController* Controller = nullptr;
 
-	virtual void AudioPlugSharpHost::SendNoteOn(int noteNumber, float velocity)
+	virtual void AudioPlugSharpHost::SendNoteOn(int noteNumber, float velocity, int sampleOffset)
 	{
 		Event event;
 
@@ -33,7 +33,7 @@ public:
 		outputEventList->addEvent(event);
 	}
 
-	virtual void AudioPlugSharpHost::SendNoteOff(int noteNumber, float velocity)
+	virtual void AudioPlugSharpHost::SendNoteOff(int noteNumber, float velocity, int sampleOffset)
 	{
 		Event event;
 
@@ -45,7 +45,7 @@ public:
 		outputEventList->addEvent(event);
 	}
 
-	virtual void AudioPlugSharpHost::SendPolyPressure(int noteNumber, float pressure)
+	virtual void AudioPlugSharpHost::SendPolyPressure(int noteNumber, float pressure, int sampleOffset)
 	{
 		Event event;
 
@@ -79,5 +79,6 @@ public:
 
 internal:
 	IEventList* outputEventList;
+	IParameterChanges* paramChanges;
 };
 

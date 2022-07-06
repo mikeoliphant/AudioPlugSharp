@@ -235,6 +235,9 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSet
 
 tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 {
+	audioPlugHost->outputEventList = data.outputEvents;
+	audioPlugHost->paramChanges = data.inputParameterChanges;
+
 	IParameterChanges* paramChanges = data.inputParameterChanges;
 
 	// Handle parameter changes
@@ -269,7 +272,6 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 
 	// Handle MIDI events
 	IEventList* eventList = data.inputEvents;
-	audioPlugHost->outputEventList = data.outputEvents;
 
 	if (eventList)
 	{
@@ -327,7 +329,11 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 
 	// Handle any output parameter changes (such as volume meter output)
 	// We don't have any
-	IParameterChanges* outParamChanges = data.outputParameterChanges;
+	//IParameterChanges* outParamChanges = data.outputParameterChanges;
+
+	// Null our temporary variables
+	audioPlugHost->outputEventList = nullptr;
+	audioPlugHost->paramChanges = nullptr;
 
 	return kResultOk;
 }
