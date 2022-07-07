@@ -107,8 +107,6 @@ namespace AudioPlugSharp
 
         public void AddParameterChangePoint(double newNormalizedValue, int sampleOffset)
         {
-            Logger.Log("Param change: " + Name + " val: " + ProcessValue + " offset: " + sampleOffset);
-
             lastParamChangeSample = nextParamChangeSample;
             lastParamValue = processValue;
 
@@ -125,8 +123,6 @@ namespace AudioPlugSharp
                 if (slope == 0)
                     needInterpolationUpdate = false;
             }
-
-            Logger.Log("Need update: " + needInterpolationUpdate);
         }
 
         public void ResetParameterChange()
