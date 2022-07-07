@@ -76,7 +76,6 @@ namespace MidiExample
         {
             base.Process();
 
-            gainParameter.ResetParameterChange();
             linearGain = Math.Pow(10.0, 0.05 * gainParameter.ProcessValue);
 
             double[] outSamples = monoOutput.GetAudioBuffers()[0];
