@@ -58,7 +58,7 @@ namespace MidiExample
         {
             Logger.Log("Param change: " + parameter.Name + " val: " + parameter.ProcessValue + " offset: " + sampleOffset);
 
-            parameter.AddParameterChangePoint(newNormalizedValue, sampleOffset);
+            base.HandleParameterChange(parameter, newNormalizedValue, sampleOffset);
         }
 
         double Lerp(double value1, double value2, double amount)

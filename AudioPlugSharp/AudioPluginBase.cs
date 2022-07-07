@@ -168,7 +168,7 @@ namespace AudioPlugSharp
 
         public virtual void HandleParameterChange(AudioPluginParameter parameter, double newNormalizedValue, int sampleOffset)
         {
-            parameter.NormalizedProcessValue = newNormalizedValue;
+            parameter.AddParameterChangePoint(newNormalizedValue, sampleOffset);
         }
 
         public virtual void HandleNoteOn(int noteNumber, float velocity, int sampleOffset)
