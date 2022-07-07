@@ -28,54 +28,58 @@ namespace AudioPlugSharp
         public double DefaultValue { get; set; }
         public string ValueFormat { get; set; }
 
-        public double Value
+        double processValue;
+        double editValue;
+
+        public double ProcessValue
         {
-            get { return value; }
+            get { return processValue; }
             set
             {
-                if (this.value != value)
+                if (this.processValue != value)
                 {
-                    this.value = value;
-
-                    if (ValueChanged != null)
-                        ValueChanged(value);
-
-                    OnPropertyChanged("Value");
-                    OnPropertyChanged("EditValue");
-                    OnPropertyChanged("DisplayValue");
-                    OnPropertyChanged("NormalizedValue");
+                    this.processValue = value;
                 }
             }
         }
 
-        // To be used by UI controls to change the value
+        // To be used by UI controls to access the value
         public double EditValue
         {
             get
             {
-                return value;
+                return editValue;
             }
             set
             {
-                this.Value = value;
+                if (editValue != value)
+                {
+                    editValue = value;
 
-                // This should really be exposed to UI controls so multiple edits can be inside a begin/end edit
-                Editor.Host.BeginEdit(ParameterIndex);
-                Editor.Host.PerformEdit(ParameterIndex, GetValueNormalized(value));
-                Editor.Host.EndEdit(ParameterIndex);
+                    // This should really be exposed to UI controls so multiple edits can be inside a begin/end edit
+                    Editor.Host.BeginEdit(ParameterIndex);
+                    Editor.Host.PerformEdit(ParameterIndex, GetValueNormalized(value));
+                    Editor.Host.EndEdit(ParameterIndex);
+
+                    OnPropertyChanged("EditValue");
+                    OnPropertyChanged("DisplayValue");
+                }
             }
         }
 
-        public Action<double> ValueChanged { get; set; }
-        public string DisplayValue { get { return String.Format(ValueFormat, Value); } }
+        public string DisplayValue { get { return String.Format(ValueFormat, editValue); } }
 
-        public double NormalizedValue
+        public double NormalizedProcessValue
         {
-            get { return GetValueNormalized(Value); }
-            set { Value = GetValueDenormalized(value); }
+            get { return GetValueNormalized(processValue); }
+            set { processValue = GetValueDenormalized(value); }
         }
 
-        double value;
+        public double NormalizedEditValue
+        {
+            get { return GetValueNormalized(editValue); }
+            set { editValue = GetValueDenormalized(value); }
+        }
 
         public AudioPluginParameter()
         {
@@ -93,6 +97,57 @@ namespace AudioPlugSharp
         public double GetValueDenormalized(double value)
         {
             return MinValue + ((MaxValue - MinValue) * value);
+        }
+
+        double lastParamValue;
+        double slope;
+        int lastParamChangeSample;
+        int nextParamChangeSample;
+        bool needInterpolationUpdate = false;
+
+        public void AddParameterChangePoint(double newNormalizedValue, int sampleOffset)
+        {
+            Logger.Log("Param change: " + Name + " val: " + ProcessValue + " offset: " + sampleOffset);
+
+            lastParamChangeSample = nextParamChangeSample;
+            lastParamValue = processValue;
+
+            nextParamChangeSample = sampleOffset;
+            NormalizedProcessValue = newNormalizedValue;
+
+            needInterpolationUpdate = true;
+
+            if (needInterpolationUpdate)
+            {
+                slope = (double)(processValue - lastParamValue) / (double)(nextParamChangeSample - lastParamChangeSample);
+
+                // No need to update if the parameter isn't changing
+                if (slope == 0)
+                    needInterpolationUpdate = false;
+            }
+
+            Logger.Log("Need update: " + needInterpolationUpdate);
+        }
+
+        public void ResetParameterChange()
+        {
+            lastParamValue = processValue;
+            lastParamChangeSample = -1;
+            nextParamChangeSample = -1;
+            needInterpolationUpdate = false;
+        }
+
+        public bool NeedInterpolationUpdate
+        {
+            get { return needInterpolationUpdate; }
+        }
+
+        public double GetInterpolatedProcessValue(int sampleOffset)
+        {
+            if (!needInterpolationUpdate)
+                return lastParamValue;
+
+            return lastParamValue + ((double)(sampleOffset - lastParamChangeSample) * slope);
         }
 
         public void OnPropertyChanged(string name)

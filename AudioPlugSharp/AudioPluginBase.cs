@@ -82,7 +82,8 @@ namespace AudioPlugSharp
             parameterList.Add(parameter);
             parameterDict[parameter.ID] = parameter;
 
-            parameter.Value = parameter.DefaultValue;
+            parameter.ProcessValue = parameter.DefaultValue;
+            parameter.EditValue = parameter.DefaultValue;
         }
 
         public AudioPluginParameter GetParameter(string paramID)
@@ -165,9 +166,9 @@ namespace AudioPlugSharp
             Logger.Log("Stop Processor");
         }
 
-        public virtual void HandleParameterChange(AudioPluginParameter parameter, double newValue, int sampleOffset)
+        public virtual void HandleParameterChange(AudioPluginParameter parameter, double newNormalizedValue, int sampleOffset)
         {
-            parameter.NormalizedValue = newValue;
+            parameter.NormalizedProcessValue = newNormalizedValue;
         }
 
         public virtual void HandleNoteOn(int noteNumber, float velocity, int sampleOffset)

@@ -17,6 +17,9 @@ namespace AudioPlugSharp
         void SendNoteOff(int noteNumber, float velocity, int sampleOffset);
         void SendPolyPressure(int noteNumber, float pressure, int sampleOffset);
 
+        void ProcessAllEvents();
+        int ProcessEvents();
+
         void BeginEdit(int parameter);
         void PerformEdit(int parameter, double normalizedValue);
         void EndEdit(int parameter);

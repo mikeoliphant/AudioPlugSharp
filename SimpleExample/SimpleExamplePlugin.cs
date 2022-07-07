@@ -44,9 +44,14 @@ namespace SimpleExample
         {
             base.Process();
 
-            double gain = GetParameter("gain").Value;
+            // This will trigger all Midi note events and parameter changes that happend during this process window
+            // For sample-accurate tracking, see the MidiExample plugin
+            Host.ProcessAllEvents();
+
+            double gain = GetParameter("gain").ProcessValue;
             double linearGain = Math.Pow(10.0, 0.05 * gain);
 
+            // Read our input into managed data
             monoInput.ReadData();
 
             double[] inSamples = monoInput.GetAudioBuffers()[0];
@@ -57,6 +62,7 @@ namespace SimpleExample
                 outSamples[i] = inSamples[i] * linearGain;
             }
 
+            // Write out our managed audio data
             monoOutput.WriteData();
         }
     }

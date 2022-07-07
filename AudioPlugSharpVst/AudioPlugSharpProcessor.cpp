@@ -129,7 +129,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setState(IBStream* state)
 
 		std::string dataString = stringStream.str();
 
-		array<Byte>^ byteArray = gcnew array<Byte>(dataString.size());
+		array<Byte>^ byteArray = gcnew array<Byte>((int)dataString.size());
 
 		Marshal::Copy((IntPtr)&dataString[0], byteArray, 0, byteArray->Length);
 
@@ -202,8 +202,9 @@ tresult PLUGIN_API AudioPlugSharpProcessor::notify(Vst::IMessage* message)
 			controller = (AudioPlugSharpController*)value;
 
 			controller->setProcessor(this, plugin);
-
-			audioPlugHost->Controller = controller;
+			
+			audioPlugHost->plugin = plugin;
+			audioPlugHost->controller = controller;
 		}
 	}
 
@@ -235,76 +236,9 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSet
 
 tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 {
-	audioPlugHost->outputEventList = data.outputEvents;
-	audioPlugHost->paramChanges = data.inputParameterChanges;
+	audioPlugHost->SetProcessData(&data);
 
 	IParameterChanges* paramChanges = data.inputParameterChanges;
-
-	// Handle parameter changes
-	if (paramChanges)
-	{
-		int32 numParamsChanged = paramChanges->getParameterCount();
-
-		for (int32 i = 0; i < numParamsChanged; i++)
-		{
-			IParamValueQueue* paramQueue = paramChanges->getParameterData(i);
-
-			if (paramQueue)
-			{
-				ParamValue value;
-				int32 sampleOffset;
-				int32 numPoints = paramQueue->getPointCount();
-
-				ParamID paramID = paramQueue->getParameterId();
-
-				for (int32 i = 0; i < numPoints; i++)
-				{
-					if (paramQueue->getPoint(i, sampleOffset, value) == kResultTrue)
-					{
-						//Logger::Log("*** processor set param: " + paramID + " to " + value);
-
-						plugin->Processor->HandleParameterChange(plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START], value, sampleOffset);
-					}
-				}
-			}
-		}
-	}
-
-	// Handle MIDI events
-	IEventList* eventList = data.inputEvents;
-
-	if (eventList)
-	{
-		int32 numEvent = eventList->getEventCount();
-
-		for (int32 i = 0; i < numEvent; i++)
-		{
-			Event event;
-
-			if (eventList->getEvent(i, event) == kResultOk)
-			{
-				switch (event.type)
-				{
-					case Event::kNoteOnEvent:
-					{
-						plugin->Processor->HandleNoteOn(event.noteOn.pitch, event.noteOn.velocity, event.sampleOffset);
-
-						break;
-					}
-					case Event::kNoteOffEvent:
-					{
-						plugin->Processor->HandleNoteOff(event.noteOff.pitch, event.noteOff.velocity, event.sampleOffset);
-
-						break;
-					}
-					case Event::kPolyPressureEvent:
-						plugin->Processor->HandlePolyPressure(event.polyPressure.pitch, event.polyPressure.pressure, event.sampleOffset);
-
-						break;
-				}
-			}
-		}
-	}
 
 	if ((data.numInputs == 0) && (data.numOutputs == 0))
 	{
@@ -327,13 +261,31 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 		plugin->Processor->Process();
 	}
 
+	// Reset any parameters that had changes
+	if (data.inputParameterChanges != nullptr)
+	{
+		int32 numParamsChanged = data.inputParameterChanges->getParameterCount();
+
+		for (int32 i = 0; i < numParamsChanged; i++)
+		{
+			IParamValueQueue* paramQueue = data.inputParameterChanges->getParameterData(i);
+
+			if (paramQueue != nullptr)
+			{
+				ParamID paramID = paramQueue->getParameterId();
+
+				plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START]->ResetParameterChange();
+			}
+		}
+	}
+
+
 	// Handle any output parameter changes (such as volume meter output)
 	// We don't have any
 	//IParameterChanges* outParamChanges = data.outputParameterChanges;
 
-	// Null our temporary variables
-	audioPlugHost->outputEventList = nullptr;
-	audioPlugHost->paramChanges = nullptr;
+	// Null our temporary pointer to process data
+	audioPlugHost->processData = nullptr;
 
 	return kResultOk;
 }

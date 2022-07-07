@@ -1,6 +1,6 @@
 #include "AudioPlugSharpEditor.h"
 #include "AudioPlugSharpProcessor.h"
-#include "AudioPlugSharpController.h";
+#include "AudioPlugSharpController.h"
 #include "AudioPlugSharpFactory.h"
 
 using namespace AudioPlugSharp;

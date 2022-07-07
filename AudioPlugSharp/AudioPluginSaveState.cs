@@ -20,7 +20,7 @@ namespace AudioPlugSharp
 
             foreach (AudioPluginParameter parameter in parameters)
             {
-                ParameterValues.Add(new AudioPluginSaveParameter { ID = parameter.ID, Value = parameter.Value });
+                ParameterValues.Add(new AudioPluginSaveParameter { ID = parameter.ID, Value = parameter.ProcessValue });
             }
         }
 
@@ -32,7 +32,7 @@ namespace AudioPlugSharp
                 {
                     if (saveParam.ID == parameter.ID)
                     {
-                        parameter.Value = saveParam.Value;
+                        parameter.ProcessValue = saveParam.Value;
 
                         break;
                     }

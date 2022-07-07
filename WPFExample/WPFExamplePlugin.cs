@@ -61,11 +61,16 @@ namespace WPFExample
         {
             base.Process();
 
-            double gain = GetParameter("gain").Value;
+            // This will trigger all Midi note events and parameter changes that happend during this process window
+            // For sample-accurate tracking, see the MidiExample plugin
+            Host.ProcessAllEvents();
+
+            double gain = GetParameter("gain").ProcessValue;
             double linearGain = Math.Pow(10.0, 0.05 * gain);
 
-            double pan = GetParameter("pan").Value;
+            double pan = GetParameter("pan").ProcessValue;
 
+            // Read our input into managed data
             monoInput.ReadData();
 
             double[] inSamples = monoInput.GetAudioBuffers()[0];
@@ -79,6 +84,7 @@ namespace WPFExample
                 outRightSamples[i] = inSamples[i] * linearGain * (1 + pan);
             }
 
+            // Write out our managed audio data
             stereoOutput.WriteData();
         }
     }
