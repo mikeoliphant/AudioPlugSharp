@@ -99,16 +99,16 @@ namespace AudioPlugSharp
             return MinValue + ((MaxValue - MinValue) * value);
         }
 
-        double lastParamValue;
+        double prevParamValue;
         double slope;
-        int lastParamChangeSample;
+        int prevParamChangeSample;
         int nextParamChangeSample;
         bool needInterpolationUpdate = false;
 
         public void AddParameterChangePoint(double newNormalizedValue, int sampleOffset)
         {
-            lastParamChangeSample = nextParamChangeSample;
-            lastParamValue = processValue;
+            prevParamChangeSample = nextParamChangeSample;
+            prevParamValue = processValue;
 
             nextParamChangeSample = sampleOffset;
             NormalizedProcessValue = newNormalizedValue;
@@ -117,7 +117,7 @@ namespace AudioPlugSharp
 
             if (needInterpolationUpdate)
             {
-                slope = (double)(processValue - lastParamValue) / (double)(nextParamChangeSample - lastParamChangeSample);
+                slope = (double)(processValue - prevParamValue) / (double)(nextParamChangeSample - prevParamChangeSample);
 
                 // No need to update if the parameter isn't changing
                 if (slope == 0)
@@ -127,8 +127,8 @@ namespace AudioPlugSharp
 
         public void ResetParameterChange()
         {
-            lastParamValue = processValue;
-            lastParamChangeSample = -1;
+            prevParamValue = processValue;
+            prevParamChangeSample = -1;
             nextParamChangeSample = -1;
             needInterpolationUpdate = false;
         }
@@ -141,17 +141,17 @@ namespace AudioPlugSharp
         public double GetInterpolatedProcessValue(int sampleOffset)
         {
             if (!needInterpolationUpdate)
-                return lastParamValue;
+                return prevParamValue;
 
             // If we go past the last control point, the value stays the same
             if (sampleOffset > nextParamChangeSample)
             {
                 needInterpolationUpdate = false;
 
-                return lastParamValue;
+                return prevParamValue;
             }
 
-            return lastParamValue + ((double)(sampleOffset - lastParamChangeSample) * slope);
+            return prevParamValue + ((double)(sampleOffset - prevParamChangeSample) * slope);
         }
 
         public void OnPropertyChanged(string name)
