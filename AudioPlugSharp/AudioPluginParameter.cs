@@ -143,6 +143,14 @@ namespace AudioPlugSharp
             if (!needInterpolationUpdate)
                 return lastParamValue;
 
+            // If we go past the last control point, the value stays the same
+            if (sampleOffset > lastParamChangeSample)
+            {
+                needInterpolationUpdate = false;
+
+                return lastParamValue;
+            }
+
             return lastParamValue + ((double)(sampleOffset - lastParamChangeSample) * slope);
         }
 
