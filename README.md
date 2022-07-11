@@ -36,7 +36,7 @@ git clone --recursive https://github.com/mikeoliphant/AudioPlugSharp
 cd AudioPlugSharp
 mkdir vstbuild
 cd vstbuild
-cmake.exe -G "Visual Studio 16 2019" -A x64 ../vst3sdk
+cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk
 ```
 
-Then you can load the solution in Visual Studio and build.
+Then you can load the solution in Visual Studio and build. ** Note that you will need to change the last line above if you have a different version of Visual Studio **
