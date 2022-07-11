@@ -39,4 +39,4 @@ cd vstbuild
 cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk
 ```
 
-Then you can load the solution in Visual Studio and build. ** Note that you will need to change the last line above if you have a different version of Visual Studio **
+Then you can load the solution in Visual Studio and build. **Note that you will need to change the last line above if you have a different version of Visual Studio.**
