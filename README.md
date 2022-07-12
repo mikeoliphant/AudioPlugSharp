@@ -9,7 +9,7 @@ See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/mast
 
 # Current Release
 
-The current [binary release is 0.2](https://github.com/mikeoliphant/AudioPlugSharp/releases/tag/v0.2). If you just want to build a plugin, you can download this rather than building from source.
+The current [binary release is here](https://github.com/mikeoliphant/AudioPlugSharp/releases/latest). If you just want to build a plugin, you can download this rather than building from source.
 
 # Plugin Project Setup and Deployment
 
