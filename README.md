@@ -9,7 +9,7 @@ See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/mast
 
 # Current Release
 
-The current [binary release is 0.2](https://github.com/mikeoliphant/AudioPlugSharp/releases/tag/v0.2). If you just want to build a plugin, you can download this rather than building from source.
+The current [binary release is here](https://github.com/mikeoliphant/AudioPlugSharp/releases/latest). If you just want to build a plugin, you can download this rather than building from source.
 
 # Plugin Project Setup and Deployment
 
@@ -36,7 +36,7 @@ git clone --recursive https://github.com/mikeoliphant/AudioPlugSharp
 cd AudioPlugSharp
 mkdir vstbuild
 cd vstbuild
-cmake.exe -G "Visual Studio 16 2019" -A x64 ../vst3sdk
+cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk
 ```
 
-Then you can load the solution in Visual Studio and build.
+Then you can load the solution in Visual Studio and build. **Note that you will need to change the last line above if you have a different version of Visual Studio.**
