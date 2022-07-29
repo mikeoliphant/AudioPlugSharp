@@ -238,8 +238,6 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 {
 	audioPlugHost->SetProcessData(&data);
 
-	IParameterChanges* paramChanges = data.inputParameterChanges;
-
 	if ((data.numInputs == 0) && (data.numOutputs == 0))
 	{
 		// The host is just flushing events without sending audio data
