@@ -16,8 +16,11 @@ public:
 	// Inherited via IAudioHost
 	virtual property double SampleRate;
 	virtual property unsigned int MaxAudioBufferSize;
+	virtual property unsigned int CurrentAudioBufferSize;
 	virtual property AudioPlugSharp::EAudioBitsPerSample BitsPerSample;
 	virtual property double BPM;
+	virtual property bool IsPlaying;
+	virtual property UInt64 CurrentProjectSample;
 
 	virtual void AudioPlugSharpHost::ProcessAllEvents()
 	{
@@ -130,6 +133,7 @@ public:
 		Event event;
 
 		event.type = Event::kNoteOnEvent;
+		event.sampleOffset = sampleOffset;
 		event.noteOn.channel = 1;
 		event.noteOn.pitch = noteNumber;
 		event.noteOn.velocity = velocity;
@@ -142,9 +146,23 @@ public:
 		Event event;
 
 		event.type = Event::kNoteOffEvent;
+		event.sampleOffset = sampleOffset;
 		event.noteOff.channel = 1;
 		event.noteOff.pitch = noteNumber;
 		event.noteOff.velocity = velocity;
+
+		processData->outputEvents->addEvent(event);
+	}
+
+	virtual void AudioPlugSharpHost::SendCC(int ccNumber, int ccValue, int sampleOffset)
+	{
+		Event event;
+
+		event.type = Event::kLegacyMIDICCOutEvent;
+		event.sampleOffset = sampleOffset;
+		event.midiCCOut.channel = 1;
+		event.midiCCOut.controlNumber = ccNumber;
+		event.midiCCOut.value = ccValue;
 
 		processData->outputEvents->addEvent(event);
 	}
@@ -154,6 +172,7 @@ public:
 		Event event;
 
 		event.type = Event::kNoteOnEvent;
+		event.sampleOffset = sampleOffset;
 		event.polyPressure.channel = 1;
 		event.polyPressure.pitch = noteNumber;
 		event.polyPressure.pressure = pressure;
@@ -186,6 +205,10 @@ internal:
 		eventSampleOffset = 0;
 		startEvent = 0;
 		processData = data;
+		CurrentAudioBufferSize = data->numSamples;
+		BPM = data->processContext->tempo;
+		IsPlaying = (data->processContext->state & ProcessContext::kPlaying) != 0;
+		CurrentProjectSample = data->processContext->projectTimeSamples;
 	}
 
 private:
