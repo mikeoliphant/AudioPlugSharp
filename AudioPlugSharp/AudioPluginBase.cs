@@ -171,15 +171,15 @@ namespace AudioPlugSharp
             parameter.AddParameterChangePoint(newNormalizedValue, sampleOffset);
         }
 
-        public virtual void HandleNoteOn(int noteNumber, float velocity, int sampleOffset)
+        public virtual void HandleNoteOn(int channel, int noteNumber, float velocity, int sampleOffset)
         {
         }
 
-        public virtual void HandleNoteOff(int noteNumber, float velocity, int sampleOffset)
+        public virtual void HandleNoteOff(int channel, int noteNumber, float velocity, int sampleOffset)
         {
         }
 
-        public virtual void HandlePolyPressure(int noteNumber, float pressure, int sampleOffset)
+        public virtual void HandlePolyPressure(int channel, int noteNumber, float pressure, int sampleOffset)
         {
         }
 

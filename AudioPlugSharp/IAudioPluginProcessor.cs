@@ -24,9 +24,9 @@ namespace AudioPlugSharp
         void Stop();
 
         void HandleParameterChange(AudioPluginParameter parameter, double newNormalizedValue, int sampleOffset);
-        void HandleNoteOn(int noteNumber, float velocity, int sampleOffset);
-        void HandleNoteOff(int noteNumber, float velocity, int sampleOffset);
-        void HandlePolyPressure(int noteNumber, float pressure, int sampleOffset);
+        void HandleNoteOn(int channel, int noteNumber, float velocity, int sampleOffset);
+        void HandleNoteOff(int channel, int noteNumber, float velocity, int sampleOffset);
+        void HandlePolyPressure(int channel, int noteNumber, float pressure, int sampleOffset);
 
         void Process();
     }

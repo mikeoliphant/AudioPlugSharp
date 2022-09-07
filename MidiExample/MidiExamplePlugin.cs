@@ -39,7 +39,7 @@ namespace MidiExample
             });
         }
 
-        public override void HandleNoteOn(int noteNumber, float velocity, int sampleOffset)
+        public override void HandleNoteOn(int channel, int noteNumber, float velocity, int sampleOffset)
         {
             Logger.Log("Note on: " + noteNumber + " offset: " + sampleOffset);
 
@@ -47,7 +47,7 @@ namespace MidiExample
             desiredNoteVolume = velocity * 0.5f;
         }
 
-        public override void HandleNoteOff(int noteNumber, float velocity, int sampleOffset)
+        public override void HandleNoteOff(int channel, int noteNumber, float velocity, int sampleOffset)
         {
             Logger.Log("Note off: " + noteNumber + " offset: " + sampleOffset);
 

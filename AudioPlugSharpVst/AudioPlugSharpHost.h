@@ -96,18 +96,18 @@ public:
 						{
 							case Event::kNoteOnEvent:
 							{
-								plugin->Processor->HandleNoteOn(event.noteOn.pitch, event.noteOn.velocity, event.sampleOffset);
+								plugin->Processor->HandleNoteOn(event.noteOn.channel, event.noteOn.pitch, event.noteOn.velocity, event.sampleOffset);
 
 								break;
 							}
 							case Event::kNoteOffEvent:
 							{
-								plugin->Processor->HandleNoteOff(event.noteOff.pitch, event.noteOff.velocity, event.sampleOffset);
+								plugin->Processor->HandleNoteOff(event.noteOff.channel, event.noteOff.pitch, event.noteOff.velocity, event.sampleOffset);
 
 								break;
 							}
 							case Event::kPolyPressureEvent:
-								plugin->Processor->HandlePolyPressure(event.polyPressure.pitch, event.polyPressure.pressure, event.sampleOffset);
+								plugin->Processor->HandlePolyPressure(event.polyPressure.channel, event.polyPressure.pitch, event.polyPressure.pressure, event.sampleOffset);
 
 								break;
 							}
@@ -128,52 +128,52 @@ public:
 		return eventSampleOffset;
 	}
 
-	virtual void AudioPlugSharpHost::SendNoteOn(int noteNumber, float velocity, int sampleOffset)
+	virtual void AudioPlugSharpHost::SendNoteOn(int channel, int noteNumber, float velocity, int sampleOffset)
 	{
 		Event event;
 
 		event.type = Event::kNoteOnEvent;
 		event.sampleOffset = sampleOffset;
-		event.noteOn.channel = 1;
+		event.noteOn.channel = channel;
 		event.noteOn.pitch = noteNumber;
 		event.noteOn.velocity = velocity;
 
 		processData->outputEvents->addEvent(event);
 	}
 
-	virtual void AudioPlugSharpHost::SendNoteOff(int noteNumber, float velocity, int sampleOffset)
+	virtual void AudioPlugSharpHost::SendNoteOff(int channel, int noteNumber, float velocity, int sampleOffset)
 	{
 		Event event;
 
 		event.type = Event::kNoteOffEvent;
 		event.sampleOffset = sampleOffset;
-		event.noteOff.channel = 1;
+		event.noteOff.channel = channel;
 		event.noteOff.pitch = noteNumber;
 		event.noteOff.velocity = velocity;
 
 		processData->outputEvents->addEvent(event);
 	}
 
-	virtual void AudioPlugSharpHost::SendCC(int ccNumber, int ccValue, int sampleOffset)
+	virtual void AudioPlugSharpHost::SendCC(int channel, int ccNumber, int ccValue, int sampleOffset)
 	{
 		Event event;
 
 		event.type = Event::kLegacyMIDICCOutEvent;
 		event.sampleOffset = sampleOffset;
-		event.midiCCOut.channel = 1;
+		event.midiCCOut.channel = channel;
 		event.midiCCOut.controlNumber = ccNumber;
 		event.midiCCOut.value = ccValue;
 
 		processData->outputEvents->addEvent(event);
 	}
 
-	virtual void AudioPlugSharpHost::SendPolyPressure(int noteNumber, float pressure, int sampleOffset)
+	virtual void AudioPlugSharpHost::SendPolyPressure(int channel, int noteNumber, float pressure, int sampleOffset)
 	{
 		Event event;
 
 		event.type = Event::kNoteOnEvent;
 		event.sampleOffset = sampleOffset;
-		event.polyPressure.channel = 1;
+		event.polyPressure.channel = channel;
 		event.polyPressure.pitch = noteNumber;
 		event.polyPressure.pressure = pressure;
 

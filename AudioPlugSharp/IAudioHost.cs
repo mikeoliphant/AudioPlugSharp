@@ -16,10 +16,10 @@ namespace AudioPlugSharp
         UInt64 CurrentProjectSample { get; }
         bool IsPlaying { get; }
 
-        void SendNoteOn(int noteNumber, float velocity, int sampleOffset);
-        void SendNoteOff(int noteNumber, float velocity, int sampleOffset);
-        void SendCC(int ccNumber, int ccValue, int sampleOffset);
-        void SendPolyPressure(int noteNumber, float pressure, int sampleOffset);
+        void SendNoteOn(int channel, int noteNumber, float velocity, int sampleOffset);
+        void SendNoteOff(int channel, int noteNumber, float velocity, int sampleOffset);
+        void SendCC(int channel, int ccNumber, int ccValue, int sampleOffset);
+        void SendPolyPressure(int channel, int noteNumber, float pressure, int sampleOffset);
 
         void ProcessAllEvents();
         int ProcessEvents();
