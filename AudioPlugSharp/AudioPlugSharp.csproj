@@ -5,7 +5,7 @@
     <OutputType>Library</OutputType>
     <Version>0.5.0</Version>
     <Authors>Mike Oliphant</Authors>
-    <Description>Easily create VST (VST3) audio plugins in C# .NET</Description>
+    <Description>Easily create VST (VST3) audio plugins in C# .NET.</Description>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -21,11 +21,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="AudioPlugSharp.targets" Pack="true" PackagePath="build\AudioPlugSharp.targets" />
+    <None Update="build\AudioPlugSharp.targets" Pack="true" PackagePath="build\AudioPlugSharp.targets" />
   </ItemGroup>
 
   <ItemGroup>
