@@ -10,7 +10,7 @@ namespace AudioPlugSharp
         IAudioHost Host { get; }
         uint EditorWidth { get; }
         uint EditorHeight { get; }
-        public IReadOnlyList<AudioPluginParameter> Parameters { get; }
+        IReadOnlyList<AudioPluginParameter> Parameters { get; }
         IAudioPluginProcessor Processor { get; }
 
         bool HasUserInterface { get; }

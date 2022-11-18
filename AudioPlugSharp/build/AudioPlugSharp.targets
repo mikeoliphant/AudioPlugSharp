@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)/../lib/net6.0/AudioPlugSharp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+    <Files Include="$(MSBuildThisFileDirectory)/../contentFiles/vst/*.*"></Files>
+    <Files2 Include="$(MSBuildThisFileDirectory)/../contentFiles/other/*.*"></Files2>
+  </ItemGroup>
+
+  <Target Name="AudioPlugSharp" AfterTargets="PostBuildEvent">
+    <Message Text="Copying AudioPlugSharp files to output directory"></Message>
+    <Copy SourceFiles="@(Files)" DestinationFiles="@(Files->Replace('AudioPlugSharpVst', '$(TargetName)Bridge')->'$(TargetDir)%(Filename)%(Extension)')"></Copy>
+    <Copy SourceFiles="@(Files2)" DestinationFolder="$(TargetDir)"></Copy>
+  </Target>
+
+</Project>

@@ -3,6 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <OutputType>Library</OutputType>
+    <Version>0.5.0</Version>
+    <Authors>Mike Oliphant</Authors>
+    <Description>Easily create VST (VST3) audio plugins in C# .NET.</Description>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -12,5 +19,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="build\AudioPlugSharp.targets" Pack="true" PackagePath="build\AudioPlugSharp.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="$(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.vst3" PackagePath="contentFiles/vst" Visible="false" />
+    <Content Include="$(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.runtimeconfig.json" PackagePath="contentFiles/vst" Visible="false" />
+    <Content Include="$(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.deps.json" PackagePath="contentFiles/vst" Visible="false" />
+    <Content Include="$(SolutionDir)x64\$(ConfigurationName)\Ijwhost.dll" PackagePath="contentFiles/other" Visible="false" />
+  </ItemGroup>
 
 </Project>

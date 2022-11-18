@@ -1,9 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <Version>0.5.0</Version>
+    <Authors>Mike Oliphant</Authors>
+    <Description>Add WPF GUI to your AudioPlugSharp plugin.</Description>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,9 +37,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="build\AudioPlugSharpWPF.targets" Pack="true" PackagePath="build\AudioPlugSharpWPF.targets" />
     <None Update="EditorView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="$(SolutionDir)x64\$(ConfigurationName)\wpf.runtimeconfig.json" PackagePath="contentFiles" Visible="false"/>
   </ItemGroup>
 
 </Project>
