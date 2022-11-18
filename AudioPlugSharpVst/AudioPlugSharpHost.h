@@ -20,7 +20,7 @@ public:
 	virtual property AudioPlugSharp::EAudioBitsPerSample BitsPerSample;
 	virtual property double BPM;
 	virtual property bool IsPlaying;
-	virtual property UInt64 CurrentProjectSample;
+	virtual property Int64 CurrentProjectSample;
 
 	virtual void AudioPlugSharpHost::ProcessAllEvents()
 	{

@@ -13,7 +13,7 @@ namespace AudioPlugSharp
         UInt32 CurrentAudioBufferSize { get; }
         EAudioBitsPerSample BitsPerSample { get; }
         double BPM { get; }
-        UInt64 CurrentProjectSample { get; }
+        Int64 CurrentProjectSample { get; }
         bool IsPlaying { get; }
 
         void SendNoteOn(int channel, int noteNumber, float velocity, int sampleOffset);
