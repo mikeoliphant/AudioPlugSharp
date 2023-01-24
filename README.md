@@ -9,7 +9,11 @@ See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/mast
 
 # Current Release
 
-The current [binary release is here](https://github.com/mikeoliphant/AudioPlugSharp/releases/latest). If you just want to build a plugin, you can download this rather than building from source.
+NuGet packages are available:
+
+[AudioPlugSharp](https://www.nuget.org/packages/AudioPlugSharp) (Needed for all plugins)
+
+[AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF)  (Also needed for WPF user interfaces)
 
 # Plugin Project Setup and Deployment
 
