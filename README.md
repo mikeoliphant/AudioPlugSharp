@@ -9,11 +9,17 @@ See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/mast
 
 # Current Release
 
-The current [binary release is here](https://github.com/mikeoliphant/AudioPlugSharp/releases/latest). If you just want to build a plugin, you can download this rather than building from source.
+NuGet packages are available:
+
+[AudioPlugSharp](https://www.nuget.org/packages/AudioPlugSharp) (Needed for all plugins)
+
+[AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF)  (Also needed for WPF user interfaces)
 
 # Plugin Project Setup and Deployment
 
-Your plugin project will need an assembly dependency on **AudioPlugSharp.dll** (and **AudioPlugSharpWPF.dll** if you are using it).
+If you use the AudioPlugSharp/AudioPlugSharpWPF NuGet packages, copying the appropriate files to your output folder will be handled for you. You simply need to copy the files from the output folder to a folder on your VST plugin path (usually "**C:\Program Files\Common Files\VST3**").
+
+If you are referencing AudioPlugSharp manually, your plugin project will need an assembly dependency on **AudioPlugSharp.dll** (and **AudioPlugSharpWPF.dll** if you are using it).
 
 For deployment, you need to copy **"AudioPlugSharpVst.vst3"** to your output folder, and rename it to be **"YourPluginDllNameBridge.vst3"**. So if your plugin dll is called **"MyPlugin.dll"**, then you would rename **"AudioPlugSharpVst.vst3"** to **"MyPluginBridge.vst3"**. You also need to copy **"AudioPlugSharpVst.runtimeconfig.json"** (or **"wpf.runtimeconfig.json"** if you are using WPF in your plugin) to your output folder as **"YourPluginDllNameBridge.runtimeconfig.json"**. You also need to copy **"Ijwhost.dll"** to your output folder.
   
