@@ -1,51 +1,55 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
-    <Version>0.5.0</Version>
-    <Authors>Mike Oliphant</Authors>
-    <Description>Add WPF GUI to your AudioPlugSharp plugin.</Description>
-	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-	<PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+		<Version>0.5.0</Version>
+		<Authors>Mike Oliphant</Authors>
+		<Description>Add WPF GUI to your AudioPlugSharp plugin.</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Images\DialBackground.png" />
-    <None Remove="Images\DialBackgroundWhite.png" />
-    <None Remove="Images\DialPointer.png" />
-    <None Remove="Images\DialPointerBlack.png" />
-    <None Remove="Images\PowerOff.png" />
-    <None Remove="Images\PowerOn.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Images\DialBackground.png" />
+		<None Remove="Images\DialBackgroundWhite.png" />
+		<None Remove="Images\DialPointer.png" />
+		<None Remove="Images\DialPointerBlack.png" />
+		<None Remove="Images\PowerOff.png" />
+		<None Remove="Images\PowerOn.png" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="Images\DialBackground.png" />
-    <Resource Include="Images\DialBackgroundWhite.png" />
-    <Resource Include="Images\DialPointerBlack.png" />
-    <Resource Include="Images\DialPointer.png" />
-    <Resource Include="Images\PowerOff.png" />
-    <Resource Include="Images\PowerOn.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<Resource Include="Images\DialBackground.png" />
+		<Resource Include="Images\DialBackgroundWhite.png" />
+		<Resource Include="Images\DialPointerBlack.png" />
+		<Resource Include="Images\DialPointer.png" />
+		<Resource Include="Images\PowerOff.png" />
+		<Resource Include="Images\PowerOn.png" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="build\AudioPlugSharpWPF.targets" Pack="true" PackagePath="build\AudioPlugSharpWPF.targets" />
-    <None Update="EditorView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Content Include="$(SolutionDir)x64\$(ConfigurationName)\wpf.runtimeconfig.json" PackagePath="contentFiles" Visible="false"/>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="build\AudioPlugSharpWPF.targets" Pack="true" PackagePath="build\AudioPlugSharpWPF.targets" />
+		<None Update="EditorView.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="$(SolutionDir)x64\$(ConfigurationName)\wpf.runtimeconfig.json" PackagePath="contentFiles" Visible="false"/>
+	</ItemGroup>
 
 </Project>

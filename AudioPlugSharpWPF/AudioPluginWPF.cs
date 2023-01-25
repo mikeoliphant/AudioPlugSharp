@@ -14,6 +14,12 @@ using AudioPlugSharp;
 
 namespace AudioPlugSharpWPF
 {    
+    public class AudioPluginWPFSaveState : AudioPluginSaveState
+    {
+        public uint EditorWidth { get; set; } = 800;
+        public uint EditorHeight { get; set; } = 600;
+    }
+
     public class AudioPluginWPF : AudioPluginBase
     {
         [DllImport("User32.dll")]
@@ -29,8 +35,15 @@ namespace AudioPlugSharpWPF
             Raw = 2,
         }
 
+        public AudioPluginWPFSaveState WPFSaveState { get { return (SaveStateData as AudioPluginWPFSaveState) ?? new AudioPluginWPFSaveState(); } }
+
         public EditorWindow EditorWindow { get; set; }
         public UserControl EditorView { get; set; }
+
+        public AudioPluginWPF()
+        {
+            SaveStateData = new AudioPluginWPFSaveState();
+        }
 
         public override double GetDpiScale()
         {
@@ -73,5 +86,20 @@ namespace AudioPlugSharpWPF
             EditorWindow.Show(parentWindow);
         }
 
+        public override byte[] SaveState()
+        {
+            WPFSaveState.EditorWidth = EditorWidth;
+            WPFSaveState.EditorHeight = EditorHeight;
+
+            return base.SaveState();
+        }
+
+        public override void RestoreState(byte[] stateData)
+        {
+            base.RestoreState(stateData);
+
+            EditorWidth = WPFSaveState.EditorWidth;
+            EditorHeight = WPFSaveState.EditorHeight;
+        }
     }
 }
