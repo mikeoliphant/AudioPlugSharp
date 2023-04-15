@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -8,11 +9,17 @@ namespace AudioPlugSharp
 {
     public static class PluginLoader
     {
+        private static Dictionary<string, AssemblyLoadContext> Contexts = new Dictionary<string, AssemblyLoadContext>();
+
         public static IAudioPlugin LoadPluginFromAssembly(string assemblyName)
         {
             string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            PluginLoadContext loadContext = new PluginLoadContext(Path.Combine(assemblyPath, assemblyName) + ".dll");
+            if (!Contexts.TryGetValue(assemblyPath, out var loadContext))
+            {
+                loadContext = new PluginLoadContext(Path.Combine(assemblyPath, assemblyName) + ".dll");
+                Contexts.Add(assemblyPath, loadContext);
+            }
 
             Assembly pluginAssembly = LoadAssembly(assemblyName, loadContext);
 
