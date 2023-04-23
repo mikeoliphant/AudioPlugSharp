@@ -42,6 +42,9 @@ namespace AudioPlugSharpWPF
 
         public AudioPluginWPF()
         {
+            // WPF requires a shared assembly load context: https://github.com/dotnet/wpf/issues/1700
+            CacheLoadContext = true;
+
             SaveStateData = new AudioPluginWPFSaveState();
         }
 

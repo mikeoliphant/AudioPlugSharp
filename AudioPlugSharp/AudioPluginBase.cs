@@ -20,6 +20,8 @@ namespace AudioPlugSharp
         public string PluginVersion { get; protected set; }
         public ulong PluginID { get; protected set; }
 
+        public bool CacheLoadContext { get; protected set; } = false;
+
         public IAudioHost Host { get; set; }
 
         public IAudioPluginProcessor Processor { get { return this; } }
