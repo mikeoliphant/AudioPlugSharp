@@ -18,12 +18,18 @@ namespace AudioPlugSharp
             if (!Contexts.TryGetValue(assemblyPath, out var loadContext))
             {
                 loadContext = new PluginLoadContext(Path.Combine(assemblyPath, assemblyName) + ".dll");
-                Contexts.Add(assemblyPath, loadContext);
             }
 
             Assembly pluginAssembly = LoadAssembly(assemblyName, loadContext);
 
-            return GetObjectByInterface(pluginAssembly, typeof(IAudioPlugin)) as IAudioPlugin;
+            IAudioPlugin plugin = GetObjectByInterface(pluginAssembly, typeof(IAudioPlugin)) as IAudioPlugin;
+
+            if ((plugin != null) && plugin.CacheLoadContext)
+            {
+                Contexts[assemblyPath] = loadContext;
+            }
+
+            return plugin;
         }
 
         static Assembly LoadAssembly(String assemblyName, AssemblyLoadContext loadContext)

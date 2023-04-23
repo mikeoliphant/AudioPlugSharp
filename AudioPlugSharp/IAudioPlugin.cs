@@ -14,6 +14,8 @@ namespace AudioPlugSharp
         string PluginVersion { get; }
         ulong PluginID { get; }
 
+        bool CacheLoadContext { get; }
+
         IAudioHost Host { get; set;  }
 
         IAudioPluginProcessor Processor { get; }
