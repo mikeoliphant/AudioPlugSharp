@@ -45,7 +45,7 @@ namespace SimpleExample
             base.Process();
 
             // This will trigger all Midi note events and parameter changes that happend during this process window
-            // For sample-accurate tracking, see the MidiExample plugin
+            // For sample-accurate tracking, see the WPFExample or MidiExample plugins
             Host.ProcessAllEvents();
 
             double gain = GetParameter("gain").ProcessValue;
