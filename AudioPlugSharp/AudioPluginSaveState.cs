@@ -32,6 +32,7 @@ namespace AudioPlugSharp
                 {
                     if (saveParam.ID == parameter.ID)
                     {
+                        parameter.EditValue = saveParam.Value;
                         parameter.ProcessValue = saveParam.Value;
 
                         break;
