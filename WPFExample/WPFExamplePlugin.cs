@@ -10,6 +10,9 @@ namespace WPFExample
         AudioIOPort monoInput;
         AudioIOPort stereoOutput;
 
+        AudioPluginParameter gainParameter = null;
+        AudioPluginParameter panParameter = null;
+
         public WPFExamplePlugin()
         {
             Company = "My Company";
@@ -34,7 +37,7 @@ namespace WPFExample
             InputPorts = new AudioIOPort[] { monoInput = new AudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
             OutputPorts = new AudioIOPort[] { stereoOutput = new AudioIOPort("Stereo Output", EAudioChannelConfiguration.Stereo) };
 
-            AddParameter(new AudioPluginParameter
+            AddParameter(gainParameter = new AudioPluginParameter
             {
                 ID = "gain",
                 Name = "Gain",
@@ -45,7 +48,7 @@ namespace WPFExample
                 ValueFormat = "{0:0.0}dB"
             });
 
-            AddParameter(new AudioPluginParameter
+            AddParameter(panParameter = new AudioPluginParameter
             {
                 ID = "pan",
                 Name = "Pan",
@@ -72,17 +75,28 @@ namespace WPFExample
             int currentSample = 0;
             int nextSample = 0;
 
+            double linearGain = Math.Pow(10.0, 0.05 * gainParameter.ProcessValue);
+            double pan = panParameter.ProcessValue;
+
             do
             {
-                nextSample = Host.ProcessEvents();  // Handle sample-accurate parameters
+                nextSample = Host.ProcessEvents();  // Handle sample-accurate parameters - see the SimpleExample plugin for a simpler, per-buffer parameter approach
 
-                double gain = GetParameter("gain").ProcessValue;
-                double linearGain = Math.Pow(10.0, 0.05 * gain);
-
-                double pan = GetParameter("pan").ProcessValue;
+                bool needGainUpdate = gainParameter.NeedInterpolationUpdate;
+                bool needPanUpdate = panParameter.NeedInterpolationUpdate;
 
                 for (int i = currentSample; i < nextSample; i++)
                 {
+                    if (needGainUpdate)
+                    {
+                        linearGain = Math.Pow(10.0, 0.05 * gainParameter.GetInterpolatedProcessValue(i));
+                    }
+
+                    if (needPanUpdate)
+                    {
+                        pan = panParameter.GetInterpolatedProcessValue(i);
+                    }
+
                     outLeftSamples[i] = inSamples[i] * linearGain * (1 - pan);
                     outRightSamples[i] = inSamples[i] * linearGain * (1 + pan);
                 }
