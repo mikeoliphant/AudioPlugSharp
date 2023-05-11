@@ -64,13 +64,10 @@ namespace WPFExample
         {
             base.Process();
 
-            // Read our input into managed data
-            monoInput.ReadData();
+            ReadOnlySpan<double> inSamples = monoInput.GetAudioBuffer(0);
 
-            double[] inSamples = monoInput.GetAudioBuffers()[0];
-
-            double[] outLeftSamples = stereoOutput.GetAudioBuffers()[0];
-            double[] outRightSamples = stereoOutput.GetAudioBuffers()[1];
+            Span<double> outLeftSamples = stereoOutput.GetAudioBuffer(0);
+            Span<double> outRightSamples = stereoOutput.GetAudioBuffer(1);
 
             int currentSample = 0;
             int nextSample = 0;
@@ -104,10 +101,6 @@ namespace WPFExample
                 currentSample = nextSample;
             }
             while (nextSample < inSamples.Length); // Continue looping until we hit the end of the buffer
-
-
-            // Write out our managed audio data
-            stereoOutput.WriteData();
         }
     }
 }

@@ -78,7 +78,7 @@ namespace MidiExample
 
             linearGain = Math.Pow(10.0, 0.05 * gainParameter.ProcessValue);
 
-            double[] outSamples = monoOutput.GetAudioBuffers()[0];
+            Span<double> outSamples = monoOutput.GetAudioBuffer(0);
 
             int currentSample = 0;
             int nextSample = 0;
@@ -111,9 +111,6 @@ namespace MidiExample
                 currentSample = nextSample;
             }
             while (nextSample < outSamples.Length); // Continue looping until we hit the end of the buffer
-
-            // Write out our managed audio data
-            monoOutput.WriteData();
         }
     }
 }

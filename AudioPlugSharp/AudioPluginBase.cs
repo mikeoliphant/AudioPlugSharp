@@ -152,7 +152,6 @@ namespace AudioPlugSharp
             }
         }
 
-
         public virtual void InitializeProcessing()
         {
             Logger.Log("Initialize Processing");
@@ -185,8 +184,24 @@ namespace AudioPlugSharp
         {
         }
 
+        public virtual void PreProcess()
+        {
+            foreach (AudioIOPort input in InputPorts)
+            {
+                input.ReadData();
+            }
+        }
+
         public virtual void Process()
         {
+        }
+
+        public virtual void PostProcess()
+        {
+            foreach (AudioIOPort output in OutputPorts)
+            {
+                output.WriteData();
+            }
         }
 
 

@@ -51,19 +51,13 @@ namespace SimpleExample
             double gain = GetParameter("gain").ProcessValue;
             double linearGain = Math.Pow(10.0, 0.05 * gain);
 
-            // Read our input into managed data
-            monoInput.ReadData();
-
-            double[] inSamples = monoInput.GetAudioBuffers()[0];
-            double[] outSamples = monoOutput.GetAudioBuffers()[0];
+            ReadOnlySpan<double> inSamples = monoInput.GetAudioBuffer(0);
+            Span<double> outSamples = monoOutput.GetAudioBuffer(0);
 
             for (int i = 0; i < inSamples.Length; i++)
             {
                 outSamples[i] = inSamples[i] * linearGain;
             }
-
-            // Write out our managed audio data
-            monoOutput.WriteData();
         }
     }
 }

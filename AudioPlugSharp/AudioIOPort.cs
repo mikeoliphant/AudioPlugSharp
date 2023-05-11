@@ -41,7 +41,7 @@ namespace AudioPlugSharp
         }
 
         /// <summary>
-        /// The current number of bits per sample
+        /// The number of bits per sample
         /// </summary>
         public EAudioBitsPerSample BitsPerSample
         {
@@ -69,15 +69,23 @@ namespace AudioPlugSharp
         uint currentBufferSize = 0;
 
         /// <summary>
+        /// Sets the maximum number of samples that will be processed, and the number of bits per sample
+        /// </summary>
+        /// <param name="maxSamples">The maximum number of samples that will be processed in a block</param>
+        /// <param name="bitsPerSample">The number of bits in each sample (current 32 or 64)</param>
+        public void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
+        {
+            this.bitsPerSample = bitsPerSample;
+        }
+
+        /// <summary>
         /// Set the unmanaged pointers for the port (called by the host)
         /// </summary>
         /// <param name="ptrs">The unmanaged buffer pointers</param>
-        /// <param name="bitsPerSample">The number of bits in each sample (current 32 or 64)</param>
         /// <param name="numSamples">The number of samples in the buffers</param>
-        public void SetAudioBufferPtrs(IntPtr ptrs, EAudioBitsPerSample bitsPerSample, uint numSamples)
+        public void SetAudioBufferPtrs(IntPtr ptrs, uint numSamples)
         {
             audioBufferPtrs = ptrs;
-            this.bitsPerSample = bitsPerSample;
             this.currentBufferSize = numSamples;
 
             SyncPointers();
@@ -114,7 +122,7 @@ namespace AudioPlugSharp
         /// <summary>
         /// Reads the data from unmanaged memory to managed memory
         /// </summary>
-        public unsafe void ReadData()
+        internal unsafe void ReadData()
         {
             for (int i = 0; i < numChannels; i++)
             {
@@ -140,7 +148,7 @@ namespace AudioPlugSharp
         /// <summary>
         /// Writes the data from managed memory to unmanaged memory
         /// </summary>
-        public unsafe void WriteData()
+        internal unsafe void WriteData()
         {
             for (int i = 0; i < numChannels; i++)
             {
@@ -166,10 +174,10 @@ namespace AudioPlugSharp
         /// <summary>
         /// Gets the managed audio buffers
         /// </summary>
-        /// <returns>An array of arrays of double</returns>
-        public double[][] GetAudioBuffers()
+        /// <returns>The sample array for the channel</returns>
+        public Span<double> GetAudioBuffer(int channel)
         {
-            return audioBuffers;
+            return audioBuffers[channel];
         }
 
         /// <summary>
