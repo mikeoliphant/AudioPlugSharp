@@ -40,7 +40,6 @@ From a shell, run the following:
 ```bash
 git clone --recursive https://github.com/mikeoliphant/AudioPlugSharp
 cd AudioPlugSharp
-mkdir vstbuild
 cd vstbuild
 cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk
 ```
