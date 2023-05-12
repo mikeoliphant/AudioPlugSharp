@@ -77,6 +77,22 @@ namespace AudioPlugSharp
         public void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
         {
             this.bitsPerSample = bitsPerSample;
+
+            if (bitsPerSample != EAudioBitsPerSample.Bits64)
+            {
+                int size = 0;
+
+                if (audioBuffers[0] != null)
+                    size = audioBuffers[0].Length;
+
+                if (size != currentBufferSize)
+                {
+                    for (int i = 0; i < numChannels; i++)
+                    {
+                        Array.Resize(ref audioBuffers[i], (int)maxSamples);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -88,9 +104,6 @@ namespace AudioPlugSharp
         {
             audioBufferPtrs = ptrs;
             this.currentBufferSize = numSamples;
-
-            if (bitsPerSample != EAudioBitsPerSample.Bits64)
-                SyncPointers();
         }
 
         /// <summary>
@@ -100,25 +113,6 @@ namespace AudioPlugSharp
         public IntPtr GetAudioBufferPtrs()
         {
             return audioBufferPtrs;
-        }
-
-        /// <summary>
-        /// Resizes our internal managed buffers, if necessary
-        /// </summary>
-        unsafe void SyncPointers()
-        {
-            int size = 0;
-
-            if (audioBuffers[0] != null)
-                size = audioBuffers[0].Length;
-
-            if (size != currentBufferSize)
-            {
-                for (int i = 0; i < numChannels; i++)
-                {
-                    Array.Resize(ref audioBuffers[i], (int)currentBufferSize);
-                }
-            }
         }
 
         /// <summary>
