@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace AudioPlugSharp
@@ -88,7 +89,8 @@ namespace AudioPlugSharp
             audioBufferPtrs = ptrs;
             this.currentBufferSize = numSamples;
 
-            SyncPointers();
+            if (bitsPerSample != EAudioBitsPerSample.Bits64)
+                SyncPointers();
         }
 
         /// <summary>
@@ -124,23 +126,17 @@ namespace AudioPlugSharp
         /// </summary>
         internal unsafe void ReadData()
         {
+            if (bitsPerSample == EAudioBitsPerSample.Bits64)
+                return;
+
             for (int i = 0; i < numChannels; i++)
             {
-                if (bitsPerSample == EAudioBitsPerSample.Bits32)
-                {
-                    float *bufferPtr = ((float**)audioBufferPtrs)[i];
-                    double[] audioBuffer = audioBuffers[i];
+                float* bufferPtr = ((float**)audioBufferPtrs)[i];
+                double[] audioBuffer = audioBuffers[i];
 
-                    for (int sample = 0; sample < currentBufferSize; sample++)
-                    {
-                        audioBuffer[sample] = bufferPtr[sample];
-                    }
-                }
-                else
+                for (int sample = 0; sample < currentBufferSize; sample++)
                 {
-                    IntPtr bufferPtr = (IntPtr)((double**)audioBufferPtrs)[i];
-
-                    Marshal.Copy(bufferPtr, audioBuffers[i], 0, (int)currentBufferSize);
+                    audioBuffer[sample] = bufferPtr[sample];
                 }
             }
         }
@@ -150,23 +146,17 @@ namespace AudioPlugSharp
         /// </summary>
         internal unsafe void WriteData()
         {
+            if (bitsPerSample == EAudioBitsPerSample.Bits64)
+                return;
+
             for (int i = 0; i < numChannels; i++)
             {
-                if (bitsPerSample == EAudioBitsPerSample.Bits32)
-                {
-                    float* bufferPtr = ((float**)audioBufferPtrs)[i];
-                    double[] audioBuffer = audioBuffers[i];
+                float* bufferPtr = ((float**)audioBufferPtrs)[i];
+                double[] audioBuffer = audioBuffers[i];
 
-                    for (int sample = 0; sample < currentBufferSize; sample++)
-                    {
-                        bufferPtr[sample] = (float)audioBuffer[sample];
-                    }
-                }
-                else
+                for (int sample = 0; sample < currentBufferSize; sample++)
                 {
-                    IntPtr bufferPtr = (IntPtr)((double**)audioBufferPtrs)[i];
-
-                    Marshal.Copy(audioBuffers[i], 0, bufferPtr, (int)currentBufferSize);
+                    bufferPtr[sample] = (float)audioBuffer[sample];
                 }
             }
         }
@@ -175,8 +165,11 @@ namespace AudioPlugSharp
         /// Gets the managed audio buffers
         /// </summary>
         /// <returns>The sample array for the channel</returns>
-        public Span<double> GetAudioBuffer(int channel)
+        public unsafe Span<double> GetAudioBuffer(int channel)
         {
+            if (bitsPerSample == EAudioBitsPerSample.Bits64)
+                return new Span<double>((void*)((double**)audioBufferPtrs)[channel], (int)currentBufferSize);
+
             return audioBuffers[channel];
         }
 
