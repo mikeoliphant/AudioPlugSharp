@@ -246,47 +246,53 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSet
 
 tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 {
-	audioPlugHost->SetProcessData(&data);
+	try
+	{
+		audioPlugHost->SetProcessData(&data);
 
-	if ((data.numInputs == 0) && (data.numOutputs == 0))
-	{
-		// The host is just flushing events without sending audio data
-	}
-	else
-	{
-		for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)
+		if ((data.numInputs == 0) && (data.numOutputs == 0))
 		{
-			plugin->Processor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]), data.numSamples);
+			// The host is just flushing events without sending audio data
 		}
-
-		for (int output = 0; output < plugin->Processor->OutputPorts->Length; output++)
+		else
 		{
-			plugin->Processor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]), data.numSamples);
-		}
-		
-		plugin->Processor->PreProcess();
-		plugin->Processor->Process();
-		plugin->Processor->PostProcess();
-	}
-
-	// Reset any parameters that had changes
-	if (data.inputParameterChanges != nullptr)
-	{
-		int32 numParamsChanged = data.inputParameterChanges->getParameterCount();
-
-		for (int32 i = 0; i < numParamsChanged; i++)
-		{
-			IParamValueQueue* paramQueue = data.inputParameterChanges->getParameterData(i);
-
-			if (paramQueue != nullptr)
+			for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)
 			{
-				ParamID paramID = paramQueue->getParameterId();
+				plugin->Processor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]), data.numSamples);
+			}
 
-				plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START]->ResetParameterChange();
+			for (int output = 0; output < plugin->Processor->OutputPorts->Length; output++)
+			{
+				plugin->Processor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]), data.numSamples);
+			}
+
+			plugin->Processor->PreProcess();
+			plugin->Processor->Process();
+			plugin->Processor->PostProcess();
+		}
+
+		// Reset any parameters that had changes
+		if (data.inputParameterChanges != nullptr)
+		{
+			int32 numParamsChanged = data.inputParameterChanges->getParameterCount();
+
+			for (int32 i = 0; i < numParamsChanged; i++)
+			{
+				IParamValueQueue* paramQueue = data.inputParameterChanges->getParameterData(i);
+
+				if (paramQueue != nullptr)
+				{
+					ParamID paramID = paramQueue->getParameterId();
+
+					plugin->Processor->Parameters[paramID - PLUGIN_PARAMETER_USER_START]->ResetParameterChange();
+				}
 			}
 		}
 	}
-
+	catch (Exception^ ex)
+	{
+		Logger::Log("Error in process loop: " + ex->ToString());
+	}
 
 	// Handle any output parameter changes (such as volume meter output)
 	// We don't have any
