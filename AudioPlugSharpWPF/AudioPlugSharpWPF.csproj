@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<TargetFrameworks>net6.0-windows;net7.0-windows</TargetFrameworks>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
-		<Version>0.5.1</Version>
+		<Version>0.5.3</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Add WPF GUI to your AudioPlugSharp plugin.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -49,7 +49,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="$(SolutionDir)x64\$(ConfigurationName)\wpf.runtimeconfig.json" PackagePath="contentFiles" Visible="false"/>
+		<Content Include="$(SolutionDir)x64\$(Configuration)\wpf.runtimeconfig.json" PackagePath="contentFiles" Visible="false"/>
 	</ItemGroup>
 
 </Project>

@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<OutputType>Library</OutputType>
-		<Version>0.5.1</Version>
+		<Version>0.5.3</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Easily create VST (VST3) audio plugins in C# .NET.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -31,10 +31,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="$(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.vst3" PackagePath="contentFiles/vst" Visible="false" />
-		<Content Include="$(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.runtimeconfig.json" PackagePath="contentFiles/vst" Visible="false" />
-		<Content Include="$(SolutionDir)x64\$(ConfigurationName)\AudioPlugSharpVst.deps.json" PackagePath="contentFiles/vst" Visible="false" />
-		<Content Include="$(SolutionDir)x64\$(ConfigurationName)\Ijwhost.dll" PackagePath="contentFiles/other" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.vst3" PackagePath="contentFiles/vst" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.runtimeconfig.json" PackagePath="contentFiles/vst" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.deps.json" PackagePath="contentFiles/vst" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\Ijwhost.dll" PackagePath="contentFiles/other" Visible="false" />
 	</ItemGroup>
 
 </Project>
