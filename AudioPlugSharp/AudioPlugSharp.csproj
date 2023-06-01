@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+		<TargetFramework>net6.0</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>0.5.3</Version>
+		<Version>0.5.6</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Easily create VST (VST3) audio plugins in C# .NET.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -27,7 +27,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="build\AudioPlugSharp.targets" Pack="true" PackagePath="build\AudioPlugSharp.targets" />
+		<None Include="build\AudioPlugSharp.targets" Pack="true" PackagePath="build\AudioPlugSharp.targets" />
 	</ItemGroup>
 
 	<ItemGroup>
