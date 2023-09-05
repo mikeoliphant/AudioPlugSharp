@@ -31,7 +31,15 @@ namespace AudioPlugSharp
         /// <summary>
         /// The channel configuration (currently Mono or Stereo
         /// </summary>
-        public EAudioChannelConfiguration ChannelConfiguration { get; private set;  }
+        public EAudioChannelConfiguration ChannelConfiguration { get; private set; }
+
+        /// <summary>
+        /// The number of audio channels
+        /// </summary>
+        public uint NumChannels
+        {
+            get { return (uint)((ChannelConfiguration == EAudioChannelConfiguration.Mono) ? 1 : 2); }
+        }
 
         /// <summary>
         /// The current size of our managed buffer in samples
@@ -78,13 +86,15 @@ namespace AudioPlugSharp
         /// </summary>
         /// <param name="maxSamples">The maximum number of samples that will be processed in a block</param>
         /// <param name="bitsPerSample">The number of bits in each sample (current 32 or 64)</param>
-        public void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
+        /// <param name="forceCopy">Force the port to keep an internal buffer for sample data</param>
+        public void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample, bool forceCopy)
         {
             this.bitsPerSample = bitsPerSample;
+            this.forceCopy = this.forceCopy || forceCopy;
 
             Logger.Log("Port [" + Name + "] max sample size is: " + maxSamples + ", bits per sample is: " + bitsPerSample);
 
-            doCopy = forceCopy || (bitsPerSample != EAudioBitsPerSample.Bits64);
+            doCopy = this.forceCopy || (bitsPerSample != EAudioBitsPerSample.Bits64);
 
             if (doCopy)
             {
@@ -128,7 +138,7 @@ namespace AudioPlugSharp
         /// </summary>
         internal unsafe void ReadData()
         {
-            if (!doCopy)
+            if (!doCopy || (audioBufferPtrs == IntPtr.Zero))
                 return;
 
             for (int i = 0; i < numChannels; i++)
@@ -157,7 +167,7 @@ namespace AudioPlugSharp
         /// </summary>
         internal unsafe void WriteData()
         {
-            if (!doCopy)
+            if (!doCopy || (audioBufferPtrs == IntPtr.Zero))
                 return;
 
             for (int i = 0; i < numChannels; i++)
@@ -214,14 +224,29 @@ namespace AudioPlugSharp
             if (destinationPort.CurrentBufferSize != CurrentBufferSize)
                 throw new InvalidOperationException("Destination port does not have the same size");
 
-            void** ptrs = (void**)audioBufferPtrs;
-            void** destPtrs = (void**)destinationPort.GetAudioBufferPtrs();
-
-            uint length = currentBufferSize * (uint)((bitsPerSample == EAudioBitsPerSample.Bits32) ? 4 : 8);
-
-            for (int channel = 0; channel < numChannels; channel++)
+            if (doCopy != destinationPort.doCopy)
             {
-                Buffer.MemoryCopy(ptrs[channel], destPtrs[channel], length, length);
+                throw new InvalidOperationException("Pass through only supported when \"forceCopy\" is the same for source and destination");
+            }
+
+            if (doCopy)
+            {
+                for (int channel = 0; channel < numChannels; channel++)
+                {
+                    audioBuffers[channel].CopyTo(destinationPort.audioBuffers[channel], 0);
+                }
+            }
+            else
+            {
+                void** ptrs = (void**)audioBufferPtrs;
+                void** destPtrs = (void**)destinationPort.GetAudioBufferPtrs();
+
+                uint length = currentBufferSize * (uint)((bitsPerSample == EAudioBitsPerSample.Bits32) ? 4 : 8);
+
+                for (int channel = 0; channel < numChannels; channel++)
+                {
+                    Buffer.MemoryCopy(ptrs[channel], destPtrs[channel], length, length);
+                }
             }
         }
     }

@@ -129,13 +129,23 @@ namespace AudioPlugSharp
 
             while (logQueue.TryDequeue(out logEntry))
             {
-                logWriter.WriteLine(logEntry);
+                try
+                {
+                    logWriter.WriteLine(logEntry);
+                }
+                catch { }
 
                 wroteEntries = true;
             }
 
             if (wroteEntries)
-                logWriter.Flush();
+            {
+                try
+                {
+                    logWriter.Flush();
+                }
+                catch { }
+            }
         }
     }
 }

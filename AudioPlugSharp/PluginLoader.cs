@@ -164,7 +164,18 @@ namespace AudioPlugSharp
 
             if (assemblyPath != null)
             {
-                return LoadFromAssemblyPath(assemblyPath);
+                Assembly assembly = null;
+
+                try
+                {
+                    assembly = LoadFromAssemblyPath(assemblyPath);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Assembly load failed with: " + ex.ToString());
+                }
+
+                return assembly;
             }
 
             return null;

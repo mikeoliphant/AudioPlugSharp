@@ -233,12 +233,12 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSet
 
 	for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)
 	{
-		plugin->Processor->InputPorts[input]->SetMaxSize(newSetup.maxSamplesPerBlock, (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64);
+		plugin->Processor->InputPorts[input]->SetMaxSize(newSetup.maxSamplesPerBlock, (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, false);
 	}
 
 	for (int output = 0; output < plugin->Processor->OutputPorts->Length; output++)
 	{
-		plugin->Processor->OutputPorts[output]->SetMaxSize(newSetup.maxSamplesPerBlock, (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64);
+		plugin->Processor->OutputPorts[output]->SetMaxSize(newSetup.maxSamplesPerBlock, (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, false);
 	}
 
 	return kResultOk;
