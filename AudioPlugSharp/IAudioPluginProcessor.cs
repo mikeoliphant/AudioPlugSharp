@@ -28,6 +28,7 @@ namespace AudioPlugSharp
         void HandleNoteOff(int channel, int noteNumber, float velocity, int sampleOffset);
         void HandlePolyPressure(int channel, int noteNumber, float pressure, int sampleOffset);
 
+        void SetMaxAudioBufferSize(uint maxSamples, EAudioBitsPerSample bitsPerSample, bool forceCopy);
         void PreProcess();
         void Process();
         void PostProcess();
