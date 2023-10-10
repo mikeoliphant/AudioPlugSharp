@@ -231,7 +231,7 @@ tresult PLUGIN_API AudioPlugSharpProcessor::setupProcessing(ProcessSetup& newSet
 
 	plugin->Processor->InitializeProcessing();
 
-	plugin->Processor->SetMaxAudioBufferSize(newSetup.maxSamplesPerBlock, (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64, false);
+	plugin->Processor->SetMaxAudioBufferSize(newSetup.maxSamplesPerBlock, (newSetup.symbolicSampleSize == kSample32) ? EAudioBitsPerSample::Bits32 : EAudioBitsPerSample::Bits64);
 
 
 	return kResultOk;
@@ -251,12 +251,14 @@ tresult PLUGIN_API AudioPlugSharpProcessor::process(ProcessData& data)
 		{
 			for (int input = 0; input < plugin->Processor->InputPorts->Length; input++)
 			{
-				plugin->Processor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]), data.numSamples);
+				plugin->Processor->InputPorts[input]->SetCurrentBufferSize(data.numSamples);
+				plugin->Processor->InputPorts[input]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.inputs[input]));
 			}
 
 			for (int output = 0; output < plugin->Processor->OutputPorts->Length; output++)
 			{
-				plugin->Processor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]), data.numSamples);
+				plugin->Processor->OutputPorts[output]->SetCurrentBufferSize(data.numSamples);
+				plugin->Processor->OutputPorts[output]->SetAudioBufferPtrs((IntPtr)getChannelBuffersPointer(processSetup, data.outputs[output]));
 			}
 
 			plugin->Processor->PreProcess();

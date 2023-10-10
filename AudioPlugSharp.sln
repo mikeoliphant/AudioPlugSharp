@@ -41,6 +41,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MidiExample", "MidiExample\
 		{EE48EC6C-2833-458A-8155-8249502F7613} = {EE48EC6C-2833-458A-8155-8249502F7613}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioPlugSharpHost", "AudioPlugSharpHost\AudioPlugSharpHost.csproj", "{060D54F3-D6E3-4334-89AC-E1914F478D1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,14 @@ Global
 		{518B2E52-C5C6-4204-A8E4-47F486748947}.Release|Any CPU.Build.0 = Release|Any CPU
 		{518B2E52-C5C6-4204-A8E4-47F486748947}.Release|x64.ActiveCfg = Release|Any CPU
 		{518B2E52-C5C6-4204-A8E4-47F486748947}.Release|x64.Build.0 = Release|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Debug|x64.Build.0 = Debug|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Release|x64.ActiveCfg = Release|Any CPU
+		{060D54F3-D6E3-4334-89AC-E1914F478D1C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

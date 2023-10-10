@@ -184,16 +184,16 @@ namespace AudioPlugSharp
         {
         }
 
-        public virtual void SetMaxAudioBufferSize(uint maxSamples, EAudioBitsPerSample bitsPerSample, bool forceCopy)
+        public virtual void SetMaxAudioBufferSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
         {
             foreach (AudioIOPort port in InputPorts)
             {
-                port.SetMaxSize(maxSamples, bitsPerSample, forceCopy);
+                port.SetMaxSize(maxSamples, bitsPerSample);
             }
 
             foreach (AudioIOPort port in OutputPorts)
             {
-                port.SetMaxSize(maxSamples, bitsPerSample, forceCopy);
+                port.SetMaxSize(maxSamples, bitsPerSample);
             }
         }
 

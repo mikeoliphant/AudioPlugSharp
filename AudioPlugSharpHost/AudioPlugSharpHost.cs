@@ -1,10 +1,9 @@
 ﻿using System;
-using System.IO;
 using System.Xml.Serialization;
 using AudioPlugSharp;
 using AudioPlugSharp.Asio;
 
-namespace AudioPlugSharpWPF
+namespace AudioPlugSharpHost
 {
     public class HostSettings
     {
@@ -61,7 +60,10 @@ namespace AudioPlugSharpWPF
                         plugin.RestoreState(data);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Logger.Log("AudioPlugSharpHost - error loading HostSettings.xml: " + ex.ToString());
+                }
             }
 
             if (!String.IsNullOrEmpty(HostSettings.AsioDeviceName))
@@ -128,12 +130,14 @@ namespace AudioPlugSharpWPF
 
                 Plugin.InitializeProcessing();
 
-                Plugin.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample, forceCopy: true);
+                Plugin.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample);
 
                 AsioDriver.Start();
             }
             catch (Exception ex)
             {
+                Logger.Log("AudioPlugSharpHost - error initializing Asio device [" + asioDeviceName + "]: " + ex.ToString());
+
                 HostSettings.AsioDeviceName = null;
             }
         }
@@ -148,7 +152,9 @@ namespace AudioPlugSharpWPF
 
                 for (int channel = 0; channel < port.NumChannels; channel++)
                 {
-                    double[] inputBuf = port.GetAudioBuffers()[channel];
+                    port.SetCurrentBufferSize(CurrentAudioBufferSize);
+
+                    double* inputBuf = ((double **)port.GetAudioBufferPtrs())[channel];
                     int* asioPtr = (int*)inputBuffers[inputCount % AsioDriver.NumInputChannels];    // recyle inputs if we don't have enough
 
                     for (int i = 0; i < CurrentAudioBufferSize; i++)
@@ -166,27 +172,32 @@ namespace AudioPlugSharpWPF
 
             int outputCount = 0;
 
-            for (int output = 0; output < Plugin.OutputPorts.Length; output++)
+            while (outputCount < AsioDriver.NumOutputChannels)
             {
-                if (outputCount >= AsioDriver.NumOutputChannels)
-                    break;
-
-                AudioIOPort port = Plugin.OutputPorts[output];
-
-                for (int channel = 0; channel < port.NumChannels; channel++)
+                for (int output = 0; output < Plugin.OutputPorts.Length; output++)
                 {
                     if (outputCount >= AsioDriver.NumOutputChannels)
                         break;
 
-                    double[] outputBuf = port.GetAudioBuffers()[channel];
-                    int* asioPtr = (int*)outputBuffers[outputCount];
+                    AudioIOPort port = Plugin.OutputPorts[output];
 
-                    for (int i = 0; i < CurrentAudioBufferSize; i++)
+                    for (int channel = 0; channel < port.NumChannels; channel++)
                     {
-                        asioPtr[i] = (int)(outputBuf[i] * Int32.MaxValue);
-                    }
+                        if (outputCount >= AsioDriver.NumOutputChannels)
+                            break;
 
-                    outputCount++;
+                        port.SetCurrentBufferSize(CurrentAudioBufferSize);
+
+                        double* outputBuf = ((double**)port.GetAudioBufferPtrs())[channel];
+                        int* asioPtr = (int*)outputBuffers[outputCount];
+
+                        for (int i = 0; i < CurrentAudioBufferSize; i++)
+                        {
+                            asioPtr[i] = (int)(outputBuf[i] * Int32.MaxValue);
+                        }
+
+                        outputCount++;
+                    }
                 }
             }
         }

@@ -40,8 +40,8 @@ namespace AudioPlugSharp.Asio
     public unsafe class AsioDriver : IDisposable
     {
         bool isDisposed = false;
-        
-        AsioInterop driver;
+
+        AsioInterop driver = null;
         ASIOCallbacks callbacks;
         private AsioDriverCapability capability;
         private ASIOBufferInfo[] bufferInfos;
@@ -120,7 +120,8 @@ namespace AudioPlugSharp.Asio
             {
             }
 
-            driver.disposeBuffers();
+            if (driver != null)
+                driver.disposeBuffers();
 
             isDisposed = true;
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Threading.Channels;
 
 namespace AudioPlugSharp
 {
@@ -86,17 +87,18 @@ namespace AudioPlugSharp
         /// </summary>
         /// <param name="maxSamples">The maximum number of samples that will be processed in a block</param>
         /// <param name="bitsPerSample">The number of bits in each sample (current 32 or 64)</param>
-        /// <param name="forceCopy">Force the port to keep an internal buffer for sample data</param>
-        public void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample, bool forceCopy)
+        public void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
         {
             this.bitsPerSample = bitsPerSample;
-            this.forceCopy = this.forceCopy || forceCopy;
 
             Logger.Log("Port [" + Name + "] max sample size is: " + maxSamples + ", bits per sample is: " + bitsPerSample);
 
-            doCopy = this.forceCopy || (bitsPerSample != EAudioBitsPerSample.Bits64);
+            if (bitsPerSample != EAudioBitsPerSample.Bits64)
+            {
+                CreateBackingBuffer(maxSamples);
+            }
 
-            if (doCopy)
+            if (forceCopy)
             {
                 int size = 0;
 
@@ -113,15 +115,63 @@ namespace AudioPlugSharp
             }
         }
 
+        unsafe void CreateBackingBuffer(uint numSamples)
+        {
+            if (audioBufferPtrs != IntPtr.Zero)
+            {
+                for (int i = 0; i < numChannels; i++)
+                {
+                    IntPtr channelPtr = (IntPtr)((double**)audioBufferPtrs)[i];
+
+                    Marshal.FreeHGlobal(channelPtr);
+                }
+
+                Marshal.FreeHGlobal(audioBufferPtrs);
+            }
+
+            audioBufferPtrs = Marshal.AllocHGlobal(numChannels * Marshal.SizeOf(typeof(IntPtr)));
+
+            double** bufferPtrs = (double **)audioBufferPtrs;
+
+            for (int i = 0; i < numChannels; i++)
+            {
+                bufferPtrs[i] = (double *)Marshal.AllocHGlobal((int)numSamples * sizeof(double));
+            }
+        }
+
+        /// <summary>
+        /// Set the current audio buffer size
+        /// </summary>
+        /// <param name="numSamples">The number of samples per processing cycle</param>
+        public void SetCurrentBufferSize(uint numSamples)
+        {
+            this.currentBufferSize = numSamples;
+        }
+
         /// <summary>
         /// Set the unmanaged pointers for the port (called by the host)
         /// </summary>
         /// <param name="ptrs">The unmanaged buffer pointers</param>
-        /// <param name="numSamples">The number of samples in the buffers</param>
-        public void SetAudioBufferPtrs(IntPtr ptrs, uint numSamples)
+        public unsafe void SetAudioBufferPtrs(IntPtr ptrs)
         {
-            audioBufferPtrs = ptrs;
-            this.currentBufferSize = numSamples;
+            if (bitsPerSample == EAudioBitsPerSample.Bits64)
+            {
+                audioBufferPtrs = ptrs;
+            }
+            else
+            {
+                // We need to convert float samples to double
+                for (int i = 0; i < numChannels; i++)
+                {
+                    float* floatPtr = ((float**)ptrs)[i];
+                    double* dblPtr = ((double**)audioBufferPtrs)[i];
+
+                    for (int s = 0; s < this.currentBufferSize; s++)
+                    {
+                        dblPtr[s] = floatPtr[s];
+                    }
+                }
+            }
         }
 
         /// <summary>
