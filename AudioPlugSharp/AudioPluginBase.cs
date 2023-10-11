@@ -111,6 +111,9 @@ namespace AudioPlugSharp
         {
             SaveStateData.SaveParameterValues(Parameters);
 
+            SaveStateData.EditorWidth = EditorWidth;
+            SaveStateData.EditorHeight = EditorHeight;
+
             XmlSerializer serializer = new XmlSerializer(SaveStateData.GetType());
 
             try
@@ -149,6 +152,9 @@ namespace AudioPlugSharp
                 }
 
                 SaveStateData.RestoreParameterValues(Parameters);
+
+                EditorWidth = SaveStateData.EditorWidth;
+                EditorHeight = SaveStateData.EditorHeight;
             }
         }
 

@@ -13,6 +13,8 @@ namespace AudioPlugSharp
     public class AudioPluginSaveState
     {
         public List<AudioPluginSaveParameter> ParameterValues { get; set; }
+        public uint EditorWidth { get; set; } = 800;
+        public uint EditorHeight { get; set; } = 600;
 
         public void SaveParameterValues(IReadOnlyList<AudioPluginParameter> parameters)
         {
