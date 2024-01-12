@@ -17,8 +17,12 @@ NuGet packages are available:
 
 # Plugin Project Setup and Deployment
 
+## NuGet Packages
+Using the NuGet packages is the recommended way to build a project using AudioPlugSharp.
+
 If you use the AudioPlugSharp/AudioPlugSharpWPF NuGet packages, copying the appropriate files to your output folder will be handled for you. You simply need to copy the files from the output folder to a folder on your VST plugin path (usually "**C:\Program Files\Common Files\VST3**").
 
+## Direct Referecing
 If you are referencing AudioPlugSharp manually, your plugin project will need an assembly dependency on **AudioPlugSharp.dll** (and **AudioPlugSharpWPF.dll** if you are using it).
 
 For deployment, you need to copy **"AudioPlugSharpVst.vst3"** to your output folder, and rename it to be **"YourPluginDllNameBridge.vst3"**. So if your plugin dll is called **"MyPlugin.dll"**, then you would rename **"AudioPlugSharpVst.vst3"** to **"MyPluginBridge.vst3"**. You also need to copy **"AudioPlugSharpVst.runtimeconfig.json"** (or **"wpf.runtimeconfig.json"** if you are using WPF in your plugin) to your output folder as **"YourPluginDllNameBridge.runtimeconfig.json"**. You also need to copy **"Ijwhost.dll"** to your output folder.
