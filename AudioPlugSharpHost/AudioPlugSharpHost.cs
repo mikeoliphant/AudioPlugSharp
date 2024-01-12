@@ -166,6 +166,12 @@ namespace AudioPlugSharpHost
                 }
             }
 
+            foreach (AudioIOPort port in Plugin.OutputPorts)
+            {
+                for (int output = 0; output < Plugin.OutputPorts.Length; output++)
+                    port.SetCurrentBufferSize(CurrentAudioBufferSize);
+            }
+
             Plugin.PreProcess();
             Plugin.Process();
             Plugin.PostProcess();
@@ -185,8 +191,6 @@ namespace AudioPlugSharpHost
                     {
                         if (outputCount >= AsioDriver.NumOutputChannels)
                             break;
-
-                        port.SetCurrentBufferSize(CurrentAudioBufferSize);
 
                         double* outputBuf = ((double**)port.GetAudioBufferPtrs())[channel];
                         int* asioPtr = (int*)outputBuffers[outputCount];
