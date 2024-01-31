@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>0.5.8</Version>
+		<Version>0.5.10</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Easily create VST (VST3) audio plugins in C# .NET.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -35,5 +35,9 @@
 		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.runtimeconfig.json" PackagePath="contentFiles/vst" Visible="false" />
 		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.deps.json" PackagePath="contentFiles/vst" Visible="false" />
 		<Content Include="$(SolutionDir)x64\$(Configuration)\Ijwhost.dll" PackagePath="contentFiles/other" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="$(SolutionDir)x64\$(Configuration)\desktop.runtimeconfig.json" PackagePath="contentFiles" Visible="false" />
 	</ItemGroup>
 </Project>

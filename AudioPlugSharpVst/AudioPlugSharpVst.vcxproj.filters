@@ -61,6 +61,6 @@
     <Xml Include="Ijwhost.xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="wpf.runtimeconfig.json" />
+    <None Include="desktop.runtimeconfig.json" />
   </ItemGroup>
 </Project>

@@ -9,6 +9,5 @@
 
   <Target Name="AudioPlugSharpWPF" AfterTargets="AudioPlugSharp">
     <Message Text="Copying AudioPlugSharpWPF files to output directory"></Message>
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)/../contentFiles/wpf.runtimeconfig.json" DestinationFiles="$(TargetDir)$(TargetName)Bridge.runtimeconfig.json"></Copy>
   </Target>
 </Project>

@@ -179,7 +179,7 @@
     <Xml Include="Ijwhost.xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="wpf.runtimeconfig.json">
+    <None Include="desktop.runtimeconfig.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
   </ItemGroup>
