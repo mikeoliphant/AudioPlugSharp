@@ -157,7 +157,7 @@ namespace AudioPlugSharp
         /// </summary>
         internal unsafe virtual void ReadData()
         {
-            if (bitsPerSample == EAudioBitsPerSample.Bits32)
+            if ((bitsPerSample == EAudioBitsPerSample.Bits32) && (hostAudioBufferPtrs != IntPtr.Zero))
             {
                 // We need to convert float samples to double
                 for (int i = 0; i < numChannels; i++)
@@ -178,7 +178,7 @@ namespace AudioPlugSharp
         /// </summary>
         internal unsafe virtual void WriteData()
         {
-            if (bitsPerSample == EAudioBitsPerSample.Bits32)
+            if ((bitsPerSample == EAudioBitsPerSample.Bits32) && (hostAudioBufferPtrs != IntPtr.Zero))
             {
                 // We need to convert float samples to back to float
                 for (int i = 0; i < numChannels; i++)

@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<UseWindowsForms>true</UseWindowsForms>
-		<Version>0.5.11</Version>
+		<Version>0.5.12</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Stand-alone ASIO host for AudioPlugSharp plugins.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
