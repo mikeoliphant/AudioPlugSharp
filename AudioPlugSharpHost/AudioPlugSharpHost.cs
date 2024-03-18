@@ -154,12 +154,12 @@ namespace AudioPlugSharpHost
                 {
                     port.SetCurrentBufferSize(CurrentAudioBufferSize);
 
-                    double* inputBuf = ((double **)port.GetAudioBufferPtrs())[channel];
+                    Span<double> inputSpan = port.GetAudioBuffer(channel);
                     int* asioPtr = (int*)inputBuffers[inputCount % AsioDriver.NumInputChannels];    // recyle inputs if we don't have enough
 
                     for (int i = 0; i < CurrentAudioBufferSize; i++)
                     {
-                        inputBuf[i] = (double)asioPtr[i] / (double)Int32.MaxValue;
+                        inputSpan[i] = (double)asioPtr[i] / (double)Int32.MaxValue;
                     }
 
                     inputCount++;
@@ -192,12 +192,13 @@ namespace AudioPlugSharpHost
                         if (outputCount >= AsioDriver.NumOutputChannels)
                             break;
 
-                        double* outputBuf = ((double**)port.GetAudioBufferPtrs())[channel];
+                        ReadOnlySpan<double> outputSpan = port.GetAudioBuffer(channel);
+
                         int* asioPtr = (int*)outputBuffers[outputCount];
 
                         for (int i = 0; i < CurrentAudioBufferSize; i++)
                         {
-                            asioPtr[i] = (int)(outputBuf[i] * Int32.MaxValue);
+                            asioPtr[i] = (int)(outputSpan[i] * Int32.MaxValue);
                         }
 
                         outputCount++;

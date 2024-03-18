@@ -63,31 +63,28 @@ namespace AudioPlugSharp
         /// </summary>
         /// <param name="name">The port name</param>
         /// <param name="channelConfiguration">The port channel configuration</param>
-        /// <param name="forceCopy">Whether to force having a managed copy of the sample data</param>
-        public AudioIOPort(string name, EAudioChannelConfiguration channelConfiguration, bool forceCopy = false)
+        public AudioIOPort(string name, EAudioChannelConfiguration channelConfiguration)
         {
             this.Name = name;
             this.ChannelConfiguration = channelConfiguration;
-            this.forceCopy = forceCopy;
 
             numChannels = (channelConfiguration == EAudioChannelConfiguration.Mono) ? 1 : 2;
-            audioBuffers = new double[numChannels][];
         }
 
         int numChannels;
-        IntPtr audioBufferPtrs = IntPtr.Zero;
-        double[][] audioBuffers;
         EAudioBitsPerSample bitsPerSample;
         uint currentBufferSize = 0;
-        bool forceCopy;
         bool doCopy;
+
+        protected IntPtr hostAudioBufferPtrs = IntPtr.Zero;
+        IntPtr backingAudioBufferPtrs = IntPtr.Zero;
 
         /// <summary>
         /// Sets the maximum number of samples that will be processed, and the number of bits per sample
         /// </summary>
         /// <param name="maxSamples">The maximum number of samples that will be processed in a block</param>
         /// <param name="bitsPerSample">The number of bits in each sample (current 32 or 64)</param>
-        public void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
+        public virtual void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
         {
             this.bitsPerSample = bitsPerSample;
 
@@ -97,41 +94,25 @@ namespace AudioPlugSharp
             {
                 CreateBackingBuffer(maxSamples);
             }
-
-            if (forceCopy)
-            {
-                int size = 0;
-
-                if (audioBuffers[0] != null)
-                    size = audioBuffers[0].Length;
-
-                if (size != maxSamples)
-                {
-                    for (int i = 0; i < numChannels; i++)
-                    {
-                        Array.Resize(ref audioBuffers[i], (int)maxSamples);
-                    }
-                }
-            }
         }
 
         unsafe void CreateBackingBuffer(uint numSamples)
         {
-            if (audioBufferPtrs != IntPtr.Zero)
+            if (backingAudioBufferPtrs != IntPtr.Zero)
             {
                 for (int i = 0; i < numChannels; i++)
                 {
-                    IntPtr channelPtr = (IntPtr)((double**)audioBufferPtrs)[i];
+                    IntPtr channelPtr = (IntPtr)((double**)backingAudioBufferPtrs)[i];
 
                     Marshal.FreeHGlobal(channelPtr);
                 }
 
-                Marshal.FreeHGlobal(audioBufferPtrs);
+                Marshal.FreeHGlobal(backingAudioBufferPtrs);
             }
 
-            audioBufferPtrs = Marshal.AllocHGlobal(numChannels * Marshal.SizeOf(typeof(IntPtr)));
+            backingAudioBufferPtrs = Marshal.AllocHGlobal(numChannels * Marshal.SizeOf(typeof(IntPtr)));
 
-            double** bufferPtrs = (double **)audioBufferPtrs;
+            double** bufferPtrs = (double **)backingAudioBufferPtrs;
 
             for (int i = 0; i < numChannels; i++)
             {
@@ -154,23 +135,11 @@ namespace AudioPlugSharp
         /// <param name="ptrs">The unmanaged buffer pointers</param>
         public unsafe void SetAudioBufferPtrs(IntPtr ptrs)
         {
+            hostAudioBufferPtrs = ptrs;
+
             if (bitsPerSample == EAudioBitsPerSample.Bits64)
             {
-                audioBufferPtrs = ptrs;
-            }
-            else
-            {
-                // We need to convert float samples to double
-                for (int i = 0; i < numChannels; i++)
-                {
-                    float* floatPtr = ((float**)ptrs)[i];
-                    double* dblPtr = ((double**)audioBufferPtrs)[i];
-
-                    for (int s = 0; s < this.currentBufferSize; s++)
-                    {
-                        dblPtr[s] = floatPtr[s];
-                    }
-                }
+                backingAudioBufferPtrs = hostAudioBufferPtrs;
             }
         }
 
@@ -180,63 +149,47 @@ namespace AudioPlugSharp
         /// <returns>An IntPtr to the unmanaged audio buffers</returns>
         public IntPtr GetAudioBufferPtrs()
         {
-            return audioBufferPtrs;
+            return backingAudioBufferPtrs;
         }
 
         /// <summary>
-        /// Reads the data from unmanaged memory to managed memory
+        /// Reads the data from the host pointers (if necessary)
         /// </summary>
-        internal unsafe void ReadData()
+        internal unsafe virtual void ReadData()
         {
-            if (!doCopy || (audioBufferPtrs == IntPtr.Zero))
-                return;
-
-            for (int i = 0; i < numChannels; i++)
+            if (bitsPerSample == EAudioBitsPerSample.Bits32)
             {
-                if (bitsPerSample == EAudioBitsPerSample.Bits32)
+                // We need to convert float samples to double
+                for (int i = 0; i < numChannels; i++)
                 {
-                    float* bufferPtr = ((float**)audioBufferPtrs)[i];
-                    double[] audioBuffer = audioBuffers[i];
+                    float* floatPtr = ((float**)hostAudioBufferPtrs)[i];
+                    double* dblPtr = ((double**)backingAudioBufferPtrs)[i];
 
                     for (int sample = 0; sample < currentBufferSize; sample++)
                     {
-                        audioBuffer[sample] = bufferPtr[sample];
+                        dblPtr[sample] = floatPtr[sample];
                     }
-                }
-                else
-                {
-                    IntPtr bufferPtr = (IntPtr)((double**)audioBufferPtrs)[i];
-
-                    Marshal.Copy(bufferPtr, audioBuffers[i], 0, (int)currentBufferSize);
                 }
             }
         }
 
         /// <summary>
-        /// Writes the data from managed memory to unmanaged memory
+        /// Writes data to the host pointers (if necessary)
         /// </summary>
-        internal unsafe void WriteData()
+        internal unsafe virtual void WriteData()
         {
-            if (!doCopy || (audioBufferPtrs == IntPtr.Zero))
-                return;
-
-            for (int i = 0; i < numChannels; i++)
+            if (bitsPerSample == EAudioBitsPerSample.Bits32)
             {
-                if (bitsPerSample == EAudioBitsPerSample.Bits32)
+                // We need to convert float samples to back to float
+                for (int i = 0; i < numChannels; i++)
                 {
-                    float* bufferPtr = ((float**)audioBufferPtrs)[i];
-                    double[] audioBuffer = audioBuffers[i];
+                    float* floatPtr = ((float**)hostAudioBufferPtrs)[i];
+                    double* dblPtr = ((double**)backingAudioBufferPtrs)[i];
 
                     for (int sample = 0; sample < currentBufferSize; sample++)
                     {
-                        bufferPtr[sample] = (float)audioBuffer[sample];
+                        floatPtr[sample] = (float)dblPtr[sample];
                     }
-                }
-                else
-                {
-                    IntPtr bufferPtr = (IntPtr)((double**)audioBufferPtrs)[i];
-
-                    Marshal.Copy(audioBuffers[i], 0, bufferPtr, (int)currentBufferSize);
                 }
             }
         }
@@ -245,59 +198,147 @@ namespace AudioPlugSharp
         /// Gets the audio buffer for a channel
         /// </summary>
         /// <returns>The sample array for the channel</returns>
-        public unsafe Span<double> GetAudioBuffer(int channel)
+        public virtual unsafe Span<double> GetAudioBuffer(int channel)
         {
-            if (!doCopy)
-                return new Span<double>((void*)((double**)audioBufferPtrs)[channel], (int)currentBufferSize);
-
-            return audioBuffers[channel];
-        }
-
-        /// <summary>
-        /// Get a managed copy of the audio buffers (requires "forceCopy" in constructor)
-        /// </summary>
-        /// <returns>The managed audio buffer arrays</returns>
-        public double[][] GetAudioBuffers()
-        {
-            if (!doCopy)
-                throw new InvalidOperationException("Managed buffers only available if \"forceCopy\" is true constructor");
-
-            return audioBuffers;
+            return new Span<double>((void*)((double**)backingAudioBufferPtrs)[channel], (int)currentBufferSize);
         }
 
         /// <summary>
         /// Pass through unmanaged data from this buffer to another buffer
         /// </summary>
         /// <param name="destinationPort">The port to copy data to</param>
-        public unsafe void PassThroughTo(AudioIOPort destinationPort)
+        public unsafe virtual void PassThroughTo(AudioIOPort destinationPort)
         {
             if (destinationPort.CurrentBufferSize != CurrentBufferSize)
                 throw new InvalidOperationException("Destination port does not have the same size");
 
-            if (doCopy != destinationPort.doCopy)
-            {
-                throw new InvalidOperationException("Pass through only supported when \"forceCopy\" is the same for source and destination");
-            }
+            if (destinationPort.BitsPerSample != BitsPerSample)
+                throw new InvalidOperationException("Destination port does not have the number of bits");
 
-            if (doCopy)
+            void** ptrs = (void**)GetAudioBufferPtrs();
+            void** destPtrs = (void**)destinationPort.GetAudioBufferPtrs();
+
+            uint length = currentBufferSize * (uint)((bitsPerSample == EAudioBitsPerSample.Bits32) ? 4 : 8);
+
+            for (int channel = 0; channel < numChannels; channel++)
             {
-                for (int channel = 0; channel < numChannels; channel++)
+                Buffer.MemoryCopy(ptrs[channel], destPtrs[channel], length, length);
+            }
+        }
+    }
+
+    public class AudioIOPortManaged : AudioIOPort
+    {
+        double[][] audioBuffers;
+
+        public AudioIOPortManaged(string name, EAudioChannelConfiguration channelConfiguration)
+            : base(name, channelConfiguration)
+        {
+            audioBuffers = new double[NumChannels][];
+        }
+
+        public override void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample)
+        {
+            base.SetMaxSize(maxSamples, bitsPerSample);
+
+            int size = 0;
+
+            if (audioBuffers[0] != null)
+                size = audioBuffers[0].Length;
+
+            if (size != maxSamples)
+            {
+                for (int i = 0; i < NumChannels; i++)
                 {
-                    audioBuffers[channel].CopyTo(destinationPort.audioBuffers[channel], 0);
+                    Array.Resize(ref audioBuffers[i], (int)maxSamples);
+                }
+            }
+        }
+
+        unsafe internal override void ReadData()
+        {
+            for (int i = 0; i < NumChannels; i++)
+            {
+                if (BitsPerSample == EAudioBitsPerSample.Bits32)
+                {
+                    float* bufferPtr = ((float**)hostAudioBufferPtrs)[i];
+                    double[] audioBuffer = audioBuffers[i];
+
+                    for (int sample = 0; sample < CurrentBufferSize; sample++)
+                    {
+                        audioBuffer[sample] = bufferPtr[sample];
+                    }
+                }
+                else
+                {
+                    IntPtr bufferPtr = (IntPtr)((double**)hostAudioBufferPtrs)[i];
+
+                    Marshal.Copy(bufferPtr, audioBuffers[i], 0, (int)CurrentBufferSize);
+                }
+            }
+        }
+
+        unsafe internal override void WriteData()
+        {
+            for (int i = 0; i < NumChannels; i++)
+            {
+                if (BitsPerSample == EAudioBitsPerSample.Bits32)
+                {
+                    float* bufferPtr = ((float**)hostAudioBufferPtrs)[i];
+                    double[] audioBuffer = audioBuffers[i];
+
+                    for (int sample = 0; sample < CurrentBufferSize; sample++)
+                    {
+                        bufferPtr[sample] = (float)audioBuffer[sample];
+                    }
+                }
+                else
+                {
+                    IntPtr bufferPtr = (IntPtr)((double**)hostAudioBufferPtrs)[i];
+
+                    Marshal.Copy(audioBuffers[i], 0, bufferPtr, (int)CurrentBufferSize);
+                }
+            }
+        }
+
+        public override void PassThroughTo(AudioIOPort destinationPort)
+        {
+            if (destinationPort.CurrentBufferSize != CurrentBufferSize)
+                throw new InvalidOperationException("Destination port does not have the same size");
+
+            AudioIOPortManaged managedPort = destinationPort as AudioIOPortManaged;
+
+            if (managedPort == null)
+            {
+                for (int channel = 0; channel < NumChannels; channel++)
+                {
+                    ReadOnlySpan<double> srcSpan = GetAudioBuffer(channel);
+                    Span<double> dstSpan = destinationPort.GetAudioBuffer(channel);
+
+                    srcSpan.CopyTo(dstSpan);
                 }
             }
             else
             {
-                void** ptrs = (void**)audioBufferPtrs;
-                void** destPtrs = (void**)destinationPort.GetAudioBufferPtrs();
-
-                uint length = currentBufferSize * (uint)((bitsPerSample == EAudioBitsPerSample.Bits32) ? 4 : 8);
-
-                for (int channel = 0; channel < numChannels; channel++)
+                for (int channel = 0; channel < NumChannels; channel++)
                 {
-                    Buffer.MemoryCopy(ptrs[channel], destPtrs[channel], length, length);
+                    audioBuffers[channel].CopyTo(managedPort.audioBuffers[channel], 0);
                 }
             }
+        }
+
+        public override Span<double> GetAudioBuffer(int channel)
+        {
+            return audioBuffers[channel];
+        }
+
+        /// <summary>
+        /// Get a managed copy of the audio buffers
+        /// </summary>
+        /// <returns>The managed audio buffer arrays</returns>
+        public double[][] GetAudioBuffers()
+        {
+            return audioBuffers;
         }
     }
 }

@@ -41,7 +41,7 @@ namespace MidiExample
 
         public override void HandleNoteOn(int channel, int noteNumber, float velocity, int sampleOffset)
         {
-            Logger.Log("Note on: " + noteNumber + " offset: " + sampleOffset);
+            Logger.Log("Note on: " + noteNumber + " velocity: " + velocity.ToString() + " offset: " + sampleOffset);
 
             freq = Math.Pow(2, (noteNumber - 49) / 12.0) * 440;
             desiredNoteVolume = velocity * 0.5f;
@@ -89,6 +89,8 @@ namespace MidiExample
                 nextSample = Host.ProcessEvents();
 
                 Logger.Log("Process from " + currentSample + " to " + (nextSample - 1));
+
+                Logger.Log("Current freq: " + freq + " volume: " + desiredNoteVolume);
 
                 bool needGainUpdate = gainParameter.NeedInterpolationUpdate;
 
