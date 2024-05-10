@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>0.5.12</Version>
+		<Version>0.6.0</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Easily create VST (VST3) audio plugins in C# .NET.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
