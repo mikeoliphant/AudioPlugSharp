@@ -29,7 +29,7 @@ These steps can be done using a Post-build event. Have a look at the included sa
 
 # Examples
 
-See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/SimpleExample/SimpleExamplePlugin.cs) and [WPFExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/WPFExample/WPFExamplePlugin.cs) projects for example usage.
+See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/SimpleExample/SimpleExamplePlugin.cs), [MidiExample](https://github.com/mikeoliphant/AudioPlugSharp/tree/master/MidiExample) and [WPFExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/WPFExample/WPFExamplePlugin.cs) projects for example usage.
 
 Here are some examples of some larger projects using AudioPlugSharp:
 
