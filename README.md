@@ -39,6 +39,10 @@ Here are some examples of some larger projects using AudioPlugSharp:
 
 [LiveSPICE VST](https://github.com/dsharlet/LiveSPICE/tree/master/LiveSPICEVst), real time SPICE simulation for audio signals.
 
+# Creating a Stand-Alone Application
+
+The [AudioPlugSharpHost library](https://github.com/mikeoliphant/AudioPlugSharp/tree/master/AudioPlugSharpHost) can be used to easily create a stand-alone Windows application for your plugin.
+
 # AudioPlugSharp Building Instructions
 
 You will need to have CMake (https://cmake.org) installed.
