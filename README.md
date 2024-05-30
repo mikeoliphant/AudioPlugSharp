@@ -11,7 +11,9 @@ NuGet packages are available:
 
 [AudioPlugSharp](https://www.nuget.org/packages/AudioPlugSharp) (Needed for all plugins)
 
-[AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF)  (Also needed for WPF user interfaces)
+[AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF) (Also needed for WPF user interfaces)
+
+[AudioPlugSharpHost](https://www.nuget.org/packages/AudioPlugSharpHost) (For createing stand-alone applictions)
 
 # Plugin Project Setup and Deployment
 
