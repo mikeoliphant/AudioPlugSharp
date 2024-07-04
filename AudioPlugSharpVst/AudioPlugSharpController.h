@@ -19,8 +19,6 @@ class AudioPlugSharpController : public EditController, public IMidiMapping
 public:
 	AudioPlugSharpController(void);
 
-	static FUID AudioPlugSharpControllerUID;
-
 	static FUnknown* createInstance(void* factory);
 
 	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;

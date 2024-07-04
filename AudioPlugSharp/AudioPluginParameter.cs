@@ -56,10 +56,13 @@ namespace AudioPlugSharp
                 {
                     editValue = value;
 
-                    // This should really be exposed to UI controls so multiple edits can be inside a begin/end edit
-                    Editor.Host.BeginEdit(ParameterIndex);
-                    Editor.Host.PerformEdit(ParameterIndex, GetValueNormalized(value));
-                    Editor.Host.EndEdit(ParameterIndex);
+                    if (Editor != null) // Just in case EditValue is set before parameter has been added
+                    {
+                        // This should really be exposed to UI controls so multiple edits can be inside a begin/end edit
+                        Editor.Host.BeginEdit(ParameterIndex);
+                        Editor.Host.PerformEdit(ParameterIndex, GetValueNormalized(value));
+                        Editor.Host.EndEdit(ParameterIndex);
+                    }
 
                     OnPropertyChanged("EditValue");
                     OnPropertyChanged("DisplayValue");
@@ -156,10 +159,9 @@ namespace AudioPlugSharp
 
         public void OnPropertyChanged(string name)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
+            if (PropertyChanged != null)
             {
-                handler(this, new PropertyChangedEventArgs(name));
+                PropertyChanged(this, new PropertyChangedEventArgs(name));
             }
         }
     }

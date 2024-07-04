@@ -5,8 +5,6 @@
 #include "AudioPlugSharpController.h"
 #include "AudioPlugSharpFactory.h"
 
-FUID AudioPlugSharpController::AudioPlugSharpControllerUID;
-
 using namespace System;
 using namespace System::Runtime::InteropServices;
 

@@ -13,13 +13,13 @@
 
 using namespace msclr;
 
-extern gcroot<AudioPlugSharp::IAudioPlugin^> plugin;
-
 class AudioPlugSharpFactory : public CPluginFactory
 {
 public:
 	AudioPlugSharpFactory();
 
+	FUID AudioPlugSharpProcessorUID;
+	FUID AudioPlugSharpControllerUID;
 	gcroot<AudioPlugSharp::IAudioPlugin^> plugin = nullptr;
 };
 

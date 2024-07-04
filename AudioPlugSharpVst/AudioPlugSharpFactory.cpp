@@ -28,14 +28,14 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 	char* pluginCategoryChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->PluginCategory);
 	char* pluginVersionChars = (char*)(void*)Marshal::StringToHGlobalAnsi(plugin->PluginVersion);
 
-	AudioPlugSharpProcessor::AudioPlugSharpProcessorUID = FUID(AUDIO_PLUG_SHARP_ID, AUDIO_PLUG_SHARP_PROCESSOR_ID, plugin->PluginID >> 32, plugin->PluginID & 0x00000000ffffffff);
-	AudioPlugSharpController::AudioPlugSharpControllerUID= FUID(AUDIO_PLUG_SHARP_ID, AUDIO_PLUG_SHARP_CONTROLLER_ID, plugin->PluginID >> 32, plugin->PluginID & 0x00000000ffffffff);
+	AudioPlugSharpProcessorUID = FUID(AUDIO_PLUG_SHARP_ID, AUDIO_PLUG_SHARP_PROCESSOR_ID, plugin->PluginID >> 32, plugin->PluginID & 0x00000000ffffffff);
+	AudioPlugSharpControllerUID = FUID(AUDIO_PLUG_SHARP_ID, AUDIO_PLUG_SHARP_CONTROLLER_ID, plugin->PluginID >> 32, plugin->PluginID & 0x00000000ffffffff);
 
 	factoryInfo = PFactoryInfo(companyChars, websiteChars, contactChars, Vst::kDefaultFactoryFlags);
 
-	static const PClassInfo2 componentClass
+	PClassInfo2 componentClass
 	(
-		AudioPlugSharpProcessor::AudioPlugSharpProcessorUID,
+		AudioPlugSharpProcessorUID,
 		PClassInfo::kManyInstances,
 		kVstAudioEffectClass,
 		pluginNameChars,
@@ -48,9 +48,9 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 
 	registerClass(&componentClass, AudioPlugSharpProcessor::createInstance, this);
 
-	static const PClassInfo2 controllerClass
+	PClassInfo2 controllerClass
 	(
-		AudioPlugSharpController::AudioPlugSharpControllerUID,
+		AudioPlugSharpControllerUID,
 		PClassInfo::kManyInstances,
 		kVstComponentControllerClass,
 		pluginNameChars,

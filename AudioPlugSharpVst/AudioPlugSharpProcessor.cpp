@@ -17,11 +17,8 @@ using namespace System::Runtime::InteropServices;
 
 using namespace AudioPlugSharp;
 
-FUID AudioPlugSharpProcessor::AudioPlugSharpProcessorUID;
-
 AudioPlugSharpProcessor::AudioPlugSharpProcessor(void)
 {
-	setControllerClass(FUID(AudioPlugSharpController::AudioPlugSharpControllerUID));
 }
 
 AudioPlugSharpProcessor::~AudioPlugSharpProcessor(void)
@@ -34,6 +31,8 @@ FUnknown* AudioPlugSharpProcessor::createInstance(void* factory)
 
 	AudioPlugSharpProcessor* processor = new AudioPlugSharpProcessor();
 	processor->plugin = ((AudioPlugSharpFactory *)factory)->plugin;
+
+	processor->setControllerClass(((AudioPlugSharpFactory*)factory)->AudioPlugSharpControllerUID);
 
 	return (IAudioProcessor*)processor;
 }

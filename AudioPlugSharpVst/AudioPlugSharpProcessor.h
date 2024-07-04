@@ -23,8 +23,6 @@ class AudioPlugSharpProcessor : public AudioEffect
 public:
 	AudioPlugSharpProcessor(void);
 
-	static FUID AudioPlugSharpProcessorUID;
-
 	static FUnknown* createInstance(void* factory);
 
 	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
