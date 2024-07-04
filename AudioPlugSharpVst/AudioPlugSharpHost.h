@@ -182,17 +182,20 @@ public:
 
 	virtual void AudioPlugSharpHost::BeginEdit(int parameter)
 	{
-		controller->beginEdit(parameter + PLUGIN_PARAMETER_USER_START);
+		if (controller != nullptr)
+			controller->beginEdit(parameter + PLUGIN_PARAMETER_USER_START);
 	}
 
 	virtual void AudioPlugSharpHost::PerformEdit(int parameter, double normalizedValue)
 	{
-		controller->performEdit(parameter + PLUGIN_PARAMETER_USER_START, (float)normalizedValue);
+		if (controller != nullptr)
+			controller->performEdit(parameter + PLUGIN_PARAMETER_USER_START, (float)normalizedValue);
 	}
 
 	virtual void AudioPlugSharpHost::EndEdit(int parameter)
 	{
-		controller->endEdit(parameter + PLUGIN_PARAMETER_USER_START);
+		if (controller != nullptr)
+			controller->endEdit(parameter + PLUGIN_PARAMETER_USER_START);
 	}
 
 internal:
