@@ -3,9 +3,7 @@ Easily create VST3 audio plugins in C#
 
 AudioPlugSharp provides a C++/CLI bridge to load managed audio plugins into VST hosts. User interfaces can be created with built-in support for WPF. Windows Forms interfaces are also possible.
 
-Framework support is .NET Core only. By default, it is configured to use .NET 6.0.
-
-See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/SimpleExample/SimpleExamplePlugin.cs) and [WPFExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/WPFExample/WPFExamplePlugin.cs) projects for example usage.
+Framework support is .NET Core only. By default, it is configured to use .NET 8.0.
 
 # Current Release
 
@@ -13,7 +11,9 @@ NuGet packages are available:
 
 [AudioPlugSharp](https://www.nuget.org/packages/AudioPlugSharp) (Needed for all plugins)
 
-[AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF)  (Also needed for WPF user interfaces)
+[AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF) (Also needed for WPF user interfaces)
+
+[AudioPlugSharpHost](https://www.nuget.org/packages/AudioPlugSharpHost) (For createing stand-alone applictions)
 
 # Plugin Project Setup and Deployment
 
@@ -31,9 +31,19 @@ These steps can be done using a Post-build event. Have a look at the included sa
 
 # Examples
 
-For an example of how to create your own plugin in its own solution, have a look at the LiveSpice VST plugin here:
+See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/SimpleExample/SimpleExamplePlugin.cs), [MidiExample](https://github.com/mikeoliphant/AudioPlugSharp/tree/master/MidiExample) and [WPFExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/WPFExample/WPFExamplePlugin.cs) projects for example usage.
 
-https://github.com/dsharlet/LiveSPICE/tree/master/LiveSPICEVst
+Here are some examples of some larger projects using AudioPlugSharp:
+
+[ChartPlayer](https://github.com/mikeoliphant/ChartPlayer), an app for playing along to song charts synchronized to music recordings.
+
+[Stompbox](https://github.com/mikeoliphant/StompboxUI), guitar amplifier and effects simulation.
+
+[LiveSPICE VST](https://github.com/dsharlet/LiveSPICE/tree/master/LiveSPICEVst), real time SPICE simulation for audio signals.
+
+# Creating a Stand-Alone Application
+
+The [AudioPlugSharpHost library](https://github.com/mikeoliphant/AudioPlugSharp/tree/master/AudioPlugSharpHost) can be used to easily create a stand-alone Windows application for your plugin.
 
 # AudioPlugSharp Building Instructions
 
