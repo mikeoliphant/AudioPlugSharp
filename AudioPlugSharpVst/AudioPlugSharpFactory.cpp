@@ -12,6 +12,8 @@ using namespace msclr;
 AudioPlugSharpFactory::AudioPlugSharpFactory()
 	: CPluginFactory(PFactoryInfo())
 {
+	Logger::Log("AudioPlugSharpFactory running under .NET version: " + System::Environment::Version);
+
 	System::String^ assemblyName = Path::GetFileNameWithoutExtension(Assembly::GetExecutingAssembly()->Location);
 
 	// Our plugin should be our name but without the 'Bridge' at the end

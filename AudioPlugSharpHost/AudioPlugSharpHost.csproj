@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net6.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<UseWindowsForms>true</UseWindowsForms>
-		<Version>0.6.0</Version>
+		<Version>0.6.2</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Stand-alone ASIO host for AudioPlugSharp plugins.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
