@@ -215,14 +215,9 @@ namespace AudioPlugSharp
             if (destinationPort.BitsPerSample != BitsPerSample)
                 throw new InvalidOperationException("Destination port does not have the number of bits");
 
-            void** ptrs = (void**)GetAudioBufferPtrs();
-            void** destPtrs = (void**)destinationPort.GetAudioBufferPtrs();
-
-            uint length = currentBufferSize * (uint)((bitsPerSample == EAudioBitsPerSample.Bits32) ? 4 : 8);
-
-            for (int channel = 0; channel < numChannels; channel++)
+            for (int i = 0; i < numChannels; i++)
             {
-                Buffer.MemoryCopy(ptrs[channel], destPtrs[channel], length, length);
+                GetAudioBuffer(i).CopyTo(destinationPort.GetAudioBuffer(i));
             }
         }
     }
