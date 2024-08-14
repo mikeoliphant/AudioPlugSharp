@@ -3,6 +3,7 @@
 using namespace System::IO;
 using namespace System::Reflection;
 using namespace System::Runtime::InteropServices;
+using namespace System::Runtime::Loader;
 using namespace AudioPlugSharp;
 
 #include <msclr/gcroot.h>
@@ -13,6 +14,8 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 	: CPluginFactory(PFactoryInfo())
 {
 	Logger::Log("AudioPlugSharpFactory running under .NET version: " + System::Environment::Version);
+
+	Logger::Log("Load Context: " + AssemblyLoadContext::GetLoadContext(Assembly::GetExecutingAssembly())->ToString());
 
 	System::String^ assemblyName = Path::GetFileNameWithoutExtension(Assembly::GetExecutingAssembly()->Location);
 
