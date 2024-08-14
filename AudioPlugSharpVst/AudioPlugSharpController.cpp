@@ -21,7 +21,7 @@ FUnknown* AudioPlugSharpController::createInstance(void* factory)
 	Logger::Log("Create controller instance");
 
 	AudioPlugSharpController* controller = new AudioPlugSharpController();
-	controller->plugin = ((AudioPlugSharpFactory*)factory)->plugin;
+	controller->plugin = ((AudioPlugSharpFactory*)factory)->GetPlugin();
 
 	return (IAudioProcessor*)controller;
 }

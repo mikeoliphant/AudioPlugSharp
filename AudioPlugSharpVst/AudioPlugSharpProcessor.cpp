@@ -30,7 +30,7 @@ FUnknown* AudioPlugSharpProcessor::createInstance(void* factory)
 	Logger::Log("Create processor instance");
 
 	AudioPlugSharpProcessor* processor = new AudioPlugSharpProcessor();
-	processor->plugin = ((AudioPlugSharpFactory *)factory)->plugin;
+	processor->plugin = ((AudioPlugSharpFactory *)factory)->GetPlugin();
 
 	processor->setControllerClass(((AudioPlugSharpFactory*)factory)->AudioPlugSharpControllerUID);
 

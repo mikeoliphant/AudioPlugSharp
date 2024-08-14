@@ -18,8 +18,13 @@ class AudioPlugSharpFactory : public CPluginFactory
 public:
 	AudioPlugSharpFactory();
 
+	gcroot<AudioPlugSharp::IAudioPlugin^> GetPlugin();
+
 	FUID AudioPlugSharpProcessorUID;
 	FUID AudioPlugSharpControllerUID;
+
+protected:
 	gcroot<AudioPlugSharp::IAudioPlugin^> plugin = nullptr;
+	int getCount = 0;
 };
 

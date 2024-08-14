@@ -75,3 +75,26 @@ AudioPlugSharpFactory::AudioPlugSharpFactory()
 
 	registerClass(&controllerClass, AudioPlugSharpController::createInstance, this);
 }
+
+gcroot<AudioPlugSharp::IAudioPlugin^> AudioPlugSharpFactory::GetPlugin()
+{
+	if (getCount == 2)	// Both a processor and a controller have grabbed the plugin, so this must be a new instance
+	{
+		Logger::Log("Creating new plugin instance");
+
+		System::String^ assemblyName = Path::GetFileNameWithoutExtension(Assembly::GetExecutingAssembly()->Location);
+
+		// Our plugin should be our name but without the 'Bridge' at the end
+		assemblyName = assemblyName->Substring(0, assemblyName->Length - 6);
+
+		plugin = PluginLoader::LoadPluginFromAssembly(assemblyName);
+
+		getCount = 0;
+	}
+	else
+	{
+		getCount++;
+	}
+
+	return plugin;
+};
