@@ -16,17 +16,19 @@ namespace SimpleExample
 
             // Unique 64bit ID for the plugin
             PluginID = 0xF57703946AFC4EF8;
+
+            SampleFormatsSupported = EAudioBitsPerSample.Bits32;
         }
 
-        AudioIOPort monoInput;
-        AudioIOPort monoOutput;
+        FloatAudioIOPort monoInput;
+        FloatAudioIOPort monoOutput;
 
         public override void Initialize()
         {
             base.Initialize();
 
-            InputPorts = new AudioIOPort[] { monoInput = new AudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
-            OutputPorts = new AudioIOPort[] { monoOutput = new AudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
+            InputPorts = new AudioIOPort[] { monoInput = new FloatAudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
+            OutputPorts = new AudioIOPort[] { monoOutput = new FloatAudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
 
             AddParameter(new AudioPluginParameter
             {
@@ -49,10 +51,10 @@ namespace SimpleExample
             Host.ProcessAllEvents();
 
             double gain = GetParameter("gain").ProcessValue;
-            double linearGain = Math.Pow(10.0, 0.05 * gain);
+            float linearGain = (float)Math.Pow(10.0, 0.05 * gain);
 
-            ReadOnlySpan<double> inSamples = monoInput.GetAudioBuffer(0);
-            Span<double> outSamples = monoOutput.GetAudioBuffer(0);
+            ReadOnlySpan<float> inSamples = monoInput.GetAudioBuffer(0);
+            Span<float> outSamples = monoOutput.GetAudioBuffer(0);
 
             for (int i = 0; i < inSamples.Length; i++)
             {

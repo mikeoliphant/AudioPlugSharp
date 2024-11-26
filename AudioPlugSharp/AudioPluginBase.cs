@@ -55,8 +55,8 @@ namespace AudioPlugSharp
         {
             SaveStateData = new AudioPluginSaveState();
 
-            InputPorts = new AudioIOPort[0];
-            OutputPorts = new AudioIOPort[0];
+            InputPorts = new AudioIOPort<double>[0];
+            OutputPorts = new AudioIOPort<double>[0];
 
             SampleFormatsSupported = EAudioBitsPerSample.Bits32 | EAudioBitsPerSample.Bits64;
 

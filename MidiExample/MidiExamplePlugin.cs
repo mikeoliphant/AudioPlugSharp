@@ -18,14 +18,14 @@ namespace MidiExample
             PluginID = 0x74466AE90F4F40CD;
         }
 
-        AudioIOPort monoOutput;
+        DoubleAudioIOPort monoOutput;
         AudioPluginParameter gainParameter;
 
         public override void Initialize()
         {
             base.Initialize();
 
-            OutputPorts = new AudioIOPort[] { monoOutput = new AudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
+            OutputPorts = new AudioIOPort[] { monoOutput = new DoubleAudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
 
             AddParameter(gainParameter = new AudioPluginParameter
             {

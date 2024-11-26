@@ -7,8 +7,8 @@ namespace WPFExample
 {
     public class WPFExamplePlugin : AudioPluginWPF
     {
-        AudioIOPort monoInput;
-        AudioIOPort stereoOutput;
+        DoubleAudioIOPort monoInput;
+        DoubleAudioIOPort stereoOutput;
 
         AudioPluginParameter gainParameter = null;
         AudioPluginParameter panParameter = null;
@@ -34,8 +34,8 @@ namespace WPFExample
         {
             base.Initialize();
 
-            InputPorts = new AudioIOPort[] { monoInput = new AudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
-            OutputPorts = new AudioIOPort[] { stereoOutput = new AudioIOPort("Stereo Output", EAudioChannelConfiguration.Stereo) };
+            InputPorts = new AudioIOPort[] { monoInput = new DoubleAudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
+            OutputPorts = new AudioIOPort[] { stereoOutput = new DoubleAudioIOPort("Stereo Output", EAudioChannelConfiguration.Stereo) };
 
             AddParameter(gainParameter = new AudioPluginParameter
             {
