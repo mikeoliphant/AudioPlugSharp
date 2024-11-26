@@ -13,7 +13,9 @@ NuGet packages are available:
 
 [AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF) (Also needed for WPF user interfaces)
 
-[AudioPlugSharpHost](https://www.nuget.org/packages/AudioPlugSharpHost) (For createing stand-alone applictions)
+[AudioPlugSharpHost](https://www.nuget.org/packages/AudioPlugSharpHost) (For createing stand-alone Windows applictions)
+
+[AudioPlugSharpJack](https://www.nuget.org/packages/AudioPlugSharpJack) (For createing cross-platform Jack Audio clients)
 
 # Plugin Project Setup and Deployment
 
