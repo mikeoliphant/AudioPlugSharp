@@ -19,10 +19,30 @@ namespace AudioPlugSharp
         Bits64 = 2,
     }
 
+    public interface IAudioIOPort
+    {
+        string Name { get; set; }
+        EAudioChannelConfiguration ChannelConfiguration { get; }
+        uint NumChannels { get; }
+        uint CurrentBufferSize { get; }
+        EAudioBitsPerSample BitsPerSample { get; }
+        void SetMaxSize(uint maxSamples, EAudioBitsPerSample bitsPerSample);
+        void SetCurrentBufferSize(uint numSamples);
+        void SetAudioBufferPtrs(IntPtr ptrs);
+        IntPtr GetAudioBufferPtrs();
+        void CopyFrom(ReadOnlySpan<float> buffer, int channel);
+        void CopyFrom(ReadOnlySpan<Int32> buffer, int channel);
+        void CopyFrom(ReadOnlySpan<double> buffer, int channel);
+        void CopyTo(Span<float> buffer, int channel);
+        void CopyTo(Span<Int32> buffer, int channel);
+        void CopyTo(Span<double> buffer, int channel);
+        void PassThroughTo(AudioIOPort destinationPort);
+    }
+
     /// <summary>
     /// Manages audio data input and output
     /// </summary>
-    public class AudioIOPort
+    public class AudioIOPort : IAudioIOPort
     {
         /// <summary>
         /// The name of the audio port
