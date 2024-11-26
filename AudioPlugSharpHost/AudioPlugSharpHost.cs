@@ -37,6 +37,16 @@ namespace AudioPlugSharpHost
 
             plugin.Initialize();
 
+            foreach (AudioIOPort input in plugin.InputPorts)
+            {
+                input.ForceBackingBuffer = true;
+            }
+
+            foreach (AudioIOPort output in plugin.OutputPorts)
+            {
+                output.ForceBackingBuffer = true;
+            }
+
             saveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Plugin.PluginName);
 
             hostSettingsFile = Path.Combine(saveFolder, "HostSettings.xml");

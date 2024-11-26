@@ -76,6 +76,8 @@ namespace AudioPlugSharp
             get { throw new NotImplementedException(); }
         }
 
+        public bool ForceBackingBuffer { get; set; } = false;
+
         int numChannels;
         EAudioBitsPerSample bitsPerSample;
         uint currentBufferSize = 0;
@@ -252,7 +254,7 @@ namespace AudioPlugSharp
     {
         protected override bool NeedBackingBuffer
         {
-            get { return (BitsPerSample != EAudioBitsPerSample.Bits32); }
+            get { return (BitsPerSample != EAudioBitsPerSample.Bits32) || ForceBackingBuffer; }
         }
 
         public FloatAudioIOPort(string name, EAudioChannelConfiguration channelConfiguration)
@@ -368,7 +370,7 @@ namespace AudioPlugSharp
     {
         protected override bool NeedBackingBuffer
         {
-            get { return (BitsPerSample != EAudioBitsPerSample.Bits64); }
+            get { return (BitsPerSample != EAudioBitsPerSample.Bits64) || ForceBackingBuffer; }
         }
 
         public DoubleAudioIOPort(string name, EAudioChannelConfiguration channelConfiguration)
