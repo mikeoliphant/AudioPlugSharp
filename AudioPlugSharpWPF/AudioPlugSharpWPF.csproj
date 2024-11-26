@@ -4,7 +4,7 @@
 		<TargetFramework>net8.0-windows</TargetFramework>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
-		<Version>0.6.8</Version>
+		<Version>0.6.9</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Add WPF GUI to your AudioPlugSharp plugin.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
