@@ -80,7 +80,7 @@ namespace AudioPlugSharpJack
             MaxAudioBufferSize = 512;
             BitsPerSample = EAudioBitsPerSample.Bits32;
 
-            jackProcessor = new("ChartPlayer", 1, 2, 0, 0, autoconnect: true);
+            jackProcessor = new(Plugin.PluginName, 1, 2, 0, 0, autoconnect: true);
 
             jackProcessor.ProcessFunc = Process;
 
