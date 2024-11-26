@@ -3,8 +3,6 @@ Easily create VST3 audio plugins in C#
 
 AudioPlugSharp provides a C++/CLI bridge to load managed audio plugins into VST hosts. User interfaces can be created with built-in support for WPF. Windows Forms interfaces are also possible.
 
-Framework support is .NET Core only. By default, it is configured to use .NET 6.0 (it will be migrated to a later .NET version once the changes in [this PR](https://github.com/dotnet/runtime/pull/105337) are released).
-
 # Current Release
 
 NuGet packages are available:
