@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing.Design;
 using System.Xml.Serialization;
 using AudioPlugSharp;
 using AudioPlugSharp.Asio;
@@ -154,13 +155,9 @@ namespace AudioPlugSharpHost
                 {
                     port.SetCurrentBufferSize(CurrentAudioBufferSize);
 
-                    Span<double> inputSpan = port.GetAudioBuffer(channel);
                     int* asioPtr = (int*)inputBuffers[inputCount % AsioDriver.NumInputChannels];    // recyle inputs if we don't have enough
 
-                    for (int i = 0; i < CurrentAudioBufferSize; i++)
-                    {
-                        inputSpan[i] = (double)asioPtr[i] / (double)Int32.MaxValue;
-                    }
+                    port.CopyFrom(new ReadOnlySpan<Int32>((void*)asioPtr, (int)CurrentAudioBufferSize), channel);
 
                     inputCount++;
                 }
@@ -192,14 +189,9 @@ namespace AudioPlugSharpHost
                         if (outputCount >= AsioDriver.NumOutputChannels)
                             break;
 
-                        ReadOnlySpan<double> outputSpan = port.GetAudioBuffer(channel);
-
                         int* asioPtr = (int*)outputBuffers[outputCount];
 
-                        for (int i = 0; i < CurrentAudioBufferSize; i++)
-                        {
-                            asioPtr[i] = (int)(outputSpan[i] * Int32.MaxValue);
-                        }
+                        port.CopyTo(new Span<Int32>((void*)asioPtr, (int)CurrentAudioBufferSize), channel);
 
                         outputCount++;
                     }

@@ -152,6 +152,68 @@ namespace AudioPlugSharp
             return backingAudioBufferPtrs;
         }
 
+        public void CopyFrom(ReadOnlySpan<float> buffer, int channel)
+        {
+            int toCopy = Math.Min(buffer.Length, (int)currentBufferSize);
+
+            Span<double> channelBuf = GetAudioBuffer(channel);
+
+            for (int i = 0; i < toCopy; i++)
+            {
+                channelBuf[i] = buffer[i];
+            }
+        }
+
+        public void CopyFrom(ReadOnlySpan<Int32> buffer, int channel)
+        {
+            int toCopy = Math.Min(buffer.Length, (int)currentBufferSize);
+
+            Span<double> channelBuf = GetAudioBuffer(channel);
+
+            for (int i = 0; i < toCopy; i++)
+            {
+                channelBuf[i] = (float)buffer[i] / (float)Int32.MaxValue;
+            }
+        }
+
+        public void CopyFrom(ReadOnlySpan<double> buffer, int channel)
+        {
+            Span<double> channelBuf = GetAudioBuffer(channel);
+
+            buffer.CopyTo(channelBuf);
+        }
+
+        public void CopyTo(Span<float> buffer, int channel)
+        {
+            int toCopy = Math.Min(buffer.Length, (int)currentBufferSize);
+
+            ReadOnlySpan<double> channelBuf = GetAudioBuffer(channel);
+
+            for (int i = 0; i < toCopy; i++)
+            {
+                buffer[i] = (float)channelBuf[i];
+            }
+        }
+
+        public void CopyTo(Span<Int32> buffer, int channel)
+        {
+            int toCopy = Math.Min(buffer.Length, (int)currentBufferSize);
+
+            ReadOnlySpan<double> channelBuf = GetAudioBuffer(channel);
+
+            for (int i = 0; i < toCopy; i++)
+            {
+                buffer[i] = (Int32)(channelBuf[i] * Int32.MaxValue);
+            }
+        }
+
+        public void CopyTo(Span<double> buffer, int channel)
+        {
+            ReadOnlySpan<double> channelBuf = GetAudioBuffer(channel);
+
+            channelBuf.CopyTo(buffer);
+        }
+
         /// <summary>
         /// Reads the data from the host pointers (if necessary)
         /// </summary>
