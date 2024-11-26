@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
 		<OutputType>Library</OutputType>
-		<Version>0.6.7</Version>
+		<Version>0.6.8</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Easily create VST (VST3) audio plugins in C# .NET.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -12,6 +12,7 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -25,9 +26,10 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
 	</ItemGroup>
-
+	
 	<ItemGroup>
 		<None Include="build\AudioPlugSharp.targets" Pack="true" PackagePath="build\AudioPlugSharp.targets" />
+		<None Include="..\README.md" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -22,7 +22,7 @@ namespace AudioPlugSharp
     /// <summary>
     /// Manages audio data input and output
     /// </summary>
-    public class AudioIOPort
+    public abstract class AudioIOPort
     {
         /// <summary>
         /// The name of the audio port
@@ -120,6 +120,12 @@ namespace AudioPlugSharp
         /// <param name="ptrs">The unmanaged buffer pointers</param>
         public virtual void SetAudioBufferPtrs(IntPtr ptrs)
         {
+            hostAudioBufferPtrs = ptrs;
+
+            if (!NeedBackingBuffer)
+            {
+                backingAudioBufferPtrs = hostAudioBufferPtrs;
+            }
         }
 
         /// <summary>
@@ -170,7 +176,7 @@ namespace AudioPlugSharp
         }
     }
 
-    public class AudioIOPort<T> : AudioIOPort
+    public abstract class AudioIOPort<T> : AudioIOPort
     {
         public AudioIOPort(string name, EAudioChannelConfiguration channelConfiguration)
             : base(name, channelConfiguration)
@@ -252,16 +258,6 @@ namespace AudioPlugSharp
         public FloatAudioIOPort(string name, EAudioChannelConfiguration channelConfiguration)
             : base(name, channelConfiguration)
         {
-        }
-
-        public override void SetAudioBufferPtrs(IntPtr ptrs)
-        {
-            hostAudioBufferPtrs = ptrs;
-
-            if (!NeedBackingBuffer)
-            {
-                backingAudioBufferPtrs = hostAudioBufferPtrs;
-            }
         }
 
         public override void CopyFrom(ReadOnlySpan<float> buffer, int channel)
@@ -375,22 +371,10 @@ namespace AudioPlugSharp
             get { return (BitsPerSample != EAudioBitsPerSample.Bits64); }
         }
 
-
         public DoubleAudioIOPort(string name, EAudioChannelConfiguration channelConfiguration)
             : base(name, channelConfiguration)
         {
         }
-
-        public override void SetAudioBufferPtrs(IntPtr ptrs)
-        {
-            hostAudioBufferPtrs = ptrs;
-
-            if (!NeedBackingBuffer)
-            {
-                backingAudioBufferPtrs = hostAudioBufferPtrs;
-            }
-        }
-
 
         public override void CopyFrom(ReadOnlySpan<float> buffer, int channel)
         {
@@ -453,7 +437,6 @@ namespace AudioPlugSharp
 
             channelBuf.CopyTo(buffer);
         }
-
 
         internal override unsafe void ReadData()
         {

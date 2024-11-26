@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<UseWindowsForms>true</UseWindowsForms>
-		<Version>0.6.6</Version>
+		<Version>0.6.8</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Stand-alone ASIO host for AudioPlugSharp plugins.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -15,10 +15,15 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 
 </Project>
