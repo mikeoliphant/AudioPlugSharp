@@ -227,7 +227,7 @@ namespace AudioPlugSharpHost
 
         public int ProcessEvents()
         {
-            return 0;
+            return (int)CurrentAudioBufferSize;
         }
 
         public void SendCC(int channel, int ccNumber, int ccValue, int sampleOffset)
