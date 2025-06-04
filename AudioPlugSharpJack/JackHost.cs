@@ -27,6 +27,16 @@ namespace AudioPlugSharpJack
 
             plugin.Initialize();
 
+            foreach (AudioIOPort input in plugin.InputPorts)
+            {
+                input.ForceBackingBuffer = true;
+            }
+
+            foreach (AudioIOPort output in plugin.OutputPorts)
+            {
+                output.ForceBackingBuffer = true;
+            }
+
             saveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Plugin.PluginName);
 
             try
@@ -48,8 +58,6 @@ namespace AudioPlugSharpJack
 
         public void Exit()
         {
-            Console.WriteLine("Exiting");
-
             byte[] data = Plugin.SaveState();
 
             try
@@ -76,28 +84,37 @@ namespace AudioPlugSharpJack
 
         public void Run()
         {
-            SampleRate = 48000;
             MaxAudioBufferSize = 512;
             BitsPerSample = EAudioBitsPerSample.Bits32;
 
             jackProcessor = new(Plugin.PluginName, 1, 2, 0, 0, autoconnect: true);
 
-            jackProcessor.ProcessFunc = Process;
+            jackProcessor.Start();
+
+            SampleRate = jackProcessor.SampleRate;
 
             Plugin.InitializeProcessing();
 
             Plugin.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample);
 
-            if (jackProcessor.Start())
-            {
-            }
+            jackProcessor.ProcessFunc = Process;
 
-            Plugin.ShowEditor(IntPtr.Zero);
-            Exit();
+            if (Plugin.HasUserInterface)
+            {
+                Plugin.ShowEditor(IntPtr.Zero);
+
+                Exit();
+            }
+            else
+            {
+                Thread.Sleep(Timeout.Infinite);
+            }
         }
 
         void Process(ProcessBuffer buffer)
         {
+            CurrentAudioBufferSize = (uint)jackProcessor.BufferSize;
+
             AudioIOPort input = Plugin.InputPorts[0];
             input.SetCurrentBufferSize((uint)buffer.Frames);
 
@@ -112,11 +129,11 @@ namespace AudioPlugSharpJack
             Plugin.Process();
             Plugin.PostProcess();
 
-            for (int channel = 0; channel < 2; channel++)
+            for (int channel = 0; channel < output.NumChannels; channel++)
             {
                 float[] jackOut = buffer.AudioOut[channel].Audio;
 
-                output.CopyFrom(jackOut, channel);
+                output.CopyTo(jackOut, channel);
             }
         }
 
@@ -138,7 +155,7 @@ namespace AudioPlugSharpJack
 
         public int ProcessEvents()
         {
-            return 0;
+            return (int)CurrentAudioBufferSize;
         }
 
         public void SendCC(int channel, int ccNumber, int ccValue, int sampleOffset)
