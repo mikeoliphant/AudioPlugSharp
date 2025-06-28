@@ -20,7 +20,7 @@ jobs:
     - name: Build VST3 SDK
       working-directory: ${{github.workspace}}/vstbuild
       run:
-        cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk
+        cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
       
     - name: Run MSBuild
       working-directory: ${{github.workspace}}
