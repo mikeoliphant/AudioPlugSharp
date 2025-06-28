@@ -27,7 +27,7 @@ jobs:
       
     - name: Run MSBuild
       working-directory: ${{github.workspace}}
-      run: msbuild .\AudioPlugSharp.sln
+      run: msbuild .\AudioPlugSharp.sln /p:Configuration=Release
 
     - name: Publish Linux-x64 Jack host test
       working-directory: ${{github.workspace}}
