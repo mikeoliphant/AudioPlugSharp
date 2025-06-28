@@ -14,16 +14,16 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Build VST3 SDK
+      working-directory: ${{github.workspace}}/vstbuild
+      run:
+        cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
+        
     - name: Setup MSBuild and add to PATH
       uses: microsoft/setup-msbuild@v2
 
     - name: Restore NuGet Packages
       run: dotnet restore
-
-    - name: Build VST3 SDK
-      working-directory: ${{github.workspace}}/vstbuild
-      run:
-        cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
       
     - name: Run MSBuild
       working-directory: ${{github.workspace}}
