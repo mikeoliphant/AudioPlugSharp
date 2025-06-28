@@ -31,10 +31,10 @@ jobs:
 
     - name: Publish Linux-x64 Jack host test
       working-directory: ${{github.workspace}}
-      run: dotnet publish .\AudioPlugSharpJack\AudioPlugSharpJack.csproj --runtime linux-x64 -p:PublishSingleFile=true --self-contained true
+      run: dotnet publish .\JackHostTest\JackHostTest.csproj --runtime linux-x64 -p:PublishSingleFile=true --self-contained true
 
     - name: Create Linux-x64 Jack host test archive
       uses: actions/upload-artifact@v4
       with:
         name: ChartPlayerLinux
-        path: ${{github.workspace}}\AudioPlugSharpJack\bin\Release\net8.0\linux-x64\publish
+        path: ${{github.workspace}}\JackHostTest\bin\Release\net8.0\linux-x64\publish
