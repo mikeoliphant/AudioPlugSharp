@@ -23,6 +23,8 @@ namespace AudioPlugSharpJack
         {
             this.Plugin = plugin;
 
+            Logger.WriteToStdErr = true;
+
             (plugin as IAudioPlugin).Host = this;
 
             plugin.Initialize();
@@ -89,25 +91,33 @@ namespace AudioPlugSharpJack
 
             jackProcessor = new(Plugin.PluginName, 1, 2, 0, 0, autoconnect: true);
 
-            jackProcessor.Start();
-
-            SampleRate = jackProcessor.SampleRate;
-
-            Plugin.InitializeProcessing();
-
-            Plugin.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample);
-
-            jackProcessor.ProcessFunc = Process;
-
-            if (Plugin.HasUserInterface)
+            if (!jackProcessor.Start())
             {
-                Plugin.ShowEditor(IntPtr.Zero);
-
-                Exit();
+                Logger.Log("Unable to connect to Jack");
             }
             else
             {
-                Thread.Sleep(Timeout.Infinite);
+                SampleRate = jackProcessor.SampleRate;
+
+                Logger.Log("Jack sample rate: " + SampleRate);
+                Logger.Log("Jack buffer size: " + jackProcessor.BufferSize);
+
+                Plugin.InitializeProcessing();
+
+                Plugin.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample);
+
+                jackProcessor.ProcessFunc = Process;
+
+                if (Plugin.HasUserInterface)
+                {
+                    Plugin.ShowEditor(IntPtr.Zero);
+
+                    Exit();
+                }
+                else
+                {
+                    Thread.Sleep(Timeout.Infinite);
+                }
             }
         }
 
