@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Version>0.6.10</Version>
+		<Authors>Mike Oliphant</Authors>
+		<Description>AudioPlugSharp VST3 plugin implmentation</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Include="..\README.md" Link="README.md">
+	    <PackagePath>\</PackagePath>
+	    <Pack>true</Pack>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AudioPlugSharpVst\AudioPlugSharpVst.vcxproj" />
+		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.vst3" PackagePath="contentFiles/vst" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.runtimeconfig.json" PackagePath="contentFiles/vst" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.deps.json" PackagePath="contentFiles/vst" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\Ijwhost.dll" PackagePath="contentFiles/other" Visible="false" />
+		<Content Include="$(SolutionDir)x64\$(Configuration)\desktop.runtimeconfig.json" PackagePath="contentFiles" Visible="false" />
+	</ItemGroup>
+</Project>

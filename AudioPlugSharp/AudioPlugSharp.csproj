@@ -28,18 +28,6 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-		<None Include="build\AudioPlugSharp.targets" Pack="true" PackagePath="build\AudioPlugSharp.targets" />
-		<None Include="..\README.md" Pack="true" PackagePath="\"/>
-	</ItemGroup>
-
-	<ItemGroup>
-		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.vst3" PackagePath="contentFiles/vst" Visible="false" />
-		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.runtimeconfig.json" PackagePath="contentFiles/vst" Visible="false" />
-		<Content Include="$(SolutionDir)x64\$(Configuration)\AudioPlugSharpVst.deps.json" PackagePath="contentFiles/vst" Visible="false" />
-		<Content Include="$(SolutionDir)x64\$(Configuration)\Ijwhost.dll" PackagePath="contentFiles/other" Visible="false" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Content Include="$(SolutionDir)x64\$(Configuration)\desktop.runtimeconfig.json" PackagePath="contentFiles" Visible="false" />
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 </Project>

@@ -49,6 +49,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HostTests", "HostTests", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JackHostTest", "JackHostTest\JackHostTest.csproj", "{FC568608-D05A-4F61-AF60-B1A6AC3A62FA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioPlugSharpVst3", "AudioPlugSharpVst3\AudioPlugSharpVst3.csproj", "{518AF134-D9A8-439D-9A04-29E2947DF910}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -161,6 +163,14 @@ Global
 		{FC568608-D05A-4F61-AF60-B1A6AC3A62FA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FC568608-D05A-4F61-AF60-B1A6AC3A62FA}.Release|x64.ActiveCfg = Release|Any CPU
 		{FC568608-D05A-4F61-AF60-B1A6AC3A62FA}.Release|x64.Build.0 = Release|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Debug|x64.Build.0 = Debug|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Release|Any CPU.Build.0 = Release|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Release|x64.ActiveCfg = Release|Any CPU
+		{518AF134-D9A8-439D-9A04-29E2947DF910}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
