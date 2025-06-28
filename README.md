@@ -55,7 +55,7 @@ From a shell, run the following:
 git clone --recursive https://github.com/mikeoliphant/AudioPlugSharp
 cd AudioPlugSharp
 cd vstbuild
-cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk
+cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
 ```
 
 Then you can load the solution in Visual Studio and build. **Note that you will need to change the last line above if you have a different version of Visual Studio.**
