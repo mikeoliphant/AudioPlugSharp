@@ -9,6 +9,8 @@ NuGet packages are available:
 
 [AudioPlugSharp](https://www.nuget.org/packages/AudioPlugSharp) (Needed for all plugins)
 
+[AudioPlugSharpVst3](https://www.nuget.org/packages/AudioPlugSharp) (Need for all VST3 plugins)
+
 [AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF) (Also needed for WPF user interfaces)
 
 [AudioPlugSharpHost](https://www.nuget.org/packages/AudioPlugSharpHost) (For createing stand-alone Windows applictions)
