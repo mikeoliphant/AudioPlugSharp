@@ -4,7 +4,7 @@
 		<TargetFramework>net8.0-windows</TargetFramework>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
-		<Version>0.7.0</Version>
+		<Version>0.7.1</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Add WPF GUI to your AudioPlugSharp plugin.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -36,10 +36,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
 	</ItemGroup>
 
@@ -48,7 +44,11 @@
 		<None Update="EditorView.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</None>
-		<None Include="..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\AudioPlugSharpVst3\AudioPlugSharpVst3.csproj" />
 	</ItemGroup>
 
 </Project>
