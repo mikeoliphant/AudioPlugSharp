@@ -10,7 +10,7 @@
 		<Files2 Include="$(MSBuildThisFileDirectory)/../contentFiles/other/*.*"></Files2>
 	</ItemGroup>
 
-	<Target Name="AudioPlugSharp" AfterTargets="PostBuildEvent">
+	<Target Name="AudioPlugSharpVst3" AfterTargets="PostBuildEvent">
 		<Message Text="Copying AudioPlugSharp files to output directory"></Message>
 		<Copy SourceFiles="@(Files)" DestinationFiles="@(Files->Replace('AudioPlugSharpVst', '$(TargetName)Bridge')->'$(TargetDir)%(Filename)%(Extension)')"></Copy>
 		<Copy SourceFiles="@(Files2)" DestinationFolder="$(TargetDir)"></Copy>
