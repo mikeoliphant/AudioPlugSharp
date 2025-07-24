@@ -1,4 +1,5 @@
-﻿using AudioPlugSharpJack;
+﻿using AudioPlugSharp;
+using AudioPlugSharpJack;
 using SimpleExample;
 
 namespace JackHostTest
@@ -10,6 +11,8 @@ namespace JackHostTest
             JackHost<SimpleExamplePlugin> host = new JackHost<SimpleExamplePlugin>(new SimpleExamplePlugin());
 
             host.Run();
+
+            Logger.FlushAndShutdown();
         }
     }
 }

@@ -110,7 +110,14 @@ namespace AudioPlugSharpJack
 
                 if (Plugin.HasUserInterface)
                 {
-                    Plugin.ShowEditor(IntPtr.Zero);
+                    try
+                    {
+                        Plugin.ShowEditor(IntPtr.Zero);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log("Plugin failed with: " + ex.ToString());
+                    }
 
                     Exit();
                 }
@@ -118,6 +125,8 @@ namespace AudioPlugSharpJack
                 {
                     Thread.Sleep(Timeout.Infinite);
                 }
+
+                Logger.FlushAndShutdown();
             }
         }
 

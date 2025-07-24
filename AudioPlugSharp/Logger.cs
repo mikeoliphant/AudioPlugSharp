@@ -22,6 +22,8 @@ namespace AudioPlugSharp
         static StreamWriter logWriter = null;
         static string logPath;
         static string logFileDateFormat = "yyyy-MM-dd-HH-mm-ss-ffff";
+        static Thread logThread;
+        static bool exit = false;
 
         static Logger()
         {
@@ -51,7 +53,7 @@ namespace AudioPlugSharp
 
                 logWriter = new StreamWriter(logFile);
 
-                Thread logThread = new Thread(() => DoLogging());
+                logThread = new Thread(() => DoLogging());
 
                 logThread.Priority = ThreadPriority.Lowest;
                 logThread.IsBackground = true;
@@ -118,6 +120,9 @@ namespace AudioPlugSharp
                 {
                     WriteLogs();
                 }
+
+                if (exit)
+                    break;
             }
             while (true);
         }
@@ -146,6 +151,16 @@ namespace AudioPlugSharp
                 }
                 catch { }
             }
+        }
+
+        public static void FlushAndShutdown()
+        {
+            exit = true;
+
+            if (logThread != null)
+                logThread.Join();
+
+            logThread = null;
         }
     }
 }

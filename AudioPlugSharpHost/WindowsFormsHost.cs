@@ -32,10 +32,27 @@ namespace AudioPlugSharpHost
             if (audioHost.AsioDriver == null)
                 ShowAudioSettings();
 
-            audioHost.Plugin.ShowEditor(IntPtr.Zero);
+            if (Plugin.HasUserInterface)
+            {
+                try
+                {
+                    Plugin.ShowEditor(IntPtr.Zero);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Plugin failed with: " + ex.ToString());
+                }
+            }
+            else
+            {
+                Thread.Sleep(Timeout.Infinite);
+            }
+
             audioHost.Exit();
 
             notifyIcon.Visible = false;
+
+            Logger.FlushAndShutdown();
         }
 
         void ShowAudioSettings()
