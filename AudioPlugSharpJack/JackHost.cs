@@ -162,10 +162,12 @@ namespace AudioPlugSharpJack
 
         public void EndEdit(int parameter)
         {
+            PerformEdit(parameter, (Plugin as IAudioPluginEditor).Parameters[parameter].NormalizedEditValue);
         }
 
         public void PerformEdit(int parameter, double normalizedValue)
         {
+            (Plugin as IAudioPluginProcessor).Parameters[parameter].NormalizedProcessValue = normalizedValue;
         }
 
         public void ProcessAllEvents()

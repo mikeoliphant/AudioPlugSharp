@@ -92,6 +92,11 @@ namespace AudioPlugSharp
             ValueFormat = "{0:0.0}";
         }
 
+        public static double DbToLinear(double db)
+        {
+            return Math.Pow(10.0, 0.05 * db);
+        }
+
         public double GetValueNormalized(double value)
         {
             return (value - MinValue) / (MaxValue - MinValue);

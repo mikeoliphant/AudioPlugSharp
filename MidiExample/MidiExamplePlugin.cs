@@ -76,7 +76,7 @@ namespace MidiExample
         {
             base.Process();
 
-            linearGain = Math.Pow(10.0, 0.05 * gainParameter.ProcessValue);
+            linearGain = AudioPluginParameter.DbToLinear(gainParameter.ProcessValue);
 
             Span<double> outSamples = monoOutput.GetAudioBuffer(0);
 
@@ -102,7 +102,7 @@ namespace MidiExample
                     // If we need to update our gain paramter, get the sample-accurate interpolated value
                     if (needGainUpdate)
                     {
-                        linearGain = Math.Pow(10.0, 0.05 * gainParameter.GetInterpolatedProcessValue(i));
+                        linearGain = AudioPluginParameter.DbToLinear(gainParameter.GetInterpolatedProcessValue(i));
                     }
 
                     outSamples[i] = Math.Sin(((double)samplesSoFar * 2 * Math.PI * freq) / Host.SampleRate) * noteVolume * linearGain;

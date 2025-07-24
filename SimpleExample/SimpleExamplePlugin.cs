@@ -46,12 +46,12 @@ namespace SimpleExample
         {
             base.Process();
 
-            // This will trigger all Midi note events and parameter changes that happend during this process window
+            // This will trigger all Midi note events and parameter changes that happened during this process window
             // For sample-accurate tracking, see the WPFExample or MidiExample plugins
             Host.ProcessAllEvents();
 
-            double gain = GetParameter("gain").ProcessValue;
-            float linearGain = (float)Math.Pow(10.0, 0.05 * gain);
+            double gainDb = GetParameter("gain").ProcessValue;
+            float linearGain = (float)AudioPluginParameter.DbToLinear(gainDb);
 
             ReadOnlySpan<float> inSamples = monoInput.GetAudioBuffer(0);
             Span<float> outSamples = monoOutput.GetAudioBuffer(0);

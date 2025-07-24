@@ -72,7 +72,7 @@ namespace WPFExample
             int currentSample = 0;
             int nextSample = 0;
 
-            double linearGain = Math.Pow(10.0, 0.05 * gainParameter.ProcessValue);
+            double linearGain = AudioPluginParameter.DbToLinear(gainParameter.ProcessValue);
             double pan = panParameter.ProcessValue;
 
             do
@@ -86,7 +86,7 @@ namespace WPFExample
                 {
                     if (needGainUpdate)
                     {
-                        linearGain = Math.Pow(10.0, 0.05 * gainParameter.GetInterpolatedProcessValue(i));
+                        linearGain = AudioPluginParameter.DbToLinear(gainParameter.GetInterpolatedProcessValue(i));
                     }
 
                     if (needPanUpdate)
