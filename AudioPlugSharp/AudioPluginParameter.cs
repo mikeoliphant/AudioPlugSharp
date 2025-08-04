@@ -205,7 +205,7 @@ namespace AudioPlugSharp
             MinValue = double.NegativeInfinity;
             MaxValue = 0;
             DefaultValue = 0;
-            RangePower = 1.0 / 4.0;
+            RangePower = 3.0;
             ValueFormat = "{0:0.0}dB";
         }
 
