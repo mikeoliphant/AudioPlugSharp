@@ -41,7 +41,6 @@ namespace WPFExample
             {
                 ID = "gain",
                 Name = "Gain",
-                Type = EAudioPluginParameterType.Float,
                 MinValue = -20,
                 MaxValue = 20,
                 DefaultValue = 0,
@@ -52,7 +51,6 @@ namespace WPFExample
             {
                 ID = "pan",
                 Name = "Pan",
-                Type = EAudioPluginParameterType.Float,
                 MinValue = -1,
                 MaxValue = 1,
                 DefaultValue = 0,

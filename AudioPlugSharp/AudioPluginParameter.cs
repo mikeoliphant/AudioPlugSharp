@@ -5,14 +5,6 @@ using System.Text;
 
 namespace AudioPlugSharp
 {
-    public enum EAudioPluginParameterType
-    {
-        Float,
-        Bool,
-        Int,
-        Enum
-    }
-
     public class AudioPluginParameter : INotifyPropertyChanged
     {
         public IAudioPluginEditor Editor { get; internal set; } 
@@ -22,7 +14,6 @@ namespace AudioPlugSharp
         public int ParameterIndex { get; internal set; }
         public string ID { get; set; }
         public string Name { get; set; }
-        public EAudioPluginParameterType Type { get; set; }
         public double MinValue { get; set; }
         public double MaxValue { get; set; }
         public double DefaultValue { get; set; }

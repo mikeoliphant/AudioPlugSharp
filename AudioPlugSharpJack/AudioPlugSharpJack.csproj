@@ -4,7 +4,7 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<Version>0.7.5</Version>
+		<Version>0.7.7</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Jack Audio host for AudioPlugSharp plugins.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>

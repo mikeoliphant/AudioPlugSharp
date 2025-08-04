@@ -102,6 +102,8 @@ namespace AudioPlugSharpJack
                 Logger.Log("Jack sample rate: " + SampleRate);
                 Logger.Log("Jack buffer size: " + jackProcessor.BufferSize);
 
+                MaxAudioBufferSize = (uint)jackProcessor.BufferSize;
+
                 Plugin.InitializeProcessing();
 
                 Plugin.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample);

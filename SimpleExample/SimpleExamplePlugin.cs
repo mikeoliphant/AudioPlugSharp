@@ -34,7 +34,6 @@ namespace SimpleExample
             {
                 ID = "gain",
                 Name = "Gain",
-                Type = EAudioPluginParameterType.Float,
                 MinValue = -20,
                 MaxValue = 20,
                 DefaultValue = 0,

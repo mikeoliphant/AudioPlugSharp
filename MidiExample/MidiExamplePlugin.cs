@@ -31,7 +31,6 @@ namespace MidiExample
             {
                 ID = "gain",
                 Name = "Gain",
-                Type = EAudioPluginParameterType.Float,
                 MinValue = -20,
                 MaxValue = 6,
                 DefaultValue = 0,
@@ -59,11 +58,6 @@ namespace MidiExample
             Logger.Log("Param change: " + parameter.Name + " val: " + parameter.ProcessValue + " offset: " + sampleOffset);
 
             base.HandleParameterChange(parameter, newNormalizedValue, sampleOffset);
-        }
-
-        double Lerp(double value1, double value2, double amount)
-        {
-            return value1 + (value2 - value1) * amount;
         }
 
         double noteVolume = 0;
@@ -97,7 +91,7 @@ namespace MidiExample
                 // Loop over the samples we have remaining until we need to trigger more events
                 for (int i = currentSample; i < nextSample; i++)
                 {
-                    noteVolume = Lerp(noteVolume, desiredNoteVolume, 0.001);
+                    noteVolume = Double.Lerp(noteVolume, desiredNoteVolume, 0.001);
 
                     // If we need to update our gain paramter, get the sample-accurate interpolated value
                     if (needGainUpdate)
