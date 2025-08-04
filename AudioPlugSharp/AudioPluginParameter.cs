@@ -234,12 +234,12 @@ namespace AudioPlugSharp
         {
             double rangeVal = (DBToLinear(value) - linearMin) / (linearMax - linearMin);
 
-            return (RangePower > 0) ? Math.Pow(rangeVal, RangePower) : rangeVal;
+            return (RangePower > 0) ? Math.Pow(rangeVal, 1 / RangePower) : rangeVal;
         }
 
         public override double GetValueDenormalized(double value)
         {
-            double rangeVal = (RangePower > 0) ? Math.Pow(value, 1 / RangePower) : value;
+            double rangeVal = (RangePower > 0) ? Math.Pow(value, RangePower) : value;
 
             return LinearToDB(linearMin + ((linearMax - linearMin) * rangeVal));
         }
