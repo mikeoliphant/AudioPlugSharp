@@ -14,8 +14,9 @@ namespace AudioPlugSharp
         public int ParameterIndex { get; internal set; }
         public string ID { get; set; }
         public string Name { get; set; }
-        public double MinValue { get; set; }
-        public double MaxValue { get; set; }
+        public virtual double MinValue { get; set; }
+        public virtual double MaxValue { get; set; }
+        public double RangePower { get; set; } = 0;
         public double DefaultValue { get; set; }
         public string ValueFormat { get; set; }
 
@@ -61,7 +62,7 @@ namespace AudioPlugSharp
             }
         }
 
-        public string DisplayValue { get { return String.Format(ValueFormat, editValue); } }
+        public virtual string DisplayValue { get { return String.Format(ValueFormat, editValue); } }
 
         public double NormalizedProcessValue
         {
@@ -83,19 +84,28 @@ namespace AudioPlugSharp
             ValueFormat = "{0:0.0}";
         }
 
-        public static double DbToLinear(double db)
+        public static double DBToLinear(double db)
         {
             return Math.Pow(10.0, 0.05 * db);
         }
 
-        public double GetValueNormalized(double value)
+        public static double LinearToDB(double linear)
         {
-            return (value - MinValue) / (MaxValue - MinValue);
+            return 20.0 * Math.Log10(linear);
         }
 
-        public double GetValueDenormalized(double value)
+        public virtual double GetValueNormalized(double value)
         {
-            return MinValue + ((MaxValue - MinValue) * value);
+            double rangeVal = (value - MinValue) / (MaxValue - MinValue);
+
+            return (RangePower > 0) ? Math.Pow(rangeVal, RangePower) : rangeVal;
+        }
+
+        public virtual double GetValueDenormalized(double value)
+        {
+            double rangeVal = (RangePower > 0) ? Math.Pow(value, 1 / RangePower) : value;
+
+            return MinValue + ((MaxValue - MinValue) * rangeVal);
         }
 
         double prevParamValue;
@@ -159,6 +169,79 @@ namespace AudioPlugSharp
             {
                 PropertyChanged(this, new PropertyChangedEventArgs(name));
             }
+        }
+    }
+
+    public class DecibelParameter : AudioPluginParameter
+    {
+        public override double MinValue
+        {
+            get => base.MinValue;
+            set
+            {
+                base.MinValue = value;
+
+                linearMin = DBToLinear(value);
+            }
+        }
+
+        public override double MaxValue
+        {
+            get => base.MaxValue;
+
+            set
+            {
+                base.MaxValue = value;
+
+                linearMax = DBToLinear(value);
+            }
+        }
+
+        double linearMin;
+        double linearMax;
+
+        public DecibelParameter()
+        {
+            MinValue = double.NegativeInfinity;
+            MaxValue = 0;
+            DefaultValue = 0;
+            RangePower = 1.0 / 4.0;
+            ValueFormat = "{0:0.0}dB";
+        }
+
+        public override string DisplayValue
+        {
+            get
+            {
+                if (double.IsNegativeInfinity(EditValue))
+                    return "-inf dB";
+
+                return base.DisplayValue;
+            }
+        }
+
+        public static double LinearToLog(double linear)
+        {
+            return Math.Pow(linear, .25);
+        }
+
+        public static double LogToLinear(double log)
+        {
+            return Math.Pow(log, 4);
+        }
+
+        public override double GetValueNormalized(double value)
+        {
+            double rangeVal = (DBToLinear(value) - linearMin) / (linearMax - linearMin);
+
+            return (RangePower > 0) ? Math.Pow(rangeVal, RangePower) : rangeVal;
+        }
+
+        public override double GetValueDenormalized(double value)
+        {
+            double rangeVal = (RangePower > 0) ? Math.Pow(value, 1 / RangePower) : value;
+
+            return LinearToDB(linearMin + ((linearMax - linearMin) * rangeVal));
         }
     }
 }

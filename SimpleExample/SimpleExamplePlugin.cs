@@ -30,13 +30,14 @@ namespace SimpleExample
             InputPorts = new AudioIOPort[] { monoInput = new FloatAudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
             OutputPorts = new AudioIOPort[] { monoOutput = new FloatAudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
 
-            AddParameter(new AudioPluginParameter
+            AddParameter(new DecibelParameter
             {
                 ID = "gain",
                 Name = "Gain",
-                MinValue = -20,
-                MaxValue = 20,
-                DefaultValue = 0,
+                MaxValue = 12,
+                //MinValue = -20,
+                //MaxValue = 20,
+                //DefaultValue = 0,
                 ValueFormat = "{0:0.0}dB"
             });
         }
@@ -50,7 +51,7 @@ namespace SimpleExample
             Host.ProcessAllEvents();
 
             double gainDb = GetParameter("gain").ProcessValue;
-            float linearGain = (float)AudioPluginParameter.DbToLinear(gainDb);
+            float linearGain = (float)AudioPluginParameter.DBToLinear(gainDb);
 
             ReadOnlySpan<float> inSamples = monoInput.GetAudioBuffer(0);
             Span<float> outSamples = monoOutput.GetAudioBuffer(0);
