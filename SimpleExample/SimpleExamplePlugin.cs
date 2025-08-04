@@ -35,9 +35,6 @@ namespace SimpleExample
                 ID = "gain",
                 Name = "Gain",
                 MaxValue = 12,
-                //MinValue = -20,
-                //MaxValue = 20,
-                //DefaultValue = 0,
                 ValueFormat = "{0:0.0}dB"
             });
         }

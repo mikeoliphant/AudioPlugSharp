@@ -27,13 +27,11 @@ namespace MidiExample
 
             OutputPorts = new AudioIOPort[] { monoOutput = new DoubleAudioIOPort("Mono Output", EAudioChannelConfiguration.Mono) };
 
-            AddParameter(gainParameter = new AudioPluginParameter
+            AddParameter(gainParameter = new DecibelParameter
             {
                 ID = "gain",
                 Name = "Gain",
-                MinValue = -20,
-                MaxValue = 6,
-                DefaultValue = 0,
+                MaxValue = 12,
                 ValueFormat = "{0:0.0}dB"
             });
         }

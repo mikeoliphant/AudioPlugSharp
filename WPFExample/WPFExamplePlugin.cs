@@ -37,13 +37,11 @@ namespace WPFExample
             InputPorts = new AudioIOPort[] { monoInput = new DoubleAudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
             OutputPorts = new AudioIOPort[] { stereoOutput = new DoubleAudioIOPort("Stereo Output", EAudioChannelConfiguration.Stereo) };
 
-            AddParameter(gainParameter = new AudioPluginParameter
+            AddParameter(gainParameter = new DecibelParameter
             {
                 ID = "gain",
                 Name = "Gain",
-                MinValue = -20,
-                MaxValue = 20,
-                DefaultValue = 0,
+                MaxValue = 12,
                 ValueFormat = "{0:0.0}dB"
             });
 
