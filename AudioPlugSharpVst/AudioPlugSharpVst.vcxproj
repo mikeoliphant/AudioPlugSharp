@@ -33,30 +33,30 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CLRSupport>NetCore</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CLRSupport>NetCore</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CLRSupport>NetCore</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <CLRSupport>NetCore</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -146,20 +146,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj">
-      <Project>{9418f8d2-a4bb-4a69-a2dc-7fd312e49d77}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\vstbuild\base\base.vcxproj">
-      <Project>{d47ca71a-67fb-39fc-a8d8-c42e728e322d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\vstbuild\pluginterfaces\pluginterfaces.vcxproj">
-      <Project>{61b1304b-aa25-31a3-83d3-9de105658b7b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\vstbuild\public.sdk\sdk.vcxproj">
-      <Project>{0e457a07-0e59-35dd-ba1c-904d39085c52}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="AudioPlugSharpHost.cpp" />
     <ClCompile Include="AudioPlugSharpProcessor.cpp" />
     <ClCompile Include="AudioPlugSharpController.cpp" />
@@ -183,6 +169,23 @@
     <None Include="desktop.runtimeconfig.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj">
+      <Project>{9418f8d2-a4bb-4a69-a2dc-7fd312e49d77}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\vstbuild\base\base.vcxproj">
+      <Project>{d47ca71a-67fb-39fc-a8d8-c42e728e322d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\vstbuild\pluginterfaces\pluginterfaces.vcxproj">
+      <Project>{61b1304b-aa25-31a3-83d3-9de105658b7b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\vstbuild\public.sdk\sdk.vcxproj">
+      <Project>{0e457a07-0e59-35dd-ba1c-904d39085c52}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\vstbuild\public.sdk\sdk_common.vcxproj">
+      <Project>{d842966e-fe62-3586-a148-214ba9825ee3}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

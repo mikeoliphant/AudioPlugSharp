@@ -89,7 +89,7 @@ namespace AudioPlugSharpJack
             MaxAudioBufferSize = 512;
             BitsPerSample = EAudioBitsPerSample.Bits32;
 
-            jackProcessor = new(Plugin.PluginName, 1, 2, 0, 0, autoconnect: true);
+            jackProcessor = new(Plugin.PluginName, 1, 2, 1, 0, autoconnect: true);
 
             if (!jackProcessor.Start())
             {
@@ -136,15 +136,42 @@ namespace AudioPlugSharpJack
         {
             CurrentAudioBufferSize = (uint)jackProcessor.BufferSize;
 
-            AudioIOPort input = Plugin.InputPorts[0];
-            input.SetCurrentBufferSize((uint)buffer.Frames);
+            foreach (var collection in buffer.MidiIn)
+            {
+                foreach (var midiEvent in collection)
+                {
+                    byte[] midiData = midiEvent.MidiData;
+
+                    int commandCode = (midiData[0] & 0xF0);
+                    int channel = (midiData[0] & 0x0F) + 1;
+
+                    if (commandCode == 144)
+                    {
+                        Plugin.HandleNoteOn(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                    }
+                    else if (commandCode == 128)
+                    {
+                        Plugin.HandleNoteOff(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                    }
+                    else if (commandCode == 160)
+                    {
+                        Plugin.HandlePolyPressure(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                    }
+                }
+            }
+
+            if (Plugin.InputPorts.Length > 0)
+            {
+                AudioIOPort input = Plugin.InputPorts[0];
+                input.SetCurrentBufferSize((uint)buffer.Frames);
+
+                float[] jackIn = buffer.AudioIn[0].Audio;
+
+                input.CopyFrom(jackIn, 0);
+            }
 
             AudioIOPort output = Plugin.OutputPorts[0];
             output.SetCurrentBufferSize((uint)buffer.Frames);
-
-            float[] jackIn = buffer.AudioIn[0].Audio;
-
-            input.CopyFrom(jackIn, 0);
 
             Plugin.PreProcess();
             Plugin.Process();
