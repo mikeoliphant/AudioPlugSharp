@@ -18,6 +18,7 @@ namespace AudioPlugSharpJack
 
         string saveFolder;
         Processor jackProcessor;
+        Controller jackController;
 
         public JackHost(T plugin)
         {
@@ -89,7 +90,7 @@ namespace AudioPlugSharpJack
             MaxAudioBufferSize = 512;
             BitsPerSample = EAudioBitsPerSample.Bits32;
 
-            jackProcessor = new(Plugin.PluginName, 1, 2, 1, 0, autoconnect: true);
+            jackProcessor = new(Plugin.PluginName, Plugin.InputPorts.Length > 0 ? 1 : 0, 2, 1, 0, autoconnect: true);
 
             if (!jackProcessor.Start())
             {
@@ -97,6 +98,15 @@ namespace AudioPlugSharpJack
             }
             else
             {
+                jackController = new(Plugin.PluginName + "Controller");
+                jackController.PortChanged += JackController_PortChanged;
+
+                if (jackController.Start())
+                {
+                    Logger.Log("Unable to start Jack controller");
+                }
+
+
                 SampleRate = jackProcessor.SampleRate;
 
                 Logger.Log("Jack sample rate: " + SampleRate);
@@ -132,6 +142,22 @@ namespace AudioPlugSharpJack
             }
         }
 
+        private void JackController_PortChanged(object sender, JackSharp.Events.PortRegistrationEventArgs e)
+        {
+            // Auto-connect any physical midi ports
+            if ((e.ChangeType == JackSharp.Events.ChangeType.New) && (e.Port.PortType == JackSharp.Ports.PortType.Midi) && (e.Port.IsPhysicalPort) && (e.Port.Direction == JackSharp.Ports.Direction.Out))
+            {
+                var midiIn = jackProcessor.MidiInPorts.FirstOrDefault();
+
+                if (midiIn != null)
+                {
+                    Logger.Log("Connect midi port:" + e.Port.ClientName + ":" + e.Port.PortName);
+
+                    jackController.Connect(e.Port.ClientName + ":" + e.Port.PortName, Plugin.PluginName + ":" + midiIn.Name);
+                }
+            }
+        }
+
         void Process(ProcessBuffer buffer)
         {
             CurrentAudioBufferSize = (uint)jackProcessor.BufferSize;
@@ -142,20 +168,23 @@ namespace AudioPlugSharpJack
                 {
                     byte[] midiData = midiEvent.MidiData;
 
-                    int commandCode = (midiData[0] & 0xF0);
-                    int channel = (midiData[0] & 0x0F) + 1;
+                    if (midiData.Length > 2)
+                    {
+                        int commandCode = (midiData[0] & 0xF0);
+                        int channel = (midiData[0] & 0x0F) + 1;
 
-                    if (commandCode == 144)
-                    {
-                        Plugin.HandleNoteOn(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
-                    }
-                    else if (commandCode == 128)
-                    {
-                        Plugin.HandleNoteOff(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
-                    }
-                    else if (commandCode == 160)
-                    {
-                        Plugin.HandlePolyPressure(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                        if (commandCode == 144)
+                        {
+                            Plugin.HandleNoteOn(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                        }
+                        else if (commandCode == 128)
+                        {
+                            Plugin.HandleNoteOff(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                        }
+                        else if (commandCode == 160)
+                        {
+                            Plugin.HandlePolyPressure(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                        }
                     }
                 }
             }
