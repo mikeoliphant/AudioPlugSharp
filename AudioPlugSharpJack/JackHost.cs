@@ -1,6 +1,11 @@
 ﻿using AudioPlugSharp;
 using JackSharp;
 using JackSharp.Processing;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
 
 namespace AudioPlugSharpJack
 {
@@ -184,6 +189,16 @@ namespace AudioPlugSharpJack
                         else if (commandCode == 160)
                         {
                             Plugin.HandlePolyPressure(channel, midiData[1], (float)midiData[2] / 127.0f, 0);
+                        }
+                        else if (commandCode == 176)
+                        {
+                            var ccParameter = Plugin.GetParameterByMidiController(midiData[1]);
+
+                            if (ccParameter != null)
+                            {
+                                //Plugin.HandleParameterChange(ccParameter, (double)midiData[2] / 127.0f, 0);
+                                ccParameter.NormalizedProcessValue = (double)midiData[2] / 127.0;
+                            }
                         }
                     }
                 }
