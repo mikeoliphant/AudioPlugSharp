@@ -13,6 +13,7 @@ namespace AudioPlugSharpHost
 {
     public partial class AudioSettingsForm : Form
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string AsioDeviceName { get; set; }
 
         public AudioSettingsForm()

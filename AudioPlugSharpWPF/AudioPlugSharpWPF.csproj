@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net10.0-windows</TargetFramework>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
-		<Version>0.7.9</Version>
+		<Version>0.7.13</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Add WPF GUI to your AudioPlugSharp plugin.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -33,10 +33,6 @@
 		<Resource Include="Images\DialPointer.png" />
 		<Resource Include="Images\PowerOff.png" />
 		<Resource Include="Images\PowerOn.png" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
 	</ItemGroup>
 
 	<ItemGroup>

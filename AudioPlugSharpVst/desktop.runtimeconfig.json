@@ -1,10 +1,10 @@
 {
   "runtimeOptions": {
-    "tfm": "net8.0",
+    "tfm": "net10.0",
     "rollForward": "LatestMajor",
     "framework": {
       "name": "Microsoft.WindowsDesktop.App",
-      "version": "8.0.0"
+      "version": "10.0.0"
     },
     "configProperties": {
       "System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext": true
