@@ -89,7 +89,7 @@ gcroot<AudioPlugSharp::IAudioPlugin^> AudioPlugSharpFactory::GetPlugin()
 
 		plugin = PluginLoader::LoadPluginFromAssembly(assemblyName);
 
-		getCount = 0;
+		getCount = 1;
 	}
 	else
 	{
