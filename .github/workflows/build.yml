@@ -17,7 +17,7 @@ jobs:
     - name: Build VST3 SDK
       working-directory: ${{github.workspace}}/vstbuild
       run:
-        cmake.exe -G "Visual Studio 17 2022" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
+        cmake.exe -G "Visual Studio 18 2026" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
         
     - name: Setup MSBuild and add to PATH
       uses: microsoft/setup-msbuild@v2
@@ -37,4 +37,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: JackHostTestLinuxX64
-        path: ${{github.workspace}}\JackHostTest\bin\Release\net8.0\linux-x64\publish
+        path: ${{github.workspace}}\JackHostTest\bin\Release\net10.0\linux-x64\publish
