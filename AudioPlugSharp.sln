@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.2.32616.157
+# Visual Studio Version 18
+VisualStudioVersion = 18.11.12402.416 oobstable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioPlugSharpVst", "AudioPlugSharpVst\AudioPlugSharpVst.vcxproj", "{99BCC0C3-3295-4AF3-A7CF-5ED582D2FD30}"
 EndProject
@@ -50,6 +50,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JackHostTest", "JackHostTest\JackHostTest.csproj", "{FC568608-D05A-4F61-AF60-B1A6AC3A62FA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioPlugSharpVst3", "AudioPlugSharpVst3\AudioPlugSharpVst3.csproj", "{518AF134-D9A8-439D-9A04-29E2947DF910}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AudioPlugSharpUILayout", "AudioPlugSharpUILayout\AudioPlugSharpUILayout.csproj", "{46C32DB4-3F6E-4147-B8E7-451D62B6F174}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{609F40C5-C560-40E6-76C7-691311A42DF0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UILayout.MonoGame.Embedded", "Dependencies\UILayout\UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj", "{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -171,6 +177,22 @@ Global
 		{518AF134-D9A8-439D-9A04-29E2947DF910}.Release|Any CPU.Build.0 = Release|Any CPU
 		{518AF134-D9A8-439D-9A04-29E2947DF910}.Release|x64.ActiveCfg = Release|Any CPU
 		{518AF134-D9A8-439D-9A04-29E2947DF910}.Release|x64.Build.0 = Release|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Debug|x64.Build.0 = Debug|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Release|x64.ActiveCfg = Release|Any CPU
+		{46C32DB4-3F6E-4147-B8E7-451D62B6F174}.Release|x64.Build.0 = Release|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Debug|x64.Build.0 = Debug|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Release|x64.ActiveCfg = Release|Any CPU
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -184,8 +206,15 @@ Global
 		{E3D78C8F-93BB-43B4-8774-0A3F08594024} = {F427CAA0-B75D-4186-9B6D-3E97BB729B4C}
 		{518B2E52-C5C6-4204-A8E4-47F486748947} = {F427CAA0-B75D-4186-9B6D-3E97BB729B4C}
 		{FC568608-D05A-4F61-AF60-B1A6AC3A62FA} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{E8C6C04F-7A30-4BEF-8B01-7CB3E5C31A69} = {609F40C5-C560-40E6-76C7-691311A42DF0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {80717CF5-9E50-46E6-8E47-04E88EB429BD}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Dependencies\UILayout\UILayout.CrossPlatform\UILayout.CrossPlatform.projitems*{e8c6c04f-7a30-4bef-8b01-7cb3e5c31a69}*SharedItemsImports = 5
+		Dependencies\UILayout\UILayout.DefaultTextures\UILayout.DefaultTextures.projitems*{e8c6c04f-7a30-4bef-8b01-7cb3e5c31a69}*SharedItemsImports = 5
+		Dependencies\UILayout\UILayout.MonoGame\UILayout.MonoGame.projitems*{e8c6c04f-7a30-4bef-8b01-7cb3e5c31a69}*SharedItemsImports = 5
+		Dependencies\UILayout\UILayout\UILayout.projitems*{e8c6c04f-7a30-4bef-8b01-7cb3e5c31a69}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		UILayout editors for AudioPlugSharp plugins (AudioPluginUILayout): a UILayout MonoGame (DesktopGL) layout
+		drawn into the editor window the host provides. Cross-platform (Windows, Linux X11).
+		UILayout comes from the Dependencies/UILayout submodule. Not packed as NuGet yet: UILayout has no package.
+	-->
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Version>0.7.14</Version>
+		<Authors>Mike Oliphant</Authors>
+		<Description>Add a UILayout GUI to your AudioPlugSharp plugin.</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Public, so plugins compile against MonoGame types (the UILayout project keeps its reference private). -->
+		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.6.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Dependencies\UILayout\UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />
+		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
+
+</Project>
