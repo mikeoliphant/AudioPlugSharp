@@ -50,6 +50,7 @@ namespace AudioPlugSharp
         public bool HasUserInterface { get; protected set; }
         public uint EditorWidth { get; protected set; }
         public uint EditorHeight { get; protected set; }
+        public virtual bool CanResizeEditor => false;
 
         public AudioPluginBase()
         {
@@ -228,27 +229,40 @@ namespace AudioPlugSharp
         // IAudioPluginEditor Methods
         //
 
-        public virtual double GetDpiScale()
+        // No editor by default: editors come from a base class such as AudioPluginUILayout, or from overriding
+        // these.
+
+        public virtual bool IsEditorWindowTypeSupported(EditorWindowType windowType)
         {
-            return 1.0;
+            return false;
         }
 
-        public virtual void InitializeEditor()
+        public virtual void OpenEditor(IntPtr window, EditorWindowType windowType, double scale)
         {
-            Logger.Log("Initialize Editor");
+            throw new NotSupportedException("This plugin has no editor");
         }
 
-        public virtual void ResizeEditor(uint newWidth, uint newHeight)
-        {
-            EditorWidth = newWidth;
-            EditorHeight = newHeight;
-        }
-
-        public virtual void ShowEditor(IntPtr parentWindow)
+        public virtual void EditorIdle(double secondsElapsed)
         {
         }
 
-        public virtual void HideEditor()
+        public virtual bool EditorInput(in EditorInputEvent inputEvent)
+        {
+            return false;
+        }
+
+        public virtual bool SetEditorSize(uint width, uint height)
+        {
+            if (!CanResizeEditor)
+                return (width == EditorWidth) && (height == EditorHeight);
+
+            EditorWidth = width;
+            EditorHeight = height;
+
+            return true;
+        }
+
+        public virtual void CloseEditor()
         {
         }
     }
