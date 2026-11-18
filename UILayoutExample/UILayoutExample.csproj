@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Stereo gain with an embedded UILayout editor (AudioPluginUILayout). Cross-platform; it needs the new CLAP/VST3
+		adapters (the C++/CLI bridge cannot open IAudioPluginEditor editors), so there is no bridge copy step yet.
+	-->
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AudioPlugSharpUILayout\AudioPlugSharpUILayout.csproj" />
+		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
+
+</Project>
