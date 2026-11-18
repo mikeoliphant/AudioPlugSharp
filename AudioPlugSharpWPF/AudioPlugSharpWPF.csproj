@@ -43,7 +43,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\AudioPlugSharpVst3\AudioPlugSharpVst3.csproj" />
+	  <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
 	</ItemGroup>
 
 </Project>
