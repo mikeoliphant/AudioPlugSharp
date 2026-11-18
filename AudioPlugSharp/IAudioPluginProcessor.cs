@@ -23,14 +23,21 @@ namespace AudioPlugSharp
         void Start();
         void Stop();
 
+        [Realtime]
         void HandleParameterChange(AudioPluginParameter parameter, double newNormalizedValue, int sampleOffset);
+        [Realtime]
         void HandleNoteOn(int channel, int noteNumber, float velocity, int sampleOffset);
+        [Realtime]
         void HandleNoteOff(int channel, int noteNumber, float velocity, int sampleOffset);
+        [Realtime]
         void HandlePolyPressure(int channel, int noteNumber, float pressure, int sampleOffset);
 
         void SetMaxAudioBufferSize(uint maxSamples, EAudioBitsPerSample bitsPerSample);
+        [Realtime]
         void PreProcess();
+        [Realtime]
         void Process();
+        [Realtime]
         void PostProcess();
     }
 }
