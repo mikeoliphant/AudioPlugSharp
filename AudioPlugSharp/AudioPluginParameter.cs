@@ -62,7 +62,15 @@ namespace AudioPlugSharp
             }
         }
 
-        public virtual string DisplayValue { get { return String.Format(ValueFormat, editValue); } }
+        public virtual string DisplayValue { get { return FormatValue(editValue); } }
+
+        /// <summary>
+        /// Formats a (plain, not normalized) parameter value for display
+        /// </summary>
+        public virtual string FormatValue(double value)
+        {
+            return String.Format(ValueFormat, value);
+        }
 
         public double NormalizedProcessValue
         {
@@ -209,15 +217,12 @@ namespace AudioPlugSharp
             ValueFormat = "{0:0.0}dB";
         }
 
-        public override string DisplayValue
+        public override string FormatValue(double value)
         {
-            get
-            {
-                if (double.IsNegativeInfinity(EditValue))
-                    return "-inf dB";
+            if (double.IsNegativeInfinity(value))
+                return "-inf dB";
 
-                return base.DisplayValue;
-            }
+            return base.FormatValue(value);
         }
 
         public static double LinearToLog(double linear)
