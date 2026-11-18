@@ -24,5 +24,16 @@ namespace AudioPlugSharpWPF
         {
             InitializeComponent();
         }
+
+        // A dial drag is one edit gesture on its parameter
+        void Dial_EditStarted(object sender, EventArgs e)
+        {
+            ((sender as FrameworkElement)?.DataContext as AudioPlugSharp.AudioPluginParameter)?.BeginEdit();
+        }
+
+        void Dial_EditEnded(object sender, EventArgs e)
+        {
+            ((sender as FrameworkElement)?.DataContext as AudioPlugSharp.AudioPluginParameter)?.EndEdit();
+        }
     }
 }

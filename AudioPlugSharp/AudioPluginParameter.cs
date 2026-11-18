@@ -35,7 +35,11 @@ namespace AudioPlugSharp
             }
         }
 
-        // To be used by UI controls to access the value
+        /// <summary>
+        /// The value shown and edited by UI controls (plain units). Setting it reports the edit to the host: as one
+        /// value inside a BeginEdit()/EndEdit() gesture, or as a gesture of its own outside one. Set it on the UI
+        /// thread.
+        /// </summary>
         public double EditValue
         {
             get
@@ -44,21 +48,7 @@ namespace AudioPlugSharp
             }
             set
             {
-                if (editValue != value)
-                {
-                    editValue = value;
-
-                    if (Editor != null) // Just in case EditValue is set before parameter has been added
-                    {
-                        // This should really be exposed to UI controls so multiple edits can be inside a begin/end edit
-                        Editor.Host.BeginEdit(ParameterIndex);
-                        Editor.Host.PerformEdit(ParameterIndex, GetValueNormalized(value));
-                        Editor.Host.EndEdit(ParameterIndex);
-                    }
-
-                    OnPropertyChanged("EditValue");
-                    OnPropertyChanged("DisplayValue");
-                }
+                SetEditValue(value, reportToHost: true);
             }
         }
 
@@ -78,10 +68,93 @@ namespace AudioPlugSharp
             set { processValue = GetValueDenormalized(value); }
         }
 
+        /// <summary>
+        /// The edit value, normalized (0-1). Setting it reports the edit to the host, like EditValue. UI controls
+        /// that work in 0-1 (knobs, sliders) bind to this one: it has no infinite ends (a DecibelParameter's -inf dB
+        /// minimum is 0) and follows RangePower.
+        /// </summary>
         public double NormalizedEditValue
         {
             get { return GetValueNormalized(editValue); }
-            set { editValue = GetValueDenormalized(value); }
+            set { SetEditValue(GetValueDenormalized(value), reportToHost: true); }
+        }
+
+        /// <summary>
+        /// The default value, normalized (0-1).
+        /// </summary>
+        public double NormalizedDefaultValue
+        {
+            get { return GetValueNormalized(DefaultValue); }
+        }
+
+        /// <summary>
+        /// True between BeginEdit() and EndEdit().
+        /// </summary>
+        public bool IsEditing { get; private set; }
+
+        /// <summary>
+        /// Starts an edit gesture (for example on mouse down on a knob). The edits until EndEdit() reach the host as
+        /// one gesture, so host automation in touch or latch mode follows the control while it is held. Call it on
+        /// the UI thread; a second call before EndEdit() is ignored.
+        /// </summary>
+        public void BeginEdit()
+        {
+            if (IsEditing)
+                return;
+
+            IsEditing = true;
+
+            Editor?.Host?.BeginEdit(ParameterIndex);
+        }
+
+        /// <summary>
+        /// Ends the edit gesture started by BeginEdit() (for example on mouse up).
+        /// </summary>
+        public void EndEdit()
+        {
+            if (!IsEditing)
+                return;
+
+            IsEditing = false;
+
+            Editor?.Host?.EndEdit(ParameterIndex);
+        }
+
+        /// <summary>
+        /// For hosts and format adapters: a value from the host (automation, the host's parameter UI, a preset).
+        /// Updates the edit value and bound UI without reporting an edit back to the host. Call it on the UI thread.
+        /// </summary>
+        public void SetNormalizedValueFromHost(double normalizedValue)
+        {
+            SetEditValue(GetValueDenormalized(normalizedValue), reportToHost: false);
+        }
+
+        internal void SetEditValue(double value, bool reportToHost)
+        {
+            if (editValue == value)
+                return;
+
+            editValue = value;
+
+            if (reportToHost && (Editor?.Host != null)) // Editor is null before the parameter has been added
+            {
+                IAudioHost host = Editor.Host;
+
+                if (IsEditing)
+                {
+                    host.PerformEdit(ParameterIndex, GetValueNormalized(value));
+                }
+                else
+                {
+                    host.BeginEdit(ParameterIndex);
+                    host.PerformEdit(ParameterIndex, GetValueNormalized(value));
+                    host.EndEdit(ParameterIndex);
+                }
+            }
+
+            OnPropertyChanged("EditValue");
+            OnPropertyChanged("NormalizedEditValue");
+            OnPropertyChanged("DisplayValue");
         }
 
         public AudioPluginParameter()
@@ -122,6 +195,12 @@ namespace AudioPlugSharp
         int nextParamChangeSample;
         bool needInterpolationUpdate = false;
 
+        // Interpolation of the normalized value, used when a plain value is infinite (a DecibelParameter's -inf dB
+        // minimum), where interpolating plain values gives NaN (-inf + k * inf) or an instant jump.
+        bool interpolateNormalized;
+        double prevNormalizedValue;
+        double normalizedSlope;
+
         public void AddParameterChangePoint(double newNormalizedValue, int sampleOffset)
         {
             prevParamChangeSample = nextParamChangeSample;
@@ -130,15 +209,22 @@ namespace AudioPlugSharp
             nextParamChangeSample = sampleOffset;
             NormalizedProcessValue = newNormalizedValue;
 
-            needInterpolationUpdate = true;
+            // No need to update if the parameter isn't changing
+            needInterpolationUpdate = processValue != prevParamValue;
+            interpolateNormalized = false;
 
             if (needInterpolationUpdate)
             {
-                slope = (double)(processValue - prevParamValue) / (double)(nextParamChangeSample - prevParamChangeSample);
+                double samples = nextParamChangeSample - prevParamChangeSample;
 
-                // No need to update if the parameter isn't changing
-                if (slope == 0)
-                    needInterpolationUpdate = false;
+                slope = (processValue - prevParamValue) / samples;
+
+                if (!double.IsFinite(slope))
+                {
+                    interpolateNormalized = true;
+                    prevNormalizedValue = GetValueNormalized(prevParamValue);
+                    normalizedSlope = (newNormalizedValue - prevNormalizedValue) / samples;
+                }
             }
         }
 
@@ -160,13 +246,17 @@ namespace AudioPlugSharp
             if (!needInterpolationUpdate)
                 return prevParamValue;
 
-            // If we go past the last control point, the value stays the same
+            // Past the last control point, the value stays at that point's value
             if (sampleOffset > nextParamChangeSample)
             {
                 needInterpolationUpdate = false;
+                prevParamValue = processValue;
 
-                return prevParamValue;
+                return processValue;
             }
+
+            if (interpolateNormalized)
+                return GetValueDenormalized(prevNormalizedValue + ((double)(sampleOffset - prevParamChangeSample) * normalizedSlope));
 
             return prevParamValue + ((double)(sampleOffset - prevParamChangeSample) * slope);
         }

@@ -7,8 +7,19 @@ using System.Windows.Input;
 
 namespace AudioPlugSharpWPF
 {
+    /// <summary>
+    /// A rotary knob. Drag vertically to change it, double-click for the default value. With a parameter, bind
+    /// Value to NormalizedEditValue (Minimum and Maximum stay 0-1) and call BeginEdit()/EndEdit() from
+    /// EditStarted/EditEnded, so a drag reaches the host as one gesture.
+    /// </summary>
     public class Dial : RangeBase
     {
+        /// <summary>Raised when a drag starts (mouse down).</summary>
+        public event EventHandler EditStarted;
+
+        /// <summary>Raised when a drag ends (mouse up or lost capture).</summary>
+        public event EventHandler EditEnded;
+
         public static readonly DependencyProperty DefaultValueProperty =
             DependencyProperty.Register("DefaultValue", typeof(double),
               typeof(Dial), new PropertyMetadata(default(double)));
@@ -42,6 +53,8 @@ namespace AudioPlugSharpWPF
             dragStart = e.GetPosition(this);
             absDragStart = System.Windows.Forms.Cursor.Position;
             valAtStart = this.Value;
+
+            EditStarted?.Invoke(this, EventArgs.Empty);
 
             this.CaptureMouse();
             this.Cursor = Cursors.None;
@@ -85,7 +98,12 @@ namespace AudioPlugSharpWPF
 
         protected override void OnLostMouseCapture(MouseEventArgs e)
         {
-            dragging = false;
+            if (dragging)
+            {
+                dragging = false;
+
+                EditEnded?.Invoke(this, EventArgs.Empty);
+            }
 
             System.Windows.Forms.Cursor.Position = absDragStart;
             this.ClearValue(FrameworkElement.CursorProperty);

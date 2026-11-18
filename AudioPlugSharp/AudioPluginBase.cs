@@ -86,7 +86,7 @@ namespace AudioPlugSharp
             parameterDict[parameter.ID] = parameter;
 
             parameter.ProcessValue = parameter.DefaultValue;
-            parameter.EditValue = parameter.DefaultValue;
+            parameter.SetEditValue(parameter.DefaultValue, reportToHost: false); // not an edit
         }
 
         public AudioPluginParameter GetParameter(string paramID)
