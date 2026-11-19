@@ -156,10 +156,12 @@ jobs:
         merge-multiple: true
 
     - name: Pack
+      # GeneratePackageOnBuild=false: those projects pack on every build, which inside dotnet pack (on a clean
+      # checkout) runs before the assembly exists (NU5026); here the pack happens once, after the build.
       run: |
-        dotnet pack AudioPlugSharp/AudioPlugSharp.csproj -c Release -o packages
-        dotnet pack AudioPlugSharpWPF/AudioPlugSharpWPF.csproj -c Release -o packages
-        dotnet pack AudioPlugSharpBridge/AudioPlugSharpBridge.csproj -c Release -o packages
+        for p in AudioPlugSharp AudioPlugSharpWPF AudioPlugSharpBridge; do
+          dotnet pack "$p/$p.csproj" -c Release -o packages -p:GeneratePackageOnBuild=false
+        done
 
     - name: The bridge package has every platform
       run: |
