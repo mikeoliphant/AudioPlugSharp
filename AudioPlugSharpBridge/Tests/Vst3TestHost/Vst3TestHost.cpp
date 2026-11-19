@@ -866,7 +866,10 @@ void test(const Tested& t) {
         daw.mouse(0, Mouse::Move, 40, sliderY);
         pump(60, daw, editors);
         daw.mouse(0, Mouse::Down, 40, sliderY);
-        pump(60, daw, editors);
+        // Wait for the press to start the gesture (beginEdit): the editor handles it on its next frame, which can take
+        // a while on a slow machine (CI runners draw with a software renderer).
+        for (int waited = 0; a.instance.handler.begins == 0 && waited < 5000; waited += 20) pump(20, daw, editors);
+        check(a.instance.handler.begins == 1, "the press on the slider starts an edit gesture (beginEdit)");
         {
             // During the gesture, the host's echo of an edit (one point at sample 0) ramps across the block:
             // the gain near the start is still close to the old (low) value, the gain at the end is the new one.
