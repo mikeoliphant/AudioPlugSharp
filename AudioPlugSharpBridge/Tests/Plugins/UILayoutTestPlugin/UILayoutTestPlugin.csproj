@@ -4,8 +4,6 @@
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<IsPackable>false</IsPackable>
-		<!-- A plugin is loaded into a host: copy its NuGet dependencies (MonoGame, SDL) to the output. -->
-		<EnableDynamicLoading>true</EnableDynamicLoading>
 	</PropertyGroup>
 
 	<ItemGroup>

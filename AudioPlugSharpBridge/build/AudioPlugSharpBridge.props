@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    AudioPlugSharpBridge: makes a plugin project loadable by DAWs (CLAP and VST3). Imported into projects that
+    reference the AudioPlugSharpBridge package; see AudioPlugSharpBridge.targets for the bundles it builds.
+  -->
+  <PropertyGroup>
+    <!--
+      A plugin is loaded into another process: copy its NuGet dependencies (for example MonoGame and SDL for UILayout
+      editors) to the output, and produce its .deps.json. A project can still set it to false itself.
+    -->
+    <EnableDynamicLoading Condition="'$(EnableDynamicLoading)' == ''">true</EnableDynamicLoading>
+  </PropertyGroup>
+
+</Project>

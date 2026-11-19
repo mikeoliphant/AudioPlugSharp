@@ -7,7 +7,7 @@
 	-->
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<Version>0.7.14</Version>
+		<Version>0.8.0</Version>
 		<Authors>Mike Oliphant</Authors>
 		<Description>Add a UILayout GUI to your AudioPlugSharp plugin.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>

@@ -1,0 +1,22 @@
+<Project>
+
+  <!--
+    For plugin projects inside this repository (Examples/, Tests/Plugins/), through their Directory.Build.targets:
+    the DAW bundles the AudioPlugSharpBridge package makes, from the bridge built here and the adapters the native
+    build (AudioPlugSharpBridge/Native, CMake) staged in AudioPlugSharpBridge/bin/native/<rid>/. Not packed.
+    The native build itself builds these projects with AudioPlugSharpBundles=false (it makes its own bundles).
+  -->
+  <PropertyGroup>
+    <AudioPlugSharpBridgeFilesDir Condition="'$(AudioPlugSharpBridgeFilesDir)' == ''">$(MSBuildThisFileDirectory)../bin/$(Configuration)/net10.0/</AudioPlugSharpBridgeFilesDir>
+    <AudioPlugSharpBridgeNativeDir Condition="'$(AudioPlugSharpBridgeNativeDir)' == ''">$(MSBuildThisFileDirectory)../bin/native/</AudioPlugSharpBridgeNativeDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(AudioPlugSharpBundles)' != 'false'">
+    <!-- Build order only: the bridge's files go into the bundles, not into the plugin's output. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../AudioPlugSharpBridge.csproj"
+                      ReferenceOutputAssembly="false" Private="false" PrivateAssets="all" />
+  </ItemGroup>
+
+  <Import Project="AudioPlugSharpBridge.targets" />
+
+</Project>

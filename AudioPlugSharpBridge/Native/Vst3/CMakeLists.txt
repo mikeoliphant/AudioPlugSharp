@@ -37,7 +37,10 @@ set_target_properties(AudioPlugSharpVst3 PROPERTIES PREFIX "" SUFFIX "${APS_VST3
 if(WIN32)
     target_link_libraries(AudioPlugSharpVst3 PRIVATE ole32) # funknown.cpp: CoCreateGuid
 else()
-    target_link_options(AudioPlugSharpVst3 PRIVATE "LINKER:--exclude-libs,ALL"
+    # The C++ runtime is linked statically (no dependency on the system's or the host's libstdc++/libgcc_s; any
+    # compiler), and --exclude-libs,ALL plus the exports map keep its symbols, like nethost's, out of the dynamic
+    # symbol table, so they can't interpose with the host's or other plugins' C++ runtimes.
+    target_link_options(AudioPlugSharpVst3 PRIVATE -static-libstdc++ -static-libgcc "LINKER:--exclude-libs,ALL"
         "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
     set_property(TARGET AudioPlugSharpVst3 APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
 endif()

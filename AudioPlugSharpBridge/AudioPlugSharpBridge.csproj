@@ -23,6 +23,43 @@
     <Using Include="AudioPlugSharp" />
   </ItemGroup>
 
+  <!--
+    The AudioPlugSharpBridge package, what a plugin project references to load in DAWs (CLAP, VST3):
+      build/AudioPlugSharpBridge.props, .targets   plugin project settings; the DAW bundles, made after each build
+      bridge/                                       this assembly, its runtimeconfig.json and deps.json
+      native/<rid>/                                 the format adapters (AudioPlugSharpClap.clap, AudioPlugSharpVst3)
+    No lib/: plugins don't compile against the bridge. Not native/ under runtimes/: NuGet would copy those files into
+    every plugin's output. The adapters come from the native build (CMake), which stages them in bin/native/<rid>/;
+    a package holds every platform staged there (CI collects them).
+  -->
+  <PropertyGroup>
+    <PackageId>AudioPlugSharpBridge</PackageId>
+    <Version>0.8.0</Version>
+    <Authors>Mike Oliphant</Authors>
+    <Description>Load AudioPlugSharp plugins in DAWs: CLAP and VST3 on Windows and Linux.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- NU5128, NU5100: no lib/, and the bridge assembly outside lib/, on purpose (see above) -->
+    <NoWarn>$(NoWarn);NU5128;NU5100</NoWarn>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);ApsBridgeFilesInPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="build/AudioPlugSharpBridge.props;build/AudioPlugSharpBridge.targets" Pack="true" PackagePath="build/" />
+    <None Include="bin/native/**/*" Pack="true" PackagePath="native/" />
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <Target Name="ApsBridgeFilesInPackage">
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)bin/native')"
+           Text="No adapters staged in bin/native/: build the native project (Native/, CMake) before packing." />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutDir)$(TargetName).dll;$(OutDir)$(TargetName).runtimeconfig.json;$(OutDir)$(TargetName).deps.json"
+                              PackagePath="bridge/" />
+    </ItemGroup>
+  </Target>
+
   <!-- Runtime settings for realtime audio; they end up in AudioPlugSharpBridge.runtimeconfig.json. -->
   <PropertyGroup>
     <!-- One runtime per process: boot the newest installed major version (>= 10). -->

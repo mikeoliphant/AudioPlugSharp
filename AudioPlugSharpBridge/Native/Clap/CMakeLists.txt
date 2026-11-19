@@ -19,7 +19,10 @@ set_target_properties(AudioPlugSharpClap PROPERTIES PREFIX "" SUFFIX ".clap" LIB
 if(NOT WIN32 AND NOT APPLE)
     # Export exactly clap_entry: also hides static-library symbols (libnethost.a) and std:: template
     # instances, which libstdc++ gives default visibility.
-    target_link_options(AudioPlugSharpClap PRIVATE "LINKER:--exclude-libs,ALL"
+    # The C++ runtime is linked statically (no dependency on the system's or the host's libstdc++/libgcc_s; any
+    # compiler), and --exclude-libs,ALL plus the exports map keep its symbols, like nethost's, out of the dynamic
+    # symbol table, so they can't interpose with the host's or other plugins' C++ runtimes.
+    target_link_options(AudioPlugSharpClap PRIVATE -static-libstdc++ -static-libgcc "LINKER:--exclude-libs,ALL"
         "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
     set_property(TARGET AudioPlugSharpClap APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
 endif()

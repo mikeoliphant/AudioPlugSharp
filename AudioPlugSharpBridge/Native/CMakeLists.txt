@@ -104,12 +104,12 @@ set(_managed_commands
 foreach(_ex IN LISTS APS_EXAMPLES)
     list(APPEND _managed_commands
         COMMAND "${DOTNET_EXE}" build "${APS_ROOT_DIR}/Examples/${_ex}/${_ex}.csproj" -c ${APS_DOTNET_CONFIG}
-                "-p:OutDir=${APS_BIN_DIR}/plugins/${_ex}/" --nologo -v:minimal)
+                "-p:OutDir=${APS_BIN_DIR}/plugins/${_ex}/" -p:AudioPlugSharpBundles=false --nologo -v:minimal)
 endforeach()
 foreach(_tp IN LISTS APS_TEST_PLUGINS)
     list(APPEND _managed_commands
         COMMAND "${DOTNET_EXE}" build "${APS_BRIDGE_DIR}/Tests/Plugins/${_tp}/${_tp}.csproj" -c ${APS_DOTNET_CONFIG}
-                "-p:OutDir=${APS_BIN_DIR}/plugins/${_tp}/" --nologo -v:minimal)
+                "-p:OutDir=${APS_BIN_DIR}/plugins/${_tp}/" -p:AudioPlugSharpBundles=false --nologo -v:minimal)
 endforeach()
 add_custom_target(managed ALL ${_managed_commands}
     WORKING_DIRECTORY "${APS_ROOT_DIR}"
@@ -178,3 +178,16 @@ aps_warnings(BridgeTestHost)
 include(FetchContent)
 add_subdirectory(Clap)
 add_subdirectory(Vst3)
+
+# ---------------------------------------------------------------------------
+# Stage the adapters in AudioPlugSharpBridge/bin/native/<rid>/: the AudioPlugSharpBridge package packs them from
+# there, and plugin projects in this repository make their DAW bundles with them (build/InRepo.targets).
+# ---------------------------------------------------------------------------
+set(APS_STAGE_DIR "${APS_BRIDGE_DIR}/bin/native/${APS_RID}")
+add_custom_target(stage_adapters ALL
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${APS_STAGE_DIR}"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:AudioPlugSharpClap>" "$<TARGET_FILE:AudioPlugSharpVst3>"
+            "${APS_STAGE_DIR}"
+    DEPENDS AudioPlugSharpClap AudioPlugSharpVst3
+    COMMENT "Staging the adapters in ${APS_STAGE_DIR}"
+    VERBATIM)

@@ -1,0 +1,81 @@
+<Project>
+
+  <!--
+    AudioPlugSharpBridge: after each build, makes the plugin's installable DAW bundles in the output folder:
+
+      <OutDir>/clap/<Plugin>/<Plugin>.clap                  CLAP: copy the <Plugin> folder to the CLAP folder
+      <OutDir>/vst3/<Plugin>.vst3/Contents/<arch>/<Plugin>.vst3 (.so on Linux)   VST3: copy <Plugin>.vst3
+
+    Each bundle holds the plugin's build output, the bridge (AudioPlugSharpBridge.dll and its runtime config) and
+    the format adapter renamed after the plugin. The adapter is the one for the build machine's platform, or for
+    $(RuntimeIdentifier) when the project sets one; AudioPlugSharpBridgeRuntimeIdentifier overrides both.
+
+    Properties:
+      AudioPlugSharpBundles                    false: make no bundles
+      AudioPlugSharpBridgeRuntimeIdentifier    the platform to bundle for (win-x64, linux-x64, linux-arm64)
+      AudioPlugSharpBridgeFilesDir             the bridge's files (default: the package's bridge/ folder)
+      AudioPlugSharpBridgeNativeDir            the adapters, in <rid>/ subfolders (default: the package's native/)
+  -->
+  <PropertyGroup>
+    <AudioPlugSharpBundles Condition="'$(AudioPlugSharpBundles)' == ''">true</AudioPlugSharpBundles>
+    <AudioPlugSharpBridgeFilesDir Condition="'$(AudioPlugSharpBridgeFilesDir)' == ''">$(MSBuildThisFileDirectory)../bridge/</AudioPlugSharpBridgeFilesDir>
+    <AudioPlugSharpBridgeNativeDir Condition="'$(AudioPlugSharpBridgeNativeDir)' == ''">$(MSBuildThisFileDirectory)../native/</AudioPlugSharpBridgeNativeDir>
+  </PropertyGroup>
+
+  <Target Name="AudioPlugSharpBundles" AfterTargets="Build" Condition="'$(AudioPlugSharpBundles)' == 'true'">
+    <PropertyGroup>
+      <_ApsOs Condition="$([MSBuild]::IsOSPlatform('Windows'))">win</_ApsOs>
+      <_ApsOs Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux</_ApsOs>
+      <_ApsOs Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_ApsOs>
+      <_ApsArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant())</_ApsArch>
+      <_ApsRid>$(AudioPlugSharpBridgeRuntimeIdentifier)</_ApsRid>
+      <_ApsRid Condition="'$(_ApsRid)' == ''">$(RuntimeIdentifier)</_ApsRid>
+      <_ApsRid Condition="'$(_ApsRid)' == ''">$(_ApsOs)-$(_ApsArch)</_ApsRid>
+
+      <!-- VST3 bundle architecture folders and binary suffixes, per the VST3 bundle format -->
+      <_ApsVst3Arch Condition="'$(_ApsRid)' == 'win-x64'">x86_64-win</_ApsVst3Arch>
+      <_ApsVst3Arch Condition="'$(_ApsRid)' == 'win-arm64'">arm64-win</_ApsVst3Arch>
+      <_ApsVst3Arch Condition="'$(_ApsRid)' == 'linux-x64'">x86_64-linux</_ApsVst3Arch>
+      <_ApsVst3Arch Condition="'$(_ApsRid)' == 'linux-arm64'">aarch64-linux</_ApsVst3Arch>
+      <_ApsVst3Suffix Condition="$(_ApsRid.StartsWith('win-'))">.vst3</_ApsVst3Suffix>
+      <_ApsVst3Suffix Condition="'$(_ApsVst3Suffix)' == ''">.so</_ApsVst3Suffix>
+
+      <_ApsNative>$(AudioPlugSharpBridgeNativeDir)$(_ApsRid)/</_ApsNative>
+      <_ApsClapAdapter>$(_ApsNative)AudioPlugSharpClap.clap</_ApsClapAdapter>
+      <_ApsVst3Adapter>$(_ApsNative)AudioPlugSharpVst3$(_ApsVst3Suffix)</_ApsVst3Adapter>
+      <_ApsClapDir>$(TargetDir)clap/$(TargetName)/</_ApsClapDir>
+      <_ApsVst3Dir>$(TargetDir)vst3/$(TargetName).vst3/Contents/$(_ApsVst3Arch)/</_ApsVst3Dir>
+    </PropertyGroup>
+
+    <Warning Condition="'$(_ApsVst3Arch)' == ''"
+             Text="AudioPlugSharpBridge: no DAW bundles for $(_ApsRid) (supported: win-x64, win-arm64, linux-x64, linux-arm64)." />
+    <Warning Condition="'$(_ApsVst3Arch)' != '' And (!Exists('$(_ApsClapAdapter)') Or !Exists('$(_ApsVst3Adapter)'))"
+             Text="AudioPlugSharpBridge: no adapters for $(_ApsRid) in $(_ApsNative); no DAW bundles made." />
+
+    <ItemGroup Condition="'$(_ApsVst3Arch)' != '' And Exists('$(_ApsClapAdapter)') And Exists('$(_ApsVst3Adapter)')">
+      <!-- The plugin's output, without the bundles themselves -->
+      <_ApsPluginFile Include="$(TargetDir)**/*" Exclude="$(TargetDir)clap/**;$(TargetDir)vst3/**" />
+      <!-- The bridge's files (copied after the plugin's: its AudioPlugSharp.dll, the one shared copy, wins) -->
+      <_ApsBridgeFile Include="$(AudioPlugSharpBridgeFilesDir)*" />
+    </ItemGroup>
+
+    <!-- Rebuilt from scratch, so files the plugin no longer has don't linger in the bundles -->
+    <RemoveDir Condition="'@(_ApsPluginFile)' != ''" Directories="$(TargetDir)clap/$(TargetName);$(TargetDir)vst3/$(TargetName).vst3" />
+
+    <Copy Condition="'@(_ApsPluginFile)' != ''" SourceFiles="@(_ApsPluginFile)"
+          DestinationFiles="@(_ApsPluginFile->'$(_ApsClapDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy Condition="'@(_ApsPluginFile)' != ''" SourceFiles="@(_ApsBridgeFile)" DestinationFolder="$(_ApsClapDir)" />
+    <Copy Condition="'@(_ApsPluginFile)' != ''" SourceFiles="$(_ApsClapAdapter)"
+          DestinationFiles="$(_ApsClapDir)$(TargetName).clap" />
+
+    <Copy Condition="'@(_ApsPluginFile)' != ''" SourceFiles="@(_ApsPluginFile)"
+          DestinationFiles="@(_ApsPluginFile->'$(_ApsVst3Dir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy Condition="'@(_ApsPluginFile)' != ''" SourceFiles="@(_ApsBridgeFile)" DestinationFolder="$(_ApsVst3Dir)" />
+    <Copy Condition="'@(_ApsPluginFile)' != ''" SourceFiles="$(_ApsVst3Adapter)"
+          DestinationFiles="$(_ApsVst3Dir)$(TargetName)$(_ApsVst3Suffix)" />
+
+    <Message Condition="'@(_ApsPluginFile)' != ''" Importance="high"
+             Text="$(TargetName) -> $(TargetDir)clap/$(TargetName), $(TargetDir)vst3/$(TargetName).vst3 ($(_ApsRid))" />
+  </Target>
+
+</Project>
