@@ -35,7 +35,7 @@ sudo apt update
 sudo apt install dotnet-runtime-10.0
 ```
 
-On Ubuntu 22.04, first add the .NET backports repository with **sudo add-apt-repository ppa:dotnet/backports**.
+On Ubuntu 22.04, first add the .NET backports repository with ```sudo add-apt-repository ppa:dotnet/backports```.
 
 ## Upgrading From Earlier Versions
 Plugins written for version 0.7 need some changes, mostly in their user interface code: the DAW now provides the window your editor draws into. The C++/CLI bridge (**AudioPlugSharpVst3**) is replaced by **AudioPlugSharpBridge**, and the post-build copy steps are no longer needed.
