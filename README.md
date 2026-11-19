@@ -18,7 +18,7 @@ For UILayout user interfaces, reference the **AudioPlugSharpUILayout** project f
 # Plugin Project Setup and Deployment
 
 ## NuGet Packages
-Add the **AudioPlugSharpBridge** package to your plugin project (it brings in AudioPlugSharp). Building a plugin only needs the .NET 10 SDK (on Ubuntu: **sudo apt install dotnet-sdk-10.0**). When you build, it creates your plugin in the output folder, ready to install:
+Add the **AudioPlugSharpBridge** package to your plugin project (it brings in AudioPlugSharp). When you build, it creates your plugin in the output folder, ready to install:
 
 - **clap/MyPlugin** - copy this folder to your CLAP plugin folder (**C:\Program Files\Common Files\CLAP** on Windows, **~/.clap** on Linux)
 - **vst3/MyPlugin.vst3** - copy this to your VST3 plugin folder (**C:\Program Files\Common Files\VST3** on Windows, **~/.vst3** on Linux)
