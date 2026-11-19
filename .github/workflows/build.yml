@@ -165,11 +165,11 @@ jobs:
 
     - name: The bridge package has every platform
       run: |
-        listing=$(7z l packages/AudioPlugSharpBridge.*.nupkg)
+        listing=$(7z l packages/AudioPlugSharpBridge.*.nupkg | tr '\\' '/')   # 7z on Windows lists with backslashes
         for f in win-x64/AudioPlugSharpClap.clap win-x64/AudioPlugSharpVst3.vst3 \
                  linux-x64/AudioPlugSharpClap.clap linux-x64/AudioPlugSharpVst3.so \
                  linux-arm64/AudioPlugSharpClap.clap linux-arm64/AudioPlugSharpVst3.so; do
-          echo "$listing" | grep -q "native.$f" || { echo "missing native/$f"; exit 1; }
+          echo "$listing" | grep -q "native/$f" || { echo "missing native/$f"; exit 1; }
         done
         echo "all platforms present"
 
