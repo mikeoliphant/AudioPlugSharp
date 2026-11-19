@@ -9,6 +9,11 @@ namespace UILayoutExample
     /// <summary>
     /// Stereo gain with an embedded UILayout editor: a gain slider (editor -> host as an edit gesture, host ->
     /// editor by following the parameter's edit value) and an output level meter fed from the audio thread.
+    ///
+    /// The editor is resizable, and Alt+Enter or F11 toggles fullscreen (editor window services, IAudioHost; some
+    /// hosts, such as Reaper, keep Alt+Enter for themselves); while fullscreen the mouse cursor hides after a second
+    /// without movement. The editor claims only the keys it maps (AudioPluginUILayout.EditorWantsKey), so the others,
+    /// such as the space bar, stay host shortcuts.
     /// </summary>
     public class UILayoutExamplePlugin : AudioPluginUILayout
     {
@@ -23,6 +28,12 @@ namespace UILayoutExample
         TextBlock gainText;
         LevelMeter meter;
         double shownGainDb = double.NaN;
+
+        // Fullscreen cursor hiding
+        const float CursorHideSeconds = 1;
+        float mouseStillSeconds;
+        float lastMouseX = float.NaN, lastMouseY = float.NaN;
+        bool cursorHidden;
 
         public UILayoutExamplePlugin()
         {
@@ -116,6 +127,22 @@ namespace UILayoutExample
 
         // ---- editor (UI thread) ----
 
+        public override bool CanResizeEditor
+        {
+            get { return true; }
+        }
+
+        protected override void EditorOpened()
+        {
+            EditorLayout.InputManager.AddMapping("ToggleFullscreen", new KeyMapping(InputKey.Enter) { Modifier = InputKey.LeftAlt });
+            EditorLayout.InputManager.AddMapping("ToggleFullscreen", new KeyMapping(InputKey.Enter) { Modifier = InputKey.RightAlt });
+            EditorLayout.InputManager.AddMapping("ToggleFullscreen", new KeyMapping(InputKey.F11));
+
+            mouseStillSeconds = 0;
+            lastMouseX = lastMouseY = float.NaN;
+            cursorHidden = false;
+        }
+
         protected override UIElement CreateEditorUI()
         {
             VerticalStack root = new VerticalStack
@@ -158,6 +185,41 @@ namespace UILayoutExample
             float peak = BitConverter.Int32BitsToSingle(Interlocked.Exchange(ref peakBits, 0));
 
             meter?.Update(peak, secondsElapsed);
+
+            UpdateWindowServices(secondsElapsed);
+        }
+
+        /// <summary>
+        /// Alt+Enter toggles fullscreen; while fullscreen the cursor hides when the mouse is still. These calls may
+        /// come from the editor's render thread: the host applies them on its UI thread.
+        /// </summary>
+        void UpdateWindowServices(float secondsElapsed)
+        {
+            MonoGameLayout layout = EditorLayout;
+
+            if (layout == null)
+                return;
+
+            InputManager input = layout.InputManager;
+
+            if (input.WasPressed("ToggleFullscreen"))
+                Host.SetEditorFullscreen(!Host.IsEditorFullscreen);
+
+            bool moved = (input.MousePosition.X != lastMouseX) || (input.MousePosition.Y != lastMouseY);
+
+            lastMouseX = input.MousePosition.X;
+            lastMouseY = input.MousePosition.Y;
+
+            mouseStillSeconds = moved ? 0 : (mouseStillSeconds + secondsElapsed);
+
+            bool hide = Host.IsEditorFullscreen && (mouseStillSeconds >= CursorHideSeconds);
+
+            if (hide != cursorHidden)
+            {
+                cursorHidden = hide;
+
+                Host.SetEditorCursorVisible(!hide);
+            }
         }
 
         protected override void EditorClosing()

@@ -56,6 +56,41 @@ namespace AudioPlugSharpUILayout
         protected bool UseEditorRenderThread { get; set; }
 
         /// <summary>
+        /// Whether the editor takes every key while it has keyboard focus, so that none of them work as host
+        /// shortcuts (for example the space bar for the host's transport). For editors that are used like an
+        /// application of their own. By default (false) the editor takes the keys EditorWantsKey names.
+        /// </summary>
+        protected bool EditorClaimsAllKeys { get; set; }
+
+        /// <summary>
+        /// Whether the editor uses a key, so that the host gives it to the editor instead of using it as a shortcut
+        /// (hosts ask per key press; Reaper and others then keep the key from their own shortcuts). The editor sees
+        /// key events either way. Default: every key with EditorClaimsAllKeys, otherwise the keys a key mapping of
+        /// the layout's InputManager reads. Called on the UI thread; should not allocate.
+        /// </summary>
+        protected virtual bool EditorWantsKey(InputKey key, EditorModifiers modifiers)
+        {
+            if (EditorClaimsAllKeys)
+                return true;
+
+            MonoGameLayout layout = EditorLayout;
+
+            if (layout == null)
+                return false;
+
+            try
+            {
+                // In render-thread mode the mappings belong to the render thread; they are normally only added while
+                // the editor opens, so reading them here is safe in practice, and a failure just means "not used"
+                return layout.InputManager.IsKeyMapped(key);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Build the editor's root element. Called on open, after the graphics device and default textures exist.
         /// </summary>
         protected abstract UIElement CreateEditorUI();
@@ -184,13 +219,26 @@ namespace AudioPlugSharpUILayout
                 // The answer for text depends on the focused element, known only on the render thread: assume used
                 return inputEvent.Type switch
                 {
-                    EditorInputEventType.KeyDown or EditorInputEventType.KeyUp => false,
+                    EditorInputEventType.KeyDown or EditorInputEventType.KeyUp => EditorWantsKey((InputKey)inputEvent.Key, inputEvent.Modifiers),
                     EditorInputEventType.MouseLeave or EditorInputEventType.FocusGained => false,
                     _ => true,
                 };
             }
 
-            return ApplyInput(host, inputEvent);
+            bool used = ApplyInput(host, inputEvent);
+
+            switch (inputEvent.Type)
+            {
+                case EditorInputEventType.KeyDown:
+                case EditorInputEventType.KeyUp:
+                    return EditorWantsKey((InputKey)inputEvent.Key, inputEvent.Modifiers);
+
+                case EditorInputEventType.Text:
+                    return used || EditorClaimsAllKeys;
+
+                default:
+                    return used;
+            }
         }
 
         /// <summary>
@@ -218,7 +266,7 @@ namespace AudioPlugSharpUILayout
                 case EditorInputEventType.KeyUp:
                     host.Key((Keys)inputEvent.Key, inputEvent.Type == EditorInputEventType.KeyDown);
 
-                    // Keys are polled by UILayout, so there is no "handled" answer; let the host see them too.
+                    // Keys are polled by UILayout, so there is no "handled" answer here (see EditorWantsKey)
                     return false;
 
                 case EditorInputEventType.Text:
