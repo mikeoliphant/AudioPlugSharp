@@ -871,10 +871,8 @@ void test(const Tested& t) {
         for (int waited = 0; a.instance.handler.begins == 0 && waited < 5000; waited += 20) pump(20, daw, editors);
         check(a.instance.handler.begins == 1, "the press on the slider starts an edit gesture (beginEdit)");
         {
-            // During the gesture, the host's echo of an edit (one point at sample 0) ramps across the block:
-            // the gain near the start is still close to the old (low) value, the gain at the end is the new one.
-            a.proc->params.add(a.paramId, 0, 1.0);
-            a.proc->run(a.instance.processor, 1);
+            // During the gesture, the host's echo of an edit (one point at sample 0) ramps across the block: the gain
+            // near the start is still close to the current value, the gain at the end approaches the new one.
             const auto& inCh = a.audio->in[0][0];
             const auto& outCh = a.audio->out[0][0];
             const auto gainAt = [&](size_t from, size_t to) {
@@ -882,11 +880,21 @@ void test(const Tested& t) {
                     if (std::fabs(inCh[i]) > 0.2f) return std::fabs(outCh[i] / inCh[i]);
                 return -1.0f;
             };
+            // The current gain: a block without new changes. It depends on whether the press's own first value has
+            // been echoed yet (timing), so the check is relative to it.
+            a.proc->run(a.instance.processor, 1);
+            const float before = gainAt(inCh.size() - 64, inCh.size());
+            a.proc->params.add(a.paramId, 0, 1.0); // +12 dB: gain 3.981
+            a.proc->run(a.instance.processor, 1);
             const float early = gainAt(0, 64), late = gainAt(inCh.size() - 64, inCh.size());
-            std::printf("    echoed edit during the gesture: gain %.3f early in the block, %.3f at its end\n", early, late);
-            // A step would put the full +12 dB (gain 3.98) at the start; the ramp is still near the old value there
-            // ("late" is measured some way before the block's end, partway up the ramp).
-            check(early >= 0 && early < 0.5f && late > early * 4, "an echoed edit ramps across the block (no step)");
+            std::printf("    echoed edit during the gesture: gain %.3f before, %.3f early in the block, %.3f at its end\n",
+                        before, early, late);
+            // A step would put the full +12 dB at the start. A ramp starts near the current gain and rises ("late" is
+            // measured some way before the block's end, partway up the ramp; the ramp is in the parameter's normalized
+            // dB domain, so its shape in linear gain is not a straight line: compare only, don't assume a shape).
+            const float target = 3.981f;
+            check(before >= 0 && before < target * 0.75f && early < (before + target) / 2 && late > early * 1.2f,
+                  "an echoed edit ramps across the block (no step)");
             a.proc->params.add(a.paramId, 0, a.instance.handler.lastValue >= 0 ? a.instance.handler.lastValue : 0.0);
             a.proc->run(a.instance.processor, 1);
         }
