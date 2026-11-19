@@ -10,12 +10,14 @@ namespace AudioPlugSharpUILayout
     /// provides (IAudioPluginEditor), on Windows and Linux (X11). Derive from it, set EditorWidth/EditorHeight and
     /// override CreateEditorUI.
     ///
-    /// Update, draw and present run in EditorIdle on the host's UI thread, without vsync. The editor is built on
-    /// open and discarded on close.
+    /// By default update, draw and present run in EditorIdle on the host's UI thread, without vsync (light
+    /// editors). Heavy editors set UseEditorRenderThread: frames then run on a thread of the editor's own, with
+    /// vsync. The editor is built on open and discarded on close.
     /// </summary>
     public abstract class AudioPluginUILayout : AudioPluginBase
     {
         MonoGameHost editorHost;
+        EditorRenderThread renderThread;
 
         protected AudioPluginUILayout()
         {
@@ -37,6 +39,21 @@ namespace AudioPlugSharpUILayout
         {
             get { return editorHost != null; }
         }
+
+        /// <summary>
+        /// Whether the editor renders on a thread of its own (render-thread mode) instead of on the host's UI
+        /// thread. For editors whose frames are too heavy for the host's UI timer (which is coarse, and shared
+        /// with the host's own UI work), or that want vsync. Set it before the editor opens, for example in the
+        /// constructor.
+        ///
+        /// In render-thread mode EditorUpdate, the layout's update and drawing (and so all UI element code) run on
+        /// the render thread. CreateEditorUI, EditorOpened and EditorClosing still run on the UI thread, while the
+        /// render thread is not running.
+        ///
+        /// For testing and diagnosis the environment variable AUDIOPLUGSHARP_EDITOR_RENDER_THREAD overrides it
+        /// ("1": render thread, "0": host UI thread).
+        /// </summary>
+        protected bool UseEditorRenderThread { get; set; }
 
         /// <summary>
         /// Build the editor's root element. Called on open, after the graphics device and default textures exist.
@@ -78,7 +95,16 @@ namespace AudioPlugSharpUILayout
             if (!IsEditorWindowTypeSupported(windowType))
                 throw new NotSupportedException("Editor window type " + windowType + " is not supported");
 
-            MonoGameHost host = new MonoGameHost(window, (int)EditorWidth, (int)EditorHeight);
+            bool useRenderThread = UseEditorRenderThread;
+
+            string renderThreadOverride = Environment.GetEnvironmentVariable("AUDIOPLUGSHARP_EDITOR_RENDER_THREAD");
+
+            if (renderThreadOverride == "1")
+                useRenderThread = true;
+            else if (renderThreadOverride == "0")
+                useRenderThread = false;
+
+            MonoGameHost host = new MonoGameHost(window, (int)EditorWidth, (int)EditorHeight, vsync: useRenderThread);
 
             try
             {
@@ -108,11 +134,26 @@ namespace AudioPlugSharpUILayout
             editorHost = host;
 
             EditorOpened();
+
+            if (useRenderThread)
+            {
+                renderThread = new EditorRenderThread(host, RenderFrame, GetType().Name + " editor");
+
+                renderThread.Start();
+            }
+        }
+
+        void RenderFrame(float secondsElapsed)
+        {
+            EditorUpdate(secondsElapsed);
+
+            editorHost.Tick(secondsElapsed);
         }
 
         /// <summary>
         /// Called every editor frame before the layout updates and draws, for example to bring controls up to date
-        /// with parameter values the host changed. Runs on the UI thread; should not allocate.
+        /// with parameter values the host changed. Runs on the UI thread, or on the render thread in render-thread
+        /// mode (UseEditorRenderThread); should not allocate.
         /// </summary>
         protected virtual void EditorUpdate(float secondsElapsed)
         {
@@ -122,12 +163,11 @@ namespace AudioPlugSharpUILayout
         {
             MonoGameHost host = editorHost;
 
-            if (host == null)
+            // In render-thread mode frames run on their own
+            if ((host == null) || (renderThread != null))
                 return;
 
-            EditorUpdate((float)secondsElapsed);
-
-            host.Tick((float)secondsElapsed);
+            RenderFrame((float)secondsElapsed);
         }
 
         public override bool EditorInput(in EditorInputEvent inputEvent)
@@ -137,6 +177,27 @@ namespace AudioPlugSharpUILayout
             if (host == null)
                 return false;
 
+            if (renderThread != null)
+            {
+                renderThread.PostInput(inputEvent);
+
+                // The answer for text depends on the focused element, known only on the render thread: assume used
+                return inputEvent.Type switch
+                {
+                    EditorInputEventType.KeyDown or EditorInputEventType.KeyUp => false,
+                    EditorInputEventType.MouseLeave or EditorInputEventType.FocusGained => false,
+                    _ => true,
+                };
+            }
+
+            return ApplyInput(host, inputEvent);
+        }
+
+        /// <summary>
+        /// Passes an input event to the host, on the host's thread. Returns whether the editor used it.
+        /// </summary>
+        internal static bool ApplyInput(MonoGameHost host, in EditorInputEvent inputEvent)
+        {
             switch (inputEvent.Type)
             {
                 case EditorInputEventType.MouseMove:
@@ -199,7 +260,10 @@ namespace AudioPlugSharpUILayout
             if (!base.SetEditorSize(width, height))
                 return false;
 
-            editorHost?.Resize((int)EditorWidth, (int)EditorHeight);
+            if (renderThread != null)
+                renderThread.PostResize((int)EditorWidth, (int)EditorHeight);
+            else
+                editorHost?.Resize((int)EditorWidth, (int)EditorHeight);
 
             return true;
         }
@@ -210,6 +274,18 @@ namespace AudioPlugSharpUILayout
 
             if (host == null)
                 return;
+
+            EditorRenderThread thread = renderThread;
+
+            renderThread = null;
+
+            if ((thread != null) && !thread.Stop())
+            {
+                // Still rendering: leave the host to it rather than pull the device out from under it (leaks)
+                editorHost = null;
+
+                return;
+            }
 
             try
             {
