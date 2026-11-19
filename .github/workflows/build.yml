@@ -2,39 +2,25 @@ name: Build
 
 on:
   [workflow_dispatch, push, pull_request]
-  
+
+# Interim (cross-platform branch): builds the managed projects. The native CLAP/VST3 adapters, the
+# Windows/Linux matrix, tests and packaging come with the AudioPlugSharpBridge move.
 jobs:
   build:
     name: Build Windows
     runs-on: windows-latest
-  
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Build VST3 SDK
-      working-directory: ${{github.workspace}}/vstbuild
-      run:
-        cmake.exe -G "Visual Studio 18 2026" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
-        
-    - name: Setup MSBuild and add to PATH
-      uses: microsoft/setup-msbuild@v2
-
-    - name: Restore NuGet Packages
-      run: dotnet restore
-      
-    - name: Run MSBuild
-      working-directory: ${{github.workspace}}
-      run: msbuild .\AudioPlugSharp.sln /p:Configuration=Release
-
-    - name: Publish Linux-x64 Jack host test
-      working-directory: ${{github.workspace}}
-      run: dotnet publish .\JackHostTest\JackHostTest.csproj --runtime linux-x64 -p:PublishSingleFile=true --self-contained true
-
-    - name: Create Linux-x64 Jack host test archive
-      uses: actions/upload-artifact@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
       with:
-        name: JackHostTestLinuxX64
-        path: ${{github.workspace}}\JackHostTest\bin\Release\net10.0\linux-x64\publish
+        dotnet-version: 10.0.x
+
+    - name: Build
+      working-directory: ${{github.workspace}}
+      run: dotnet build AudioPlugSharp.sln -c Release
