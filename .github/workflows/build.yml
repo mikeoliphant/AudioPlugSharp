@@ -3,15 +3,34 @@ name: Build
 on:
   [workflow_dispatch, push, pull_request]
 
-# Interim (cross-platform branch): builds the managed projects. The native CLAP/VST3 adapters, the
-# Windows/Linux matrix, tests and packaging come with the AudioPlugSharpBridge move.
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
-  build:
-    name: Build Windows
-    runs-on: windows-latest
+  # Builds the native project (core, CLAP and VST3 adapters, test hosts; it also builds the managed bridge, the
+  # examples and the test plugins) on each platform, tests it, and uploads the platform's adapters.
+  native:
+    name: Build and test (${{ matrix.rid }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+          # Linux on Ubuntu 22.04: the adapters then need glibc 2.35 or newer (glibc is backward compatible only)
+          - rid: linux-x64
+            os: ubuntu-22.04
+          - rid: linux-arm64
+            os: ubuntu-22.04-arm
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
       with:
         submodules: recursive
@@ -21,6 +40,177 @@ jobs:
       with:
         dotnet-version: 10.0.x
 
+    - name: Linux packages
+      if: runner.os == 'Linux'
+      # X11 for the editor windows; Xvfb and Mesa (llvmpipe) for the editor tests; binutils for the binary check
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libx11-dev xvfb libgl1-mesa-dri libglx-mesa0 binutils
+
     - name: Build
-      working-directory: ${{github.workspace}}
-      run: dotnet build AudioPlugSharp.sln -c Release
+      run: |
+        cmake -S AudioPlugSharpBridge/Native -B build -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --parallel
+
+    - name: Generated ABI files are current
+      if: matrix.rid == 'linux-x64'
+      # The build regenerates them from the contract; committed files that differ were not regenerated.
+      run: |
+        git diff --exit-code -- AudioPlugSharpBridge/Generated AudioPlugSharpBridge/Native/Include/aps/generated \
+                                AudioPlugSharpBridge/Contract/abi-manifest.json
+
+    - name: Unit tests
+      run: |
+        dotnet test AudioPlugSharpBridge/Tests/AudioPlugSharpBridgeTests -c Release
+        dotnet test AudioPlugSharpBridge/Tests/AbiGenTests -c Release
+
+    - name: Linux binary check
+      if: runner.os == 'Linux'
+      # The adapters export only their entry points (no C++ runtime symbols that could interpose with the host's),
+      # don't depend on a dynamic libstdc++/libgcc_s (linked statically), and need at most glibc 2.35.
+      run: |
+        check() {
+          local f=$1; shift
+          local exports expected max
+          exports=$(nm -D --defined-only "$f" | awk '{print $3}' | sort | tr '\n' ' ')
+          expected=$(printf '%s\n' "$@" | sort | tr '\n' ' ')
+          if [ "$exports" != "$expected" ]; then echo "$f exports: $exports(expected: $expected)"; return 1; fi
+          if objdump -p "$f" | grep -E 'NEEDED.*(libstdc\+\+|libgcc_s)'; then echo "$f: dynamic C++ runtime"; return 1; fi
+          max=$(objdump -T "$f" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -uV | tail -1)
+          if [ "$(printf '%s\n' "$max" 2.35 | sort -V | tail -1)" != "2.35" ]; then echo "$f needs glibc $max (> 2.35)"; return 1; fi
+          echo "$f: ok (exports: $exports; glibc >= $max)"
+        }
+        cd build/bin
+        check AudioPlugSharpClap.clap clap_entry
+        check AudioPlugSharpVst3.so GetPluginFactory ModuleEntry ModuleExit
+
+    - name: Software OpenGL for the editor tests (Windows)
+      if: runner.os == 'Windows'
+      # The runners have no GPU, and Windows' own software OpenGL (1.1) is too old for MonoGame: Mesa's llvmpipe,
+      # next to the test hosts only. Pinned by version and checksum.
+      run: |
+        curl -sSL -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/26.2.5/mesa3d-26.2.5-release-msvc.7z
+        echo "997123ef4ce8896204ab912d5b54f19372c487ff9835bcefafa2fca23b8953c2  mesa.7z" | sha256sum -c
+        7z e mesa.7z -obuild/bin -y x64/opengl32.dll x64/libgallium_wgl.dll
+
+    - name: Test hosts
+      env:
+        GALLIUM_DRIVER: llvmpipe
+      # Linux: the editor tests run on Xvfb with Mesa's llvmpipe. Both editor modes: host-tick and render thread.
+      run: |
+        run() {
+          if [ "$RUNNER_OS" = "Linux" ]; then xvfb-run -a -s "-screen 0 1920x1080x24" "$@"; else "$@"; fi
+        }
+        cd build/bin
+        run ./BridgeTestHost
+        for mode in 0 1; do
+          export AUDIOPLUGSHARP_EDITOR_RENDER_THREAD=$mode
+          run ./ClapTestHost
+          run ./Vst3TestHost
+        done
+
+    - name: Upload the adapters
+      uses: actions/upload-artifact@v4
+      with:
+        name: native-${{ matrix.rid }}
+        path: AudioPlugSharpBridge/bin/native/
+        if-no-files-found: error
+
+    - name: Upload the test hosts (for the package smoke test)
+      if: matrix.rid == 'win-x64'
+      uses: actions/upload-artifact@v4
+      with:
+        name: testhosts-win-x64
+        path: |
+          build/bin/ClapTestHost.exe
+          build/bin/Vst3TestHost.exe
+        if-no-files-found: error
+
+  # Packs the NuGet packages with every platform's adapters, then builds a plugin from them as an author would.
+  # Nothing is published.
+  pack:
+    name: Pack NuGet packages
+    needs: native
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Download the adapters
+      uses: actions/download-artifact@v4
+      with:
+        pattern: native-*
+        path: AudioPlugSharpBridge/bin/native
+        merge-multiple: true
+
+    - name: Pack
+      run: |
+        dotnet pack AudioPlugSharp/AudioPlugSharp.csproj -c Release -o packages
+        dotnet pack AudioPlugSharpWPF/AudioPlugSharpWPF.csproj -c Release -o packages
+        dotnet pack AudioPlugSharpBridge/AudioPlugSharpBridge.csproj -c Release -o packages
+
+    - name: The bridge package has every platform
+      run: |
+        listing=$(7z l packages/AudioPlugSharpBridge.*.nupkg)
+        for f in win-x64/AudioPlugSharpClap.clap win-x64/AudioPlugSharpVst3.vst3 \
+                 linux-x64/AudioPlugSharpClap.clap linux-x64/AudioPlugSharpVst3.so \
+                 linux-arm64/AudioPlugSharpClap.clap linux-arm64/AudioPlugSharpVst3.so; do
+          echo "$listing" | grep -q "native.$f" || { echo "missing native/$f"; exit 1; }
+        done
+        echo "all platforms present"
+
+    - name: Download the test hosts
+      uses: actions/download-artifact@v4
+      with:
+        name: testhosts-win-x64
+        path: testhosts
+
+    - name: Smoke test (a plugin built from the package)
+      # SimpleExample's source in a project that references only the AudioPlugSharpBridge package
+      run: |
+        mkdir smoke
+        cp Examples/SimpleExample/SimpleExamplePlugin.cs smoke/
+        cat > smoke/SmokePlugin.csproj <<'EOF'
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <TargetFramework>net10.0</TargetFramework>
+          </PropertyGroup>
+          <ItemGroup>
+            <PackageReference Include="AudioPlugSharpBridge" Version="*" />
+          </ItemGroup>
+        </Project>
+        EOF
+        feed=$(cygpath -m "$PWD/packages")   # a Windows path for NuGet
+        cat > smoke/nuget.config <<EOF
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <packageSources>
+            <clear />
+            <add key="local" value="$feed" />
+            <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+          </packageSources>
+        </configuration>
+        EOF
+        cd smoke
+        dotnet build -c Release
+        ../testhosts/ClapTestHost.exe bin/Release/net10.0/clap/SmokePlugin/SmokePlugin.clap
+        ../testhosts/Vst3TestHost.exe bin/Release/net10.0/vst3/SmokePlugin.vst3
+
+    - name: Upload the packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: packages/
+        if-no-files-found: error
