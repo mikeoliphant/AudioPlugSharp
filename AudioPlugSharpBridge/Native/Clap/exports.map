@@ -1,0 +1,5 @@
+/* Linux: the CLAP binary exports exactly its entry point. */
+{
+    global: clap_entry;
+    local: *;
+};

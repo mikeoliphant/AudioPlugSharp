@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- The test hosts' UILayout plugin (see UILayoutTestPlugin.cs). Not an example: it carries test-only features. -->
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<IsPackable>false</IsPackable>
+		<!-- A plugin is loaded into a host: copy its NuGet dependencies (MonoGame, SDL) to the output. -->
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\..\AudioPlugSharpUILayout\AudioPlugSharpUILayout.csproj" />
+		<ProjectReference Include="..\..\..\..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
+
+</Project>
