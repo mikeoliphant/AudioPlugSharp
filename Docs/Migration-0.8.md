@@ -26,7 +26,7 @@ The DAW now provides the window, and your editor draws into it. The old editor m
 | InitializeEditor() | (part of OpenEditor) |
 | | EditorIdle (called regularly) and EditorInput (mouse and keys) |
 
-Most plugins don't implement these themselves: the WPF and UILayout base classes do.
+Most plugins don't implement these themselves: the WPF and UILayout base classes do. See [Plugin Editors](Editors.md) for how editors work now.
 
 ### WPF Editors
 
@@ -34,23 +34,11 @@ Keep deriving from **AudioPluginWPF** and overriding **GetEditorView**. Remove a
 
 ### UILayout Editors
 
-Instead of creating and running your own editor window, derive from **AudioPluginUILayout** (the **AudioPlugSharpUILayout** project), set **EditorWidth** and **EditorHeight**, and override **CreateEditorUI** (or **CreateEditorLayout** to use your own layout class). Your editor then works on Windows and Linux. Some options:
-
-- **CanResizeEditor**: let the DAW resize the editor.
-- **UseEditorRenderThread**: draw on a thread of the editor's own, for heavy or fast-moving editors. Your editor code then runs on that thread.
-- **EditorClaimsAllKeys**: take every key while the editor has focus. Otherwise the editor only takes the keys its input mappings use, and the others stay DAW shortcuts (such as the space bar).
-- **Host.SetEditorFullscreen** and **Host.SetEditorCursorVisible**: fullscreen and hiding the mouse cursor.
-- **Layout.Scale** is your own zoom setting. The display scale (high-DPI screens) is handled separately and automatically.
-
-### Editor Size
-
-**EditorWidth** and **EditorHeight** are in pixels at 100% display scale. On high-DPI screens the editor is scaled up automatically.
+Instead of creating and running your own editor window, derive from **AudioPluginUILayout** (the **AudioPlugSharpUILayout** project), set **EditorWidth** and **EditorHeight**, and override **CreateEditorUI**. Your editor then works on Windows and Linux. See [UILayout Editors](Editors.md#uilayout-editors) for resizing, smooth drawing, keyboard handling and fullscreen.
 
 ## Parameters
 
-- Setting **EditValue** or **NormalizedEditValue** from your editor still reports the change to the DAW.
-- For knobs and sliders, call **BeginEdit()** when the user grabs the control and **EndEdit()** when they let go. The DAW then records the movement as one gesture, which automation modes such as touch and latch need.
-- Bind 0-1 controls to **NormalizedEditValue**: it also works for parameters whose minimum is -inf dB.
+Knobs and sliders should now call the parameter's **BeginEdit()** and **EndEdit()** around a drag, so the DAW records the movement as one gesture. See [Parameters](Editors.md#parameters).
 
 ## Stand-Alone Applications
 

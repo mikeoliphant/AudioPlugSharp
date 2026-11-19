@@ -1,7 +1,7 @@
 # AudioPlugSharp
 Easily create CLAP and VST3 audio plugins in C#
 
-AudioPlugSharp lets you write audio plugins in C# and use them in DAWs on Windows and Linux, as CLAP and VST3 plugins. User interfaces can be created with [UILayout](https://github.com/mikeoliphant/UILayout) (Windows and Linux) or WPF (Windows only).
+AudioPlugSharp lets you write audio plugins in C# and use them in DAWs on Windows and Linux, as CLAP and VST3 plugins. User interfaces can be created with [UILayout](https://github.com/mikeoliphant/UILayout) (Windows and Linux) or WPF (Windows only) - see [Plugin Editors](Docs/Editors.md).
 
 # Current Release
 
