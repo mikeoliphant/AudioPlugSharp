@@ -7,8 +7,9 @@ project(AudioPlugSharpBridge LANGUAGES CXX)
 #   bin/bridge/AudioPlugSharpBridge.dll (+ .runtimeconfig.json) and AudioPlugSharp.dll
 #   bin/plugins/<Plugin>/<Plugin>.dll          (examples and test plugins)
 #   bin/clap/<Plugin>/<Plugin>.clap            (installable CLAP folder: adapter + plugin + bridge)
-#   bin/BridgeTestHost[.exe], bin/ClapTestHost[.exe]
-# The format adapters are built by their folders (Clap/), from the shared parts defined here.
+#   bin/vst3/<Plugin>.vst3/Contents/<arch>/    (installable VST3 bundle: adapter + plugin + bridge)
+#   bin/BridgeTestHost[.exe], bin/ClapTestHost[.exe], bin/Vst3TestHost[.exe]
+# The format adapters are built by their folders (Clap/, Vst3/), from the shared parts defined here.
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -172,7 +173,8 @@ aps_warnings(BridgeTestHost)
 
 # ---------------------------------------------------------------------------
 # The format adapters. Each folder builds its adapter, its test host and its installable bundles from the shared
-# parts above (aps_native_core, aps_warnings, APS_PLUGINS, APS_BIN_DIR/APS_OUT).
+# parts above (aps_native_core, aps_warnings, APS_PLUGINS, APS_ARCH, APS_BIN_DIR/APS_OUT).
 # ---------------------------------------------------------------------------
 include(FetchContent)
 add_subdirectory(Clap)
+add_subdirectory(Vst3)

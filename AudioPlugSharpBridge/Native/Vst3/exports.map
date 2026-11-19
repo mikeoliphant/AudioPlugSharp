@@ -1,0 +1,9 @@
+/* The VST3 adapter exports only the module entry points (see the CLAP adapter's exports.map). */
+{
+    global:
+        GetPluginFactory;
+        ModuleEntry;
+        ModuleExit;
+    local:
+        *;
+};
