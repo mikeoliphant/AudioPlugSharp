@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Unit tests for the bridge (ManagedHost) and for core AudioPlugSharp behaviour the bridge relies on. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <!-- Bridge internals are visible to this assembly; skip regenerating the ABI from here. -->
+    <ApsSkipAbiGen>true</ApsSkipAbiGen>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The AudioPlugSharp API, used throughout (the namespace is no longer nested inside AudioPlugSharp). -->
+    <Using Include="AudioPlugSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../AudioPlugSharpBridge.csproj" />
+    <ProjectReference Include="../../../AudioPlugSharp/AudioPlugSharp.csproj" />
+  </ItemGroup>
+
+</Project>

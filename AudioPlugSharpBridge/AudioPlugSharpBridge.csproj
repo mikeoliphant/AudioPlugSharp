@@ -1,0 +1,96 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The managed side of the native/managed bridge: implements the generated ABI on top of the AudioPlugSharp API,
+    hosts each plugin instance in its own load context, and implements IAudioHost in managed code. The native
+    format adapters (Native/) boot the runtime with this assembly's runtimeconfig.json.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AudioPlugSharpBridge</RootNamespace>
+    <!-- Produces .runtimeconfig.json / .deps.json: the native adapters load this assembly through hostfxr. -->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <!-- When built by the native (CMake) build, output goes to its bridge folder (next to AudioPlugSharp.dll). -->
+    <OutDir Condition="'$(AudioPlugSharpBridgeOutDir)' != ''">$(AudioPlugSharpBridgeOutDir)/</OutDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The AudioPlugSharp API, used throughout (the namespace is no longer nested inside AudioPlugSharp). -->
+    <Using Include="AudioPlugSharp" />
+  </ItemGroup>
+
+  <!-- Runtime settings for realtime audio; they end up in AudioPlugSharpBridge.runtimeconfig.json. -->
+  <PropertyGroup>
+    <!-- One runtime per process: boot the newest installed major version (>= 10). -->
+    <RollForward>LatestMajor</RollForward>
+    <!-- No tiering: every method is JIT-compiled once, fully optimized, and never re-JITted. -->
+    <TieredCompilation>false</TieredCompilation>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <RetainVMGarbageCollection>true</RetainVMGarbageCollection>
+  </PropertyGroup>
+
+  <!--
+    Windows: the runtime is started with the Windows Desktop framework (WPF, WinForms), so plugins that use it work
+    whichever AudioPlugSharp plugin starts the one runtime in the process. Users therefore install the .NET Desktop
+    Runtime (which includes the base runtime). Nothing of it is loaded unless a plugin uses it.
+  -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <!-- PrivateAssets: only the runtimeconfig needs it; projects referencing the bridge (tests) stay net10.0. -->
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The public plugin API; shipped next to the bridge and shared by all plugin instances. -->
+    <ProjectReference Include="../AudioPlugSharp/AudioPlugSharp.csproj" />
+    <InternalsVisibleTo Include="AudioPlugSharpBridgeTests" />
+  </ItemGroup>
+
+  <!-- The other projects under this folder (contract, generator, tests) and the native sources are not part of it. -->
+  <ItemGroup>
+    <Compile Remove="Contract/**;Tools/**;Tests/**;Native/**" />
+    <None Remove="Contract/**;Tools/**;Tests/**;Native/**" />
+  </ItemGroup>
+
+  <!--
+    ABI code generation. The contract sources are compiled into this assembly; the contract project is built
+    separately only so AbiGen can read it as metadata. Generated files are committed; this target regenerates them
+    on every build and AbiGen only rewrites files that changed.
+  -->
+  <PropertyGroup>
+    <ApsContractDir>$(MSBuildThisFileDirectory)Contract/</ApsContractDir>
+    <ApsContractProject>$(ApsContractDir)AudioPlugSharpBridgeContract.csproj</ApsContractProject>
+    <ApsAbiGenProject>$(MSBuildThisFileDirectory)Tools/AbiGen/AbiGen.csproj</ApsAbiGenProject>
+    <ApsNativeGeneratedDir>$(MSBuildThisFileDirectory)Native/Include/aps/generated/</ApsNativeGeneratedDir>
+    <ApsDotnet Condition="'$(DOTNET_HOST_PATH)' != ''">$(DOTNET_HOST_PATH)</ApsDotnet>
+    <ApsDotnet Condition="'$(ApsDotnet)' == ''">dotnet</ApsDotnet>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ApsContractDir)*.cs" LinkBase="Contract" />
+    <!-- Build order and restore only; nothing is referenced or copied. -->
+    <ProjectReference Include="$(ApsContractProject)" ReferenceOutputAssembly="false" Private="false" PrivateAssets="all" />
+    <ProjectReference Include="$(ApsAbiGenProject)" ReferenceOutputAssembly="false" Private="false" PrivateAssets="all" />
+  </ItemGroup>
+
+  <Target Name="ApsGenerateAbi" AfterTargets="ResolveProjectReferences" BeforeTargets="CoreCompile"
+          Condition="'$(ApsSkipAbiGen)' != 'true'">
+    <MSBuild Projects="$(ApsContractProject)" Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="_ApsContractDll" />
+    </MSBuild>
+    <MSBuild Projects="$(ApsAbiGenProject)" Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="_ApsAbiGenDll" />
+    </MSBuild>
+    <Exec Command="&quot;$(ApsDotnet)&quot; &quot;$(_ApsAbiGenDll)&quot; --contract &quot;$(_ApsContractDll)&quot; --manifest &quot;$(ApsContractDir)abi-manifest.json&quot; --c-header &quot;$(ApsNativeGeneratedDir)abi.h&quot; --cpp-header &quot;$(ApsNativeGeneratedDir)abi.hpp&quot; --csharp-dir &quot;$(MSBuildThisFileDirectory)Generated&quot;" />
+    <ItemGroup>
+      <!-- Pick up generated files that did not exist when the project was evaluated. -->
+      <Compile Remove="Generated/**/*.cs" />
+      <Compile Include="Generated/**/*.cs" />
+    </ItemGroup>
+  </Target>
+
+</Project>
