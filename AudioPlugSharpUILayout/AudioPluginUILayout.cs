@@ -18,6 +18,7 @@ namespace AudioPlugSharpUILayout
     {
         MonoGameHost editorHost;
         EditorRenderThread renderThread;
+        double editorScale = 1.0;
 
         protected AudioPluginUILayout()
         {
@@ -139,13 +140,17 @@ namespace AudioPlugSharpUILayout
             else if (renderThreadOverride == "0")
                 useRenderThread = false;
 
-            MonoGameHost host = new MonoGameHost(window, (int)EditorWidth, (int)EditorHeight, vsync: useRenderThread);
+            editorScale = (scale > 0) ? scale : 1.0;
+
+            // The window is the logical size x the UI scale; the layout works in logical units (MonoGameLayout.Scale)
+            MonoGameHost host = new MonoGameHost(window, ToWindowPixels(EditorWidth, editorScale), ToWindowPixels(EditorHeight, editorScale), vsync: useRenderThread);
 
             try
             {
                 MonoGameLayout layout = CreateEditorLayout();
 
-                layout.Scale = (float)((scale > 0) ? scale : 1.0);
+                // DisplayScale: the layout's own Scale stays the plugin's (for example a user zoom setting)
+                layout.DisplayScale = (float)editorScale;
                 host.SetLayout(layout);
                 layout.RootUIElement = CreateEditorUI();
                 layout.UpdateLayout();
@@ -308,12 +313,45 @@ namespace AudioPlugSharpUILayout
             if (!base.SetEditorSize(width, height))
                 return false;
 
-            if (renderThread != null)
-                renderThread.PostResize((int)EditorWidth, (int)EditorHeight);
-            else
-                editorHost?.Resize((int)EditorWidth, (int)EditorHeight);
+            ResizeEditorHost(scaleChanged: false);
 
             return true;
+        }
+
+        public override void SetEditorScale(double scale)
+        {
+            editorScale = (scale > 0) ? scale : 1.0;
+
+            ResizeEditorHost(scaleChanged: true);
+        }
+
+        /// <summary>
+        /// The UI scale of the open editor (1 = 96 DPI).
+        /// </summary>
+        public double EditorScale
+        {
+            get { return editorScale; }
+        }
+
+        void ResizeEditorHost(bool scaleChanged)
+        {
+            int width = ToWindowPixels(EditorWidth, editorScale);
+            int height = ToWindowPixels(EditorHeight, editorScale);
+
+            if (renderThread != null)
+            {
+                if (scaleChanged)
+                    renderThread.PostScale((float)editorScale);
+
+                renderThread.PostResize(width, height);
+            }
+            else if (editorHost != null)
+            {
+                if (scaleChanged && (editorHost.Layout != null))
+                    editorHost.Layout.DisplayScale = (float)editorScale;
+
+                editorHost.Resize(width, height);
+            }
         }
 
         public override void CloseEditor()

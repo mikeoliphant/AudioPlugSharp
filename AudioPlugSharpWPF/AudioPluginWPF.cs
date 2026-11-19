@@ -26,6 +26,7 @@ namespace AudioPlugSharpWPF
         static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
 
         HwndSource editorSource;
+        double editorScale = 1.0;
 
         public UserControl EditorView { get; set; }
 
@@ -59,14 +60,18 @@ namespace AudioPlugSharpWPF
 
             EditorView.DataContext = Processor;
 
+            editorScale = (scale > 0) ? scale : 1.0;
+
+            // Pixels; WPF lays the view out in DIPs at the window's DPI, which match the logical units when the scale
+            // is the window's DPI (the OS scale). A host scale that differs from it is not applied to WPF content.
             var parameters = new HwndSourceParameters("AudioPlugSharpWPF")
             {
                 ParentWindow = window,
                 WindowStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
                 PositionX = 0,
                 PositionY = 0,
-                Width = (int)EditorWidth,
-                Height = (int)EditorHeight,
+                Width = ToWindowPixels(EditorWidth, editorScale),
+                Height = ToWindowPixels(EditorHeight, editorScale),
             };
 
             editorSource = new HwndSource(parameters);
@@ -78,10 +83,22 @@ namespace AudioPlugSharpWPF
             if (!base.SetEditorSize(width, height))
                 return false;
 
-            if (editorSource != null)
-                SetWindowPos(editorSource.Handle, IntPtr.Zero, 0, 0, (int)EditorWidth, (int)EditorHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            ResizeEditorWindow();
 
             return true;
+        }
+
+        public override void SetEditorScale(double scale)
+        {
+            editorScale = (scale > 0) ? scale : 1.0;
+
+            ResizeEditorWindow();
+        }
+
+        void ResizeEditorWindow()
+        {
+            if (editorSource != null)
+                SetWindowPos(editorSource.Handle, IntPtr.Zero, 0, 0, ToWindowPixels(EditorWidth, editorScale), ToWindowPixels(EditorHeight, editorScale), SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
         }
 
         public override void CloseEditor()

@@ -262,8 +262,20 @@ namespace AudioPlugSharp
             return true;
         }
 
+        public virtual void SetEditorScale(double scale)
+        {
+        }
+
         public virtual void CloseEditor()
         {
+        }
+
+        /// <summary>
+        /// Window pixels for a size in logical units at a UI scale (at least 1).
+        /// </summary>
+        public static int ToWindowPixels(uint units, double scale)
+        {
+            return Math.Max(1, (int)Math.Round(units * ((scale > 0) ? scale : 1.0)));
         }
     }
 }

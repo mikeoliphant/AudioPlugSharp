@@ -38,6 +38,10 @@ namespace AudioPlugSharpUILayout
         // Packed (width << 32) | height, or -1 when unchanged.
         long pendingSize = -1;
 
+        // A new UI scale (float bits), or NoScale; applied before the size.
+        const long NoScale = -1;
+        long pendingScale = NoScale;
+
         volatile bool stopRequested;
 
         // Written by the render thread, read after it stopped
@@ -116,6 +120,12 @@ namespace AudioPlugSharpUILayout
             Interlocked.Exchange(ref pendingSize, ((long)width << 32) | (uint)height);
         }
 
+        /// <summary>The UI scale changed; applied before the next frame (with the size posted with it).</summary>
+        public void PostScale(float scale)
+        {
+            Interlocked.Exchange(ref pendingScale, (uint)BitConverter.SingleToInt32Bits(scale));
+        }
+
         void Run()
         {
             try
@@ -163,6 +173,11 @@ namespace AudioPlugSharpUILayout
 
         void ApplyPending()
         {
+            long scaleBits = Interlocked.Exchange(ref pendingScale, NoScale);
+
+            if ((scaleBits != NoScale) && (host.Layout != null))
+                host.Layout.DisplayScale = BitConverter.Int32BitsToSingle((int)(uint)scaleBits);
+
             long size = Interlocked.Exchange(ref pendingSize, -1);
 
             if (size != -1)
