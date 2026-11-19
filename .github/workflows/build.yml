@@ -1,7 +1,18 @@
 name: Build
 
 on:
-  [workflow_dispatch, push, pull_request]
+  workflow_dispatch:
+  # Every pull request gets the full check (no path filters)
+  pull_request:
+  # Pushes to the main branches, except for documentation-only changes
+  push:
+    branches: [master, crossplatform]
+    paths-ignore: ['**.md', 'Docs/**']
+
+# A newer push to the same branch (or pull request) cancels the run still going for the older one
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DOTNET_NOLOGO: true
