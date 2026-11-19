@@ -91,7 +91,16 @@ namespace AudioPlugSharpUILayout
             }
             catch
             {
-                host.Dispose();
+                // Keep the original exception: disposing calls the layout's Exiting, which may fail on a
+                // half-built editor too
+                try
+                {
+                    host.Dispose();
+                }
+                catch (Exception disposeException)
+                {
+                    Logger.Log("Editor cleanup after a failed open also failed: " + disposeException);
+                }
 
                 throw;
             }

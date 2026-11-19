@@ -12,6 +12,9 @@
 		<Description>Add a UILayout GUI to your AudioPlugSharp plugin.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<!-- A plugin with its own UILayout checkout sets this (for example in Directory.Build.props), so only one
+		     copy of UILayout is built. Default: this repository's Dependencies/UILayout submodule. -->
+		<UILayoutDir Condition="'$(UILayoutDir)' == ''">$(MSBuildThisFileDirectory)..\Dependencies\UILayout\</UILayoutDir>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -20,7 +23,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Dependencies\UILayout\UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />
+		<ProjectReference Include="$(UILayoutDir)UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />
 		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
 	</ItemGroup>
 
