@@ -1,0 +1,57 @@
+using System.Reflection;
+using System.Runtime.Loader;
+using AudioPlugSharp;
+
+namespace AudioPlugSharpStandalone;
+
+/// <summary>
+/// Loads a plugin from its build output, as the DAW bridge does: the plugin assembly and its dependencies (UILayout,
+/// MonoGame, SDL, ...) load into a context of their own, resolved through the plugin's .deps.json (a plugin project
+/// gets one from the AudioPlugSharpBridge package, or with EnableDynamicLoading). AudioPlugSharp is shared with the
+/// host, so the plugin's types are the host's.
+/// </summary>
+public static class PluginLoader
+{
+    /// <summary>
+    /// Creates the plugin in <paramref name="pluginPath"/>: its public IAudioPlugin implementation with a
+    /// parameterless constructor.
+    /// </summary>
+    public static IAudioPlugin Load(string pluginPath)
+    {
+        string fullPath = Path.GetFullPath(pluginPath);
+        if (!File.Exists(fullPath)) throw new FileNotFoundException("Plugin not found", fullPath);
+
+        var context = new PluginLoadContext(fullPath);
+        Assembly assembly = context.LoadFromAssemblyPath(fullPath);
+        Type type = assembly.GetExportedTypes().FirstOrDefault(t =>
+                        typeof(IAudioPlugin).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface &&
+                        t.GetConstructor(Type.EmptyTypes) != null)
+                    ?? throw new InvalidOperationException($"No public IAudioPlugin implementation with a parameterless constructor in {fullPath}");
+        return (IAudioPlugin)Activator.CreateInstance(type)!;
+    }
+
+    class PluginLoadContext : AssemblyLoadContext
+    {
+        static readonly Assembly ApiAssembly = typeof(IAudioPlugin).Assembly;
+        readonly AssemblyDependencyResolver resolver;
+
+        public PluginLoadContext(string pluginPath)
+            : base(Path.GetFileNameWithoutExtension(pluginPath))
+        {
+            resolver = new AssemblyDependencyResolver(pluginPath);
+        }
+
+        protected override Assembly? Load(AssemblyName name)
+        {
+            if (string.Equals(name.Name, ApiAssembly.GetName().Name, StringComparison.OrdinalIgnoreCase)) return ApiAssembly;
+            string? path = resolver.ResolveAssemblyToPath(name);
+            return path != null ? LoadFromAssemblyPath(path) : null; // null: the default context (the framework)
+        }
+
+        protected override nint LoadUnmanagedDll(string unmanagedDllName)
+        {
+            string? path = resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+            return path != null ? LoadUnmanagedDllFromPath(path) : 0;
+        }
+    }
+}

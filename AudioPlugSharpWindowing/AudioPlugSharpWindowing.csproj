@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Native windows for hosts written in C#, such as the standalone host: top-level and child windows with their
+    native handles, a message loop with timers, input events, cursor, fullscreen and DPI. Managed only: it calls the
+    operating system's own libraries (user32 on Windows; libX11 on Linux, to come), so nothing is built per platform.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>AudioPlugSharpWindowing</RootNamespace>
+  </PropertyGroup>
+
+</Project>
