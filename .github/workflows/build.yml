@@ -120,6 +120,24 @@ jobs:
           run ./Vst3TestHost
         done
 
+    - name: Standalone host tests
+      env:
+        GALLIUM_DRIVER: llvmpipe
+      # The standalone host running the UILayout test plugin, driven from outside, in both editor modes. Linux: on
+      # Xvfb, so also without a window manager. Windows: Mesa's OpenGL next to the host, as for the test hosts.
+      run: |
+        dotnet build AudioPlugSharpStandalone -c Release
+        dotnet build AudioPlugSharpStandalone/Tests/StandaloneTests -c Release
+        out=AudioPlugSharpStandalone/bin/Release/net10.0
+        host=$out/AudioPlugSharpStandalone
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          cp build/bin/opengl32.dll build/bin/libgallium_wgl.dll $out/
+          host=$host.exe
+        fi
+        tests=(dotnet AudioPlugSharpStandalone/Tests/StandaloneTests/bin/Release/net10.0/StandaloneTests.dll
+               "$host" build/bin/plugins/UILayoutTestPlugin/UILayoutTestPlugin.dll)
+        if [ "$RUNNER_OS" = "Linux" ]; then xvfb-run -a -s "-screen 0 1920x1080x24" "${tests[@]}"; else "${tests[@]}"; fi
+
     - name: Upload the adapters
       uses: actions/upload-artifact@v4
       with:

@@ -22,6 +22,12 @@
     <FrameworkReference Include="Microsoft.WindowsDesktop.App" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- The tests under Tests/ are a project of their own. -->
+  <ItemGroup>
+    <Compile Remove="Tests/**" />
+    <None Remove="Tests/**" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
     <ProjectReference Include="..\AudioPlugSharpWindowing\AudioPlugSharpWindowing.csproj" />
