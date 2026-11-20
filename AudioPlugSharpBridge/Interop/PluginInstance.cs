@@ -23,7 +23,7 @@ internal sealed unsafe class PluginInstance : IPluginContract, IAbiErrorHandler,
     // Editor state (main thread).
     private EditorWindowType _editorWindowType; // None while closed
 
-    // Allocation accounting on the audio thread (DESIGN.md §8.1). Bridge = everything in Process outside the plugin's code.
+    // Allocation accounting on the audio thread. Bridge = everything in Process outside the plugin's code.
     private long _bridgeBytes, _pluginBytes, _blocks;
     private int _gc0, _gc1, _gc2;
     private TimeSpan _gcPause;

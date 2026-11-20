@@ -1,6 +1,6 @@
 // The native/managed ABI contract: the single source of truth for the boundary between the native
 // format adapters (CLAP, VST3, LV2, test hosts) and AudioPlugSharpBridge. Tools/AbiGen generates the C
-// header, the C++ wrappers and the C# interop code from this file. See DESIGN.md §5 and §6.
+// header, the C++ wrappers and the C# interop code from this file. See Tools/AbiGen/README.md.
 //
 // Rules: append members at the end only (new ones must be [OptionalMember]); any other change requires
 // bumping AbiConfig.Version. Every interface method needs [MainThread] or [AudioThread].

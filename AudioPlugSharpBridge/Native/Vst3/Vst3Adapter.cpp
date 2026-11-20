@@ -1,4 +1,4 @@
-// Vst3Adapter.cpp - the generic VST3 adapter for AudioPlugSharp plugins (DESIGN.md §7, phase 5).
+// Vst3Adapter.cpp - the generic VST3 adapter for AudioPlugSharp plugins.
 //
 // One binary serves every plugin. It is shipped in a VST3 bundle, <Plugin>.vst3/Contents/<arch>-<os>/, next to
 // <Plugin>.dll (the managed plugin) and the bridge (AudioPlugSharpBridge.dll, AudioPlugSharp.dll,
@@ -10,7 +10,7 @@
 //
 // Structure: a single component. One object is the IComponent/IAudioProcessor and the IEditController (the
 // host finds the controller by queryInterface; getControllerClassId returns kNotImplemented), because both
-// halves share one managed plugin instance. Compatibility with the C++/CLI bridge (DESIGN.md §11): the same
+// halves share one managed plugin instance. Compatibility with the C++/CLI bridge: the same
 // processor class UID, parameter IDs = index + 128, and the same state bytes.
 //
 // Threading follows VST3: setup, state, parameters and the view on the UI thread; process on the audio thread.

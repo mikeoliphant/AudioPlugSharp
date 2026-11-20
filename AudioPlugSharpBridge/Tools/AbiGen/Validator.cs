@@ -1,6 +1,6 @@
 namespace AbiGen;
 
-/// <summary>Enforces the type rules from DESIGN.md §5. Anything outside them is a build error.</summary>
+/// <summary>Enforces the ABI type rules (see README.md). Anything outside them is a build error.</summary>
 public static class Validator
 {
     public static void Validate(AbiModel model, List<string> errors)

@@ -1,4 +1,4 @@
-// ClapAdapter.cpp - the generic CLAP adapter for AudioPlugSharp plugins (DESIGN.md §7, phase 3).
+// ClapAdapter.cpp - the generic CLAP adapter for AudioPlugSharp plugins.
 //
 // One binary serves every plugin. It is shipped as <Plugin>.clap in a folder that also contains <Plugin>.dll
 // (the managed plugin) and the bridge (AudioPlugSharpBridge.dll, AudioPlugSharp.dll, runtimeconfig). The

@@ -1,5 +1,5 @@
 // main.cpp - BridgeTestHost: loads unmodified AudioPlugSharp plugins through the bridge, runs a functional demo,
-// an isolation test, a realtime stress test, and the audio-thread allocation check (DESIGN.md §8.1).
+// an isolation test, a realtime stress test, and the audio-thread allocation check.
 #include "aps/ManagedPluginFactory.h"
 
 #include <algorithm>
@@ -489,7 +489,7 @@ int main(int argc, char** argv) {
                                    static_cast<long long>(diag.pluginAllocatedBytes())});
     }
 
-    // DESIGN.md §8.1: the bridge must not allocate on the audio path. Plugin allocations are reported only.
+    // The bridge must not allocate on the audio path. Plugin allocations are reported only.
     std::printf("\n== Audio-path allocations (process calls after setup) ==\n");
     for (const auto& a : allocations) {
         std::printf("  %-16s bridge %lld B %s, plugin %lld B\n", a.name.c_str(), a.bridge, a.bridge == 0 ? "(ok)" : "(FAIL)",

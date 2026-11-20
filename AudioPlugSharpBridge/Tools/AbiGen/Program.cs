@@ -1,6 +1,6 @@
 using AbiGen;
 
-// AbiGen: generates the native/managed ABI from the contract assembly. See DESIGN.md §5.
+// AbiGen: generates the native/managed ABI from the contract assembly. See README.md.
 //
 //   AbiGen --contract <Contract.dll> --manifest <abi-manifest.json> --c-header <abi.h>
 //          --cpp-header <abi.hpp> --csharp-dir <dir> [--check]

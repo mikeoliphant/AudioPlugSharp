@@ -6,7 +6,7 @@ namespace AudioPlugSharpBridge.Interop;
 /// block's output buffer, and only parameter edits call into native code (on the main thread; edits from other
 /// threads are queued for it).
 ///
-/// Everything used during Process is allocation-free (DESIGN.md §8.1).
+/// Everything used during Process is allocation-free.
 /// </summary>
 internal sealed unsafe class ManagedHost : IAudioHost
 {

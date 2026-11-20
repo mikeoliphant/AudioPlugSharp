@@ -1,4 +1,4 @@
-// EditorWindow.h - the native child window that hosts a plugin editor (DESIGN.md §9.3), shared by the
+// EditorWindow.h - the native child window that hosts a plugin editor, shared by the
 // format adapters.
 //
 // The adapter creates one EditorWindow per open editor inside the host's parent window. The window drives
@@ -63,7 +63,7 @@ public:
     virtual void editorOpened() {}
     virtual void editorClosing() {}
 
-    // Window services (DESIGN.md §9.3). Each returns false where the platform does not support it.
+    // Window services. Each returns false where the platform does not support it.
     // Show or hide the cursor while it is over the window.
     virtual bool setCursorVisible(bool) { return false; }
     // Move the window out of its parent into a borderless top-level window covering its monitor, or back. On a
