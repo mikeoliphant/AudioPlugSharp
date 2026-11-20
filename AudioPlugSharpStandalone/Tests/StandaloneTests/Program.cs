@@ -17,7 +17,7 @@ namespace StandaloneTests;
 /// </summary>
 static class Program
 {
-    const string PluginName = "UILayout Test"; // the window title, and the plugin's save folder
+    const string PluginName = "UILayout Test"; // the window title
     const int EditorWidth = 320, EditorHeight = 160;
     const uint KeyF11 = 0x7A;
 
@@ -56,7 +56,8 @@ static class Program
 
     static void Run(WindowDriver driver, string host, string plugin, string mode, string? captures)
     {
-        string saveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), PluginName);
+        // A folder of the test's own (--save-folder), not the plugin's real one in the user's application data.
+        string saveFolder = Path.Combine(Path.GetTempPath(), $"AudioPlugSharpStandaloneTests-{Environment.ProcessId}-{mode}");
         string saveFile = Path.Combine(saveFolder, "SaveData");
         if (Directory.Exists(saveFolder)) Directory.Delete(saveFolder, recursive: true);
 
@@ -65,7 +66,7 @@ static class Program
             if (captures != null) driver.Capture(window, Path.Combine(captures, $"standalone-{name}-{mode}.bmp"));
         }
 
-        Process process = Start(host, plugin, mode);
+        Process process = Start(host, plugin, mode, saveFolder);
         try
         {
             if (!driver.Find(PluginName, out nint top, out nint editor))
@@ -129,7 +130,7 @@ static class Program
             Check(double.TryParse(gain, NumberStyles.Float, CultureInfo.InvariantCulture, out double dB) && dB < -10,
                 $"the drag reached the plugin (gain saved: {(gain == "" ? "none" : gain + " dB")})");
 
-            process = Start(host, plugin, mode);
+            process = Start(host, plugin, mode, saveFolder);
             bool found = driver.Find(PluginName, out top, out editor);
             Thread.Sleep(1500);
             Check(found && driver.Size(editor) == Expect(500, 300), $"reopens at the saved size (editor {(found ? driver.Size(editor) : "none")})");
@@ -139,12 +140,15 @@ static class Program
         finally
         {
             if (!process.HasExited) process.Kill();
+            if (Directory.Exists(saveFolder)) Directory.Delete(saveFolder, recursive: true);
         }
     }
 
-    static Process Start(string host, string plugin, string mode)
+    static Process Start(string host, string plugin, string mode, string saveFolder)
     {
         var start = new ProcessStartInfo(host) { UseShellExecute = false };
+        start.ArgumentList.Add("--save-folder");
+        start.ArgumentList.Add(saveFolder);
         start.ArgumentList.Add(plugin);
         start.Environment["AUDIOPLUGSHARP_EDITOR_RENDER_THREAD"] = mode;
         return Process.Start(start) ?? throw new InvalidOperationException($"Could not start {host}");
