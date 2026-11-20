@@ -1,3 +1,4 @@
+using AudioIOSharp;
 using AudioPlugSharp;
 using AudioPlugSharpWindowing;
 
@@ -13,9 +14,11 @@ namespace AudioPlugSharpStandalone;
 /// static void Main() => new StandaloneHost(new MyPlugin()).Run();
 /// </code>
 ///
-/// The plugin's state is restored when it starts and saved when it closes (<see cref="SaveFolder"/>). Audio is a
-/// dummy device for now: silent input, output discarded, at <see cref="SampleRate"/> in blocks of
-/// <see cref="BlockSize"/>.
+/// The plugin's state is restored when it starts and saved when it closes (<see cref="SaveFolder"/>). Audio runs
+/// through AudioIOSharp: ASIO, JACK, or its internal clock (no device, the default). The audio configuration is saved
+/// in the save folder too, with the last one used with each driver; <see cref="AudioDriver"/>,
+/// <see cref="AudioDevice"/>, <see cref="AudioSampleRate"/> and <see cref="AudioBufferSize"/> change it for a run (and
+/// from then on).
 /// </summary>
 public class StandaloneHost : IAudioHost
 {
@@ -23,9 +26,28 @@ public class StandaloneHost : IAudioHost
     readonly IAudioPluginProcessor processor;
     readonly IAudioPluginEditor? editor;
 
-    PortBuffers? inputBuffers, outputBuffers;
-    DummyAudioDevice? audio;
+    AudioEngine? engine;
+    PortBinding? inputBinding, outputBinding;
+    bool processing;
     Exception? processFailure;
+    // Since the device last started or changed its format: blocks and the frames in them, and the dropouts in the first
+    // second (a device can resync as it starts, before anything is heard) and after it.
+    long blocks, frames, startupDropouts, dropouts;
+    const double StartupSeconds = 1;
+
+    // What went on while processing, recorded on the audio thread without allocating and logged only when processing
+    // stops, so finding out about dropouts can't cause more: each dropout's position, with the garbage collections and GC
+    // pause so far (process-wide, so they show whether a collection came with it), and the plugin's allocations.
+    const int MaxRecordedDropouts = 64;
+    readonly long[] dropoutFrames = new long[MaxRecordedDropouts];
+    readonly int[] dropoutLost = new int[MaxRecordedDropouts];
+    readonly int[] dropoutCollections = new int[MaxRecordedDropouts * 3];
+    readonly long[] dropoutPauseTicks = new long[MaxRecordedDropouts];
+    int recordedDropouts;
+    long pluginAllocatedBytes;
+    readonly int[] startCollections = new int[3];
+    long startPauseTicks;
+    DateTime startTime;
 
     public StandaloneHost(IAudioPlugin plugin)
     {
@@ -37,11 +59,25 @@ public class StandaloneHost : IAudioHost
 
     public IAudioPlugin Plugin => plugin;
 
-    /// <summary>Where the plugin's state is kept between runs (as by AudioPlugSharp 0.7's standalone hosts).</summary>
+    /// <summary>Where the plugin's state is kept between runs (as by AudioPlugSharp 0.7's standalone hosts), and the
+    /// audio settings.</summary>
     public string SaveFolder { get; set; }
 
-    /// <summary>The block size audio is processed in. Set before <see cref="Run"/>.</summary>
-    public uint BlockSize { get; set; } = 256;
+    /// <summary>The audio driver to use instead of the saved one (None, ASIO, JACK). Another driver starts from the
+    /// configuration last used with it. Set before <see cref="Run"/>.</summary>
+    public string? AudioDriver { get; set; }
+
+    /// <summary>The device to use instead of the saved one. Set before <see cref="Run"/>.</summary>
+    public string? AudioDevice { get; set; }
+
+    /// <summary>The sample rate to use instead of the saved one. Set before <see cref="Run"/>.</summary>
+    public int? AudioSampleRate { get; set; }
+
+    /// <summary>The buffer size to use instead of the saved one. Set before <see cref="Run"/>.</summary>
+    public int? AudioBufferSize { get; set; }
+
+    /// <summary>The audio engine, while <see cref="Run"/> runs.</summary>
+    public AudioEngine? Engine => engine;
 
     /// <summary>
     /// Runs the plugin until its window is closed, then saves its state. Call on the thread that should own the
@@ -54,30 +90,58 @@ public class StandaloneHost : IAudioHost
         PrepareParameters();
         editsEnabled = true;
         LoadState();
-
         BitsPerSample = (processor.SampleFormatsSupported & EAudioBitsPerSample.Bits32) != 0 ? EAudioBitsPerSample.Bits32 : EAudioBitsPerSample.Bits64;
-        MaxAudioBufferSize = BlockSize;
-        processor.InitializeProcessing();
-        processor.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample);
-        inputBuffers = new PortBuffers(processor.InputPorts, MaxAudioBufferSize, BitsPerSample);
-        outputBuffers = new PortBuffers(processor.OutputPorts, MaxAudioBufferSize, BitsPerSample);
 
-        processor.Start();
-        audio = new DummyAudioDevice(SampleRate, MaxAudioBufferSize, ProcessBlock);
-        audio.Start();
+        AudioSettings settings = AudioSettings.Load(SaveFolder);
+        engine = new AudioEngine(StartupConfig(settings), AudioEngine.PlatformDrivers(plugin.PluginName), settings.For);
+        engine.Log += (level, message) => Logger.Log($"Audio: {message}");
+        // The engine went back to no device after the device failed: that's the configuration from now on.
+        engine.ConfigChanged += config =>
+        {
+            settings.Remember(config);
+            settings.Save(SaveFolder);
+        };
+        var client = new Client(this);
         try
         {
+            // The engine's work doesn't need this thread, so waiting here is safe.
+            engine.Start().GetAwaiter().GetResult();
+            engine.Attach(client).GetAwaiter().GetResult();
+            settings.Remember(engine.Config);
+            settings.Save(SaveFolder);
             RunWindow();
         }
         finally
         {
-            audio.Stop();
-            processor.Stop();
+            engine.Detach(client).GetAwaiter().GetResult();
+            settings.Remember(engine.Config);
+            engine.Dispose();
+            if (processing)
+            {
+                processor.Stop();
+                processing = false;
+                ReportProcessing();
+            }
             SaveState();
-            inputBuffers.Dispose();
-            outputBuffers.Dispose();
+            settings.Save(SaveFolder);
+            inputBinding?.Dispose();
+            outputBinding?.Dispose();
             if (processFailure != null) Logger.Log("Processing failed: " + processFailure);
         }
+    }
+
+    // The saved configuration, with this run's choices on top. Another driver starts from what was last used with it.
+    AudioConfig StartupConfig(AudioSettings settings)
+    {
+        AudioConfig c = settings.Config;
+        if (AudioDriver != null && !string.Equals(AudioDriver, c.Driver, StringComparison.OrdinalIgnoreCase))
+            c = settings.For(AudioDriver) is AudioConfig last ? last with { Driver = AudioDriver } : new AudioConfig { Driver = AudioDriver };
+        return c with
+        {
+            Device = AudioDevice ?? c.Device,
+            SampleRate = AudioSampleRate ?? c.SampleRate,
+            BufferSize = AudioBufferSize ?? c.BufferSize,
+        };
     }
 
     // ---- state --------------------------------------------------------------------------------------------------
@@ -118,37 +182,91 @@ public class StandaloneHost : IAudioHost
 
     // ---- IAudioHost: transport ----------------------------------------------------------------------------------
 
-    /// <summary>The sample rate audio is processed at. Set before <see cref="Run"/>.</summary>
-    public double SampleRate { get; set; } = 48000;
+    public double SampleRate { get; private set; } = ClockDriver.DefaultSampleRate;
     public uint MaxAudioBufferSize { get; private set; }
     public uint CurrentAudioBufferSize { get; private set; }
     public EAudioBitsPerSample BitsPerSample { get; private set; }
     public double BPM => 120;
     public long CurrentProjectSample { get; private set; }
+
+    /// <summary>Dropouts while running, since the device last started or changed its format (after its first second;
+    /// see <see cref="StartupDropouts"/>): the device's resyncs and callbacks that overran (ASIO), JACK's xruns, and the
+    /// internal clock falling behind.</summary>
+    public long Dropouts => Interlocked.Read(ref dropouts);
+
+    /// <summary>Dropouts in the first second after the device started or changed its format: a device can resync as it
+    /// starts, before anything is heard.</summary>
+    public long StartupDropouts => Interlocked.Read(ref startupDropouts);
     public bool IsPlaying => false;
+
+    // ---- the plugin on the device -------------------------------------------------------------------------------
+
+    /// <summary>The plugin as the audio engine's client.</summary>
+    class Client(StandaloneHost host) : IAudioClient
+    {
+        public void Prepare(AudioFormat format) => host.Prepare(format);
+
+        public void Process(in AudioBuffers buffers) => host.ProcessBlock(buffers);
+    }
+
+    // The device opened, or its format changed (the engine calls this while nothing processes): the plugin is set up
+    // for the device's rate and buffer size, and its ports for the device's channels.
+    void Prepare(AudioFormat format)
+    {
+        if (processing)
+        {
+            processor.Stop();
+            processing = false;
+            ReportProcessing();
+        }
+        SampleRate = format.SampleRate;
+        MaxAudioBufferSize = (uint)Math.Max(format.MaxFrames, 1);
+        processor.InitializeProcessing();
+        processor.SetMaxAudioBufferSize(MaxAudioBufferSize, BitsPerSample);
+        inputBinding?.Dispose();
+        outputBinding?.Dispose();
+        inputBinding = new PortBinding(processor.InputPorts, input: true, MaxAudioBufferSize, BitsPerSample);
+        outputBinding = new PortBinding(processor.OutputPorts, input: false, MaxAudioBufferSize, BitsPerSample);
+        processor.Start();
+        processing = true;
+        startTime = DateTime.Now;
+        for (int g = 0; g < 3; g++)
+            startCollections[g] = GC.CollectionCount(g);
+        startPauseTicks = GC.GetTotalPauseDuration().Ticks;
+        Logger.Log($"Audio: {format.SampleRate} Hz, {format.MaxFrames} frames, inputs [{string.Join(", ", format.Inputs)}], outputs [{string.Join(", ", format.Outputs)}]");
+    }
 
     // ---- audio thread -------------------------------------------------------------------------------------------
 
     bool blockEventsDispatched;
 
-    void ProcessBlock(uint frames)
+    void ProcessBlock(in AudioBuffers buffers)
     {
-        CurrentAudioBufferSize = frames;
+        int frames = buffers.Frames;
+        if (!processing || frames > MaxAudioBufferSize || inputBinding == null || outputBinding == null)
+        {
+            buffers.ClearOutputs();
+            return;
+        }
+        CurrentAudioBufferSize = (uint)frames;
         blockEventsDispatched = false;
         changedCount = 0;
 
-        inputBuffers!.Bind(frames, clear: true);
-        outputBuffers!.Bind(frames, clear: false);
+        inputBinding.Bind(buffers, frames);
+        outputBinding.Bind(buffers, frames);
         try
         {
+            long allocated = GC.GetAllocatedBytesForCurrentThread();
             processor.PreProcess();
             processor.Process();
             processor.PostProcess();
+            pluginAllocatedBytes += GC.GetAllocatedBytesForCurrentThread() - allocated;
+            outputBinding.Finish(buffers, frames);
         }
         catch (Exception e)
         {
             processFailure ??= e; // logged when the host stops; logging here would allocate on every block
-            outputBuffers.Clear(frames);
+            buffers.ClearOutputs();
         }
 
         // As in a DAW: parameters that changed in this block end their interpolation.
@@ -157,6 +275,67 @@ public class StandaloneHost : IAudioHost
             parameters[changed[i]].ResetParameterChange();
 
         CurrentProjectSample += frames;
+        int lost = buffers.Xruns + (buffers.Skipped > 0 ? 1 : 0);
+        if (lost > 0)
+        {
+            Interlocked.Add(ref this.frames < StartupSeconds * SampleRate ? ref startupDropouts : ref dropouts, lost);
+            if (recordedDropouts < MaxRecordedDropouts)
+            {
+                int r = recordedDropouts++;
+                dropoutFrames[r] = this.frames;
+                dropoutLost[r] = lost;
+                for (int g = 0; g < 3; g++)
+                    dropoutCollections[r * 3 + g] = GC.CollectionCount(g);
+                dropoutPauseTicks[r] = GC.GetTotalPauseDuration().Ticks;
+            }
+        }
+        blocks++;
+        this.frames += frames;
+    }
+
+    // Processing stopped (the device closed or changed its format): how it went, in the log.
+    // Times are from when processing started (logged), so they line up with the plugin's own log lines.
+    void ReportProcessing()
+    {
+        Logger.Log($"Audio: started {startTime:HH:mm:ss.fff}: {blocks} blocks at {SampleRate} Hz ({frames / SampleRate:F1} s), " +
+                   $"{Interlocked.Read(ref dropouts)} dropout(s) while running, {Interlocked.Read(ref startupDropouts)} while starting");
+
+        var collections = Enumerable.Range(0, 3).Select(g => GC.CollectionCount(g) - startCollections[g]).ToArray();
+        double pause = TimeSpan.FromTicks(GC.GetTotalPauseDuration().Ticks - startPauseTicks).TotalMilliseconds;
+        Logger.Log($"Audio: GCs while processing: gen0 {collections[0]}, gen1 {collections[1]}, gen2 {collections[2]} " +
+                   $"(total pause {pause:F1} ms); the plugin allocated {pluginAllocatedBytes:N0} bytes on the audio thread");
+
+        if (recordedDropouts > 0)
+        {
+            var lines = new List<string>();
+            int[] previous = startCollections;
+            long previousPause = startPauseTicks;
+            for (int r = 0; r < recordedDropouts; r++)
+            {
+                var gens = new List<string>();
+                for (int g = 0; g < 3; g++)
+                {
+                    int since = dropoutCollections[r * 3 + g] - previous[g];
+                    if (since > 0)
+                        gens.Add($"gen{g} {since}");
+                }
+                double sincePause = TimeSpan.FromTicks(dropoutPauseTicks[r] - previousPause).TotalMilliseconds;
+                string what = dropoutFrames[r] < StartupSeconds * SampleRate ? ", starting" : "";
+                string gc = gens.Count > 0 ? $"GCs since the last: {string.Join(", ", gens)}, {sincePause:F1} ms pause" : "no GC since the last";
+                lines.Add($"{dropoutFrames[r] / SampleRate:F2} s ({dropoutLost[r]}{what}; {gc})");
+                previous = dropoutCollections[(r * 3)..(r * 3 + 3)];
+                previousPause = dropoutPauseTicks[r];
+            }
+            long total = Interlocked.Read(ref dropouts) + Interlocked.Read(ref startupDropouts);
+            long unrecorded = total - dropoutLost.Take(recordedDropouts).Sum();
+            Logger.Log($"Audio: dropouts at {string.Join("; ", lines)}{(unrecorded > 0 ? $"; and {unrecorded} more" : "")}");
+        }
+
+        blocks = frames = 0;
+        Interlocked.Exchange(ref dropouts, 0);
+        Interlocked.Exchange(ref startupDropouts, 0);
+        recordedDropouts = 0;
+        pluginAllocatedBytes = 0;
     }
 
     public int ProcessEvents()
