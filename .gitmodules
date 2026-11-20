@@ -1,3 +1,6 @@
 [submodule "Dependencies/UILayout"]
 	path = Dependencies/UILayout
 	url = https://github.com/mikeoliphant/UILayout.git
+[submodule "Dependencies/AudioIOSharp"]
+	path = Dependencies/AudioIOSharp
+	url = https://github.com/mikeoliphant/AudioIOSharp
