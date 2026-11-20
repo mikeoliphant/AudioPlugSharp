@@ -9,6 +9,7 @@
   <PropertyGroup>
     <AudioPlugSharpBridgeFilesDir Condition="'$(AudioPlugSharpBridgeFilesDir)' == ''">$(MSBuildThisFileDirectory)../bin/$(Configuration)/net10.0/</AudioPlugSharpBridgeFilesDir>
     <AudioPlugSharpBridgeNativeDir Condition="'$(AudioPlugSharpBridgeNativeDir)' == ''">$(MSBuildThisFileDirectory)../bin/native/</AudioPlugSharpBridgeNativeDir>
+    <AudioPlugSharpBridgeRuntimeConfigDir Condition="'$(AudioPlugSharpBridgeRuntimeConfigDir)' == ''">$(MSBuildThisFileDirectory)../obj/$(Configuration)/runtimeconfig/</AudioPlugSharpBridgeRuntimeConfigDir>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(AudioPlugSharpBundles)' != 'false'">

@@ -26,7 +26,8 @@
   <!--
     The AudioPlugSharpBridge package, what a plugin project references to load in DAWs (CLAP, VST3):
       build/AudioPlugSharpBridge.props, .targets   plugin project settings; the DAW bundles, made after each build
-      bridge/                                       this assembly, its runtimeconfig.json and deps.json
+      bridge/                                       this assembly and its deps.json
+      bridge/runtimeconfig/windows/, default/       its runtimeconfig.json for Windows bundles, and for the others
       native/<rid>/                                 the format adapters (AudioPlugSharpClap.clap, AudioPlugSharpVst3)
     No lib/: plugins don't compile against the bridge. Not native/ under runtimes/: NuGet would copy those files into
     every plugin's output. The adapters come from the native build (CMake), which stages them in bin/native/<rid>/;
@@ -55,8 +56,11 @@
     <Error Condition="!Exists('$(MSBuildThisFileDirectory)bin/native')"
            Text="No adapters staged in bin/native/: build the native project (Native/, CMake) before packing." />
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(OutDir)$(TargetName).dll;$(OutDir)$(TargetName).runtimeconfig.json;$(OutDir)$(TargetName).deps.json"
-                              PackagePath="bridge/" />
+      <TfmSpecificPackageFile Include="$(OutDir)$(TargetName).dll;$(OutDir)$(TargetName).deps.json" PackagePath="bridge/" />
+      <TfmSpecificPackageFile Include="$(ApsRuntimeConfigDir)windows/$(TargetName).runtimeconfig.json"
+                              PackagePath="bridge/runtimeconfig/windows/" />
+      <TfmSpecificPackageFile Include="$(ApsRuntimeConfigDir)default/$(TargetName).runtimeconfig.json"
+                              PackagePath="bridge/runtimeconfig/default/" />
     </ItemGroup>
   </Target>
 
@@ -80,6 +84,35 @@
     <!-- PrivateAssets: only the runtimeconfig needs it; projects referencing the bridge (tests) stay net10.0. -->
     <FrameworkReference Include="Microsoft.WindowsDesktop.App" PrivateAssets="all" />
   </ItemGroup>
+
+  <!--
+    A bundle gets the runtime config for its own platform, whatever platform it is made on (Linux bundles can be made
+    on Windows, and the package is packed on Windows): windows/ with the Windows Desktop framework, default/ without
+    it, since other platforms don't have it. Both are derived from the runtime config the SDK generated here. The
+    package ships both, and the bundle targets pick one (build/AudioPlugSharpBridge.targets).
+  -->
+  <PropertyGroup>
+    <ApsRuntimeConfigDir>$(MSBuildThisFileDirectory)obj/$(Configuration)/runtimeconfig/</ApsRuntimeConfigDir>
+  </PropertyGroup>
+
+  <Target Name="ApsRuntimeConfigVariants" AfterTargets="GenerateBuildRuntimeConfigurationFiles"
+          Inputs="$(ProjectRuntimeConfigFilePath);$(MSBuildThisFileFullPath)"
+          Outputs="$(ApsRuntimeConfigDir)windows/$(TargetName).runtimeconfig.json;$(ApsRuntimeConfigDir)default/$(TargetName).runtimeconfig.json">
+    <PropertyGroup>
+      <_ApsRc>$([System.IO.File]::ReadAllText('$(ProjectRuntimeConfigFilePath)'))</_ApsRc>
+      <_ApsDesktopFramework>\s*,\s*\{\s*"name":\s*"Microsoft\.WindowsDesktop\.App",\s*"version":\s*"[^"]*"\s*\}</_ApsDesktopFramework>
+      <_ApsCoreFramework>\{\s*"name":\s*"Microsoft\.NETCore\.App",\s*"version":\s*"([^"]*)"\s*\}</_ApsCoreFramework>
+      <_ApsRcDefault>$([System.Text.RegularExpressions.Regex]::Replace('$(_ApsRc)', '$(_ApsDesktopFramework)', ''))</_ApsRcDefault>
+      <_ApsRcWindows Condition="$(_ApsRc.Contains('Microsoft.WindowsDesktop.App'))">$(_ApsRc)</_ApsRcWindows>
+      <_ApsRcWindows Condition="'$(_ApsRcWindows)' == ''">$([System.Text.RegularExpressions.Regex]::Replace('$(_ApsRcDefault)', '$(_ApsCoreFramework)', '$0, { "name": "Microsoft.WindowsDesktop.App", "version": "$1" }'))</_ApsRcWindows>
+    </PropertyGroup>
+    <Error Condition="$(_ApsRcDefault.Contains('WindowsDesktop')) Or !$(_ApsRcWindows.Contains('Microsoft.WindowsDesktop.App'))"
+           Text="AudioPlugSharpBridge: could not make the per-platform runtime configs from $(ProjectRuntimeConfigFilePath)" />
+    <WriteLinesToFile File="$(ApsRuntimeConfigDir)windows/$(TargetName).runtimeconfig.json"
+                      Lines="$([MSBuild]::Escape($(_ApsRcWindows)))" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(ApsRuntimeConfigDir)default/$(TargetName).runtimeconfig.json"
+                      Lines="$([MSBuild]::Escape($(_ApsRcDefault)))" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
 
   <ItemGroup>
     <!-- The public plugin API; shipped next to the bridge and shared by all plugin instances. -->

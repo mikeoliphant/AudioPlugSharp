@@ -221,6 +221,20 @@ jobs:
         ../testhosts/ClapTestHost.exe bin/Release/net10.0/clap/SmokePlugin/SmokePlugin.clap
         ../testhosts/Vst3TestHost.exe bin/Release/net10.0/vst3/SmokePlugin.vst3
 
+    - name: Each bundle gets its platform's runtime config
+      # The package is packed on Windows; Linux bundles must not ask for the Windows Desktop framework
+      working-directory: smoke
+      run: |
+        grep -q Microsoft.WindowsDesktop.App bin/Release/net10.0/vst3/SmokePlugin.vst3/Contents/x86_64-win/AudioPlugSharpBridge.runtimeconfig.json \
+          || { echo "the Windows bundle lacks the Windows Desktop framework"; exit 1; }
+        dotnet build -c Release -p:AudioPlugSharpBridgeRuntimeIdentifier=linux-x64
+        for f in bin/Release/net10.0/clap/SmokePlugin/AudioPlugSharpBridge.runtimeconfig.json \
+                 bin/Release/net10.0/vst3/SmokePlugin.vst3/Contents/x86_64-linux/AudioPlugSharpBridge.runtimeconfig.json; do
+          grep -q Microsoft.NETCore.App "$f" || { echo "$f: no runtime framework"; exit 1; }
+          if grep -q WindowsDesktop "$f"; then echo "$f asks for the Windows Desktop framework"; exit 1; fi
+        done
+        echo "runtime configs ok"
+
     - name: Upload the packages
       uses: actions/upload-artifact@v4
       with:

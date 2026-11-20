@@ -6,20 +6,22 @@
       <OutDir>/clap/<Plugin>/<Plugin>.clap                  CLAP: copy the <Plugin> folder to the CLAP folder
       <OutDir>/vst3/<Plugin>.vst3/Contents/<arch>/<Plugin>.vst3 (.so on Linux)   VST3: copy <Plugin>.vst3
 
-    Each bundle holds the plugin's build output, the bridge (AudioPlugSharpBridge.dll and its runtime config) and
-    the format adapter renamed after the plugin. The adapter is the one for the build machine's platform, or for
+    Each bundle holds the plugin's build output, the bridge (AudioPlugSharpBridge.dll and the runtime config for the
+    bundle's platform) and the format adapter renamed after the plugin. The adapter is the one for the build machine's platform, or for
     $(RuntimeIdentifier) when the project sets one; AudioPlugSharpBridgeRuntimeIdentifier overrides both.
 
     Properties:
       AudioPlugSharpBundles                    false: make no bundles
       AudioPlugSharpBridgeRuntimeIdentifier    the platform to bundle for (win-x64, linux-x64, linux-arm64)
       AudioPlugSharpBridgeFilesDir             the bridge's files (default: the package's bridge/ folder)
+      AudioPlugSharpBridgeRuntimeConfigDir     the runtime configs, in windows/ and default/ (default: bridge/runtimeconfig/)
       AudioPlugSharpBridgeNativeDir            the adapters, in <rid>/ subfolders (default: the package's native/)
   -->
   <PropertyGroup>
     <AudioPlugSharpBundles Condition="'$(AudioPlugSharpBundles)' == ''">true</AudioPlugSharpBundles>
     <AudioPlugSharpBridgeFilesDir Condition="'$(AudioPlugSharpBridgeFilesDir)' == ''">$(MSBuildThisFileDirectory)../bridge/</AudioPlugSharpBridgeFilesDir>
     <AudioPlugSharpBridgeNativeDir Condition="'$(AudioPlugSharpBridgeNativeDir)' == ''">$(MSBuildThisFileDirectory)../native/</AudioPlugSharpBridgeNativeDir>
+    <AudioPlugSharpBridgeRuntimeConfigDir Condition="'$(AudioPlugSharpBridgeRuntimeConfigDir)' == ''">$(AudioPlugSharpBridgeFilesDir)runtimeconfig/</AudioPlugSharpBridgeRuntimeConfigDir>
   </PropertyGroup>
 
   <Target Name="AudioPlugSharpBundles" AfterTargets="Build" Condition="'$(AudioPlugSharpBundles)' == 'true'">
@@ -43,6 +45,9 @@
       <_ApsNative>$(AudioPlugSharpBridgeNativeDir)$(_ApsRid)/</_ApsNative>
       <_ApsClapAdapter>$(_ApsNative)AudioPlugSharpClap.clap</_ApsClapAdapter>
       <_ApsVst3Adapter>$(_ApsNative)AudioPlugSharpVst3$(_ApsVst3Suffix)</_ApsVst3Adapter>
+      <!-- The Windows Desktop framework only in Windows bundles: other platforms don't have it -->
+      <_ApsRuntimeConfig>$(AudioPlugSharpBridgeRuntimeConfigDir)default/AudioPlugSharpBridge.runtimeconfig.json</_ApsRuntimeConfig>
+      <_ApsRuntimeConfig Condition="$(_ApsRid.StartsWith('win-'))">$(AudioPlugSharpBridgeRuntimeConfigDir)windows/AudioPlugSharpBridge.runtimeconfig.json</_ApsRuntimeConfig>
       <_ApsClapDir>$(TargetDir)clap/$(TargetName)/</_ApsClapDir>
       <_ApsVst3Dir>$(TargetDir)vst3/$(TargetName).vst3/Contents/$(_ApsVst3Arch)/</_ApsVst3Dir>
     </PropertyGroup>
@@ -51,12 +56,15 @@
              Text="AudioPlugSharpBridge: no DAW bundles for $(_ApsRid) (supported: win-x64, win-arm64, linux-x64, linux-arm64)." />
     <Warning Condition="'$(_ApsVst3Arch)' != '' And (!Exists('$(_ApsClapAdapter)') Or !Exists('$(_ApsVst3Adapter)'))"
              Text="AudioPlugSharpBridge: no adapters for $(_ApsRid) in $(_ApsNative); no DAW bundles made." />
+    <Error Condition="'$(_ApsVst3Arch)' != '' And Exists('$(_ApsClapAdapter)') And Exists('$(_ApsVst3Adapter)') And !Exists('$(_ApsRuntimeConfig)')"
+           Text="AudioPlugSharpBridge: $(_ApsRuntimeConfig) not found." />
 
     <ItemGroup Condition="'$(_ApsVst3Arch)' != '' And Exists('$(_ApsClapAdapter)') And Exists('$(_ApsVst3Adapter)')">
       <!-- The plugin's output, without the bundles themselves -->
       <_ApsPluginFile Include="$(TargetDir)**/*" Exclude="$(TargetDir)clap/**;$(TargetDir)vst3/**" />
       <!-- The bridge's files (copied after the plugin's: its AudioPlugSharp.dll, the one shared copy, wins) -->
-      <_ApsBridgeFile Include="$(AudioPlugSharpBridgeFilesDir)*" />
+      <_ApsBridgeFile Include="$(AudioPlugSharpBridgeFilesDir)*" Exclude="$(AudioPlugSharpBridgeFilesDir)*.runtimeconfig.json" />
+      <_ApsBridgeFile Include="$(_ApsRuntimeConfig)" />
     </ItemGroup>
 
     <!-- Rebuilt from scratch, so files the plugin no longer has don't linger in the bundles -->
