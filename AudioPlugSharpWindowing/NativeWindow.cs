@@ -26,11 +26,13 @@ public abstract class NativeWindow : IDisposable
     public static NativeWindow CreateTopLevel(string title, int width, int height, bool resizable)
     {
         if (OperatingSystem.IsWindows()) return Win32Window.Create(title, width, height, resizable);
-        throw new PlatformNotSupportedException("AudioPlugSharpWindowing supports Windows only so far");
+        if (OperatingSystem.IsLinux()) return X11Window.Create(title, width, height, resizable);
+        throw new PlatformNotSupportedException("AudioPlugSharpWindowing supports Windows and Linux (X11)");
     }
 
     /// <summary>The platform's kind of window, or null where windows aren't supported.</summary>
-    public static NativeWindowType? PlatformWindowType => OperatingSystem.IsWindows() ? NativeWindowType.Win32 : null;
+    public static NativeWindowType? PlatformWindowType =>
+        OperatingSystem.IsWindows() ? NativeWindowType.Win32 : OperatingSystem.IsLinux() ? NativeWindowType.X11 : null;
 
     /// <summary>Creates a visible child window at the given position in this window's client area.</summary>
     public abstract NativeWindow CreateChild(int x, int y, int width, int height);

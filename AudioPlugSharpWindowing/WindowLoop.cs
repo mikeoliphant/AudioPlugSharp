@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
-using static AudioPlugSharpWindowing.Win32Api;
 
 namespace AudioPlugSharpWindowing;
 
@@ -10,12 +9,12 @@ namespace AudioPlugSharpWindowing;
 /// Timers are run by the loop itself, at about millisecond resolution, rather than by the system's coarser window
 /// timers (about 16 ms on Windows, which would turn a 60 Hz frame timer into about 30 Hz).
 /// </summary>
-public static unsafe class WindowLoop
+public static class WindowLoop
 {
     static readonly List<WindowTimer> timers = new();
     static readonly Stopwatch clock = Stopwatch.StartNew();
     static volatile bool quit;
-    static uint loopThreadId;
+    static volatile Action? wake;
     static ExceptionDispatchInfo? failure;
 
     /// <summary>
@@ -24,43 +23,12 @@ public static unsafe class WindowLoop
     /// </summary>
     public static void Run()
     {
-        if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("AudioPlugSharpWindowing supports Windows only so far");
-
         quit = false;
         failure = null;
-        loopThreadId = GetCurrentThreadId();
-        timeBeginPeriod(1); // so the wait below wakes on time
 
-        try
-        {
-            MSG msg;
-            while (!quit)
-            {
-                while (!quit && PeekMessageW(&msg, 0, 0, 0, PM_REMOVE) != 0)
-                {
-                    if (msg.Message == WM_QUIT)
-                    {
-                        quit = true;
-                        break;
-                    }
-                    TranslateMessage(&msg);
-                    DispatchMessageW(&msg);
-                }
-                if (quit) break;
-
-                RunDueTimers();
-
-                double wait = NextTimerDue() - Now;
-                uint milliseconds = double.IsPositiveInfinity(wait) ? INFINITE : (uint)Math.Clamp(Math.Ceiling(wait * 1000), 0, int.MaxValue);
-                MsgWaitForMultipleObjectsEx(0, null, milliseconds, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
-            }
-        }
-        finally
-        {
-            timeEndPeriod(1);
-            loopThreadId = 0;
-        }
+        if (OperatingSystem.IsWindows()) Win32Window.RunLoop();
+        else if (OperatingSystem.IsLinux()) X11Window.RunLoop();
+        else throw new PlatformNotSupportedException("AudioPlugSharpWindowing supports Windows and Linux (X11)");
 
         failure?.Throw();
     }
@@ -69,8 +37,7 @@ public static unsafe class WindowLoop
     public static void Quit()
     {
         quit = true;
-        uint thread = loopThreadId;
-        if (thread != 0) PostThreadMessageW(thread, WM_NULL, 0, 0); // wake the loop
+        wake?.Invoke();
     }
 
     /// <summary>
@@ -86,17 +53,32 @@ public static unsafe class WindowLoop
 
     internal static void StopTimer(WindowTimer timer) => timers.Remove(timer);
 
-    static double Now => clock.Elapsed.TotalSeconds;
+    // ---- for the platform loops ----------------------------------------------------------------------------------
 
-    static double NextTimerDue()
+    internal static bool Quitting => quit;
+
+    /// <summary>Wakes the platform loop from its wait (set by the loop while it runs; any thread).</summary>
+    internal static Action? Wake
     {
-        double next = double.PositiveInfinity;
-        foreach (WindowTimer timer in timers) next = Math.Min(next, timer.Due);
-        return next;
+        get => wake;
+        set => wake = value;
     }
 
+    /// <summary>How long the platform loop may wait for messages before the next timer is due (infinite: none).</summary>
+    internal static double SecondsUntilNextTimer
+    {
+        get
+        {
+            double next = double.PositiveInfinity;
+            foreach (WindowTimer timer in timers) next = Math.Min(next, timer.Due);
+            return next - Now;
+        }
+    }
+
+    static double Now => clock.Elapsed.TotalSeconds;
+
     /// <summary>Runs the timers that are due. Also called while Windows runs a modal loop (moving or resizing a
-    /// window), where <see cref="Run"/>'s loop doesn't run.</summary>
+    /// window), where the platform loop doesn't run.</summary>
     internal static void RunDueTimers()
     {
         double now = Now;

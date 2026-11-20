@@ -299,6 +299,45 @@ internal unsafe class Win32Window : NativeWindow
         DestroyWindow(hwnd); // WM_NCDESTROY releases the rest
     }
 
+    // ---- message loop ------------------------------------------------------------------------------------------
+
+    /// <summary>WindowLoop.Run on Windows: messages, and the timers in between.</summary>
+    internal static void RunLoop()
+    {
+        uint thread = GetCurrentThreadId();
+        WindowLoop.Wake = () => PostThreadMessageW(thread, WM_NULL, 0, 0);
+        timeBeginPeriod(1); // so the wait below wakes on time
+        try
+        {
+            MSG msg;
+            while (!WindowLoop.Quitting)
+            {
+                while (!WindowLoop.Quitting && PeekMessageW(&msg, 0, 0, 0, PM_REMOVE) != 0)
+                {
+                    if (msg.Message == WM_QUIT)
+                    {
+                        WindowLoop.Quit();
+                        break;
+                    }
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                }
+                if (WindowLoop.Quitting) break;
+
+                WindowLoop.RunDueTimers();
+
+                double wait = WindowLoop.SecondsUntilNextTimer;
+                uint milliseconds = double.IsPositiveInfinity(wait) ? INFINITE : (uint)Math.Clamp(Math.Ceiling(wait * 1000), 0, int.MaxValue);
+                MsgWaitForMultipleObjectsEx(0, null, milliseconds, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
+            }
+        }
+        finally
+        {
+            timeEndPeriod(1);
+            WindowLoop.Wake = null;
+        }
+    }
+
     // ---- window procedures ---------------------------------------------------------------------------------
 
     [UnmanagedCallersOnly]
