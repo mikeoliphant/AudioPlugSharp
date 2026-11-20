@@ -46,6 +46,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AudioPlugSharpBridgeTests",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UILayoutTestPlugin", "AudioPlugSharpBridge\Tests\Plugins\UILayoutTestPlugin\UILayoutTestPlugin.csproj", "{BF936761-37CD-4EF1-B3BD-034BD08275F4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{5D3F8A21-7C4E-4B9A-A6D2-3E1F0B8C9A47}"
+	ProjectSection(SolutionItems) = preProject
+		Docs\Editors.md = Docs\Editors.md
+		Docs\Migration-0.8.md = Docs\Migration-0.8.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

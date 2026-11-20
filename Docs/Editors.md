@@ -82,3 +82,23 @@ WPF editors work on Windows only, and are heavier than UILayout editors.
 # Other Editors
 
 To use something else, implement the editor methods of **IAudioPluginEditor** yourself (or override them in **AudioPluginBase**): **OpenEditor** gives you the window to draw into, **EditorIdle** is called regularly, **EditorInput** brings mouse and keyboard input, and **CloseEditor** ends it.
+
+# Design Notes
+
+This section explains why editors work the way they do. You don't need it to write an editor.
+
+## Threads
+
+By default, an editor's updating and drawing run on the DAW's user interface thread, each time the DAW's timer fires. Drawing doesn't wait for the screen's refresh, so several open editors don't hold each other up.
+
+With **UseEditorRenderThread**, each editor gets a thread of its own, and all of its user interface work runs there: input, updating, layout and drawing. Mouse and keyboard input from the DAW is queued for that thread. In the other direction, parameter changes and window requests (fullscreen, cursor) are queued for the DAW's thread, because that's where the DAW expects them. Creating and destroying the window's graphics, and **CreateEditorUI**, **EditorOpened** and **EditorClosing**, stay on the DAW's thread.
+
+We considered a simpler split: update on the DAW's thread, and only draw on the render thread. We rejected it because UILayout moves things in response to input while updating (scrolling, dragging a list). Those would then move only at the DAW's timer rate, about 30 times a second in Reaper, even though drawing kept up with the screen.
+
+The DAW asks about each key right away, so **EditorWantsKey** is answered on the DAW's thread from the editor's input mappings, even in render-thread mode.
+
+## Scaling
+
+**EditorWidth**, **EditorHeight** and the editor sizes the DAW sees are logical units (pixels at 100% scale), as in earlier versions. The scale comes from the DAW when it provides one, otherwise from the system: the window's DPI on Windows, and 100% on Linux. When the scale changes (the DAW changes it, or the window moves to a screen with a different DPI), the window is resized and the editor redraws at the new scale.
+
+WPF scales its content by the window's DPI itself, so a DAW scale that differs from the system's isn't applied to WPF editors.
