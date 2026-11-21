@@ -143,6 +143,8 @@ namespace AudioPlugSharpUILayout
 
             editorScale = (scale > 0) ? scale : 1.0;
 
+            ResetFrameAllocations();
+
             // The window is the logical size x the UI scale; the layout works in logical units (MonoGameLayout.Scale)
             MonoGameHost host = new MonoGameHost(window, ToWindowPixels(EditorWidth, editorScale), ToWindowPixels(EditorHeight, editorScale), vsync: useRenderThread);
 
@@ -189,9 +191,57 @@ namespace AudioPlugSharpUILayout
 
         void RenderFrame(float secondsElapsed)
         {
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+
             EditorUpdate(secondsElapsed);
 
             editorHost.Tick(secondsElapsed);
+
+            CountFrameAllocations(secondsElapsed, GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+        }
+
+        // ---- editor-frame allocations ---------------------------------------------------------------------------
+        //
+        // The editor path aims to allocate nothing per frame (as the audio path does not at all). Frames are counted
+        // after the editor's first second (opening, the first layouts and drawing allocate), on the thread that runs
+        // them, and logged when the editor closes.
+
+        const float AllocationWarmUpSeconds = 1;
+
+        float editorSeconds;
+        long countedFrames;
+        long countedBytes;
+        long allocatingFrames;
+
+        void CountFrameAllocations(float secondsElapsed, long bytes)
+        {
+            editorSeconds += secondsElapsed;
+
+            if (editorSeconds < AllocationWarmUpSeconds)
+                return;
+
+            countedFrames++;
+            countedBytes += bytes;
+
+            if (bytes > 0)
+                allocatingFrames++;
+        }
+
+        void ResetFrameAllocations()
+        {
+            editorSeconds = 0;
+            countedFrames = 0;
+            countedBytes = 0;
+            allocatingFrames = 0;
+        }
+
+        void LogFrameAllocations()
+        {
+            if (countedFrames == 0)
+                return;
+
+            Logger.Log($"{PluginName} editor: {countedFrames} frames after the first second; {allocatingFrames} " +
+                $"allocated, {countedBytes:N0} bytes in all ({countedBytes / countedFrames:N0} per frame)");
         }
 
         /// <summary>
@@ -381,6 +431,8 @@ namespace AudioPlugSharpUILayout
 
                 return;
             }
+
+            LogFrameAllocations();
 
             try
             {

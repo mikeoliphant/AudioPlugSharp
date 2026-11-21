@@ -18,7 +18,29 @@ namespace AudioPlugSharp
         public virtual double MaxValue { get; set; }
         public double RangePower { get; set; } = 0;
         public double DefaultValue { get; set; }
-        public string ValueFormat { get; set; }
+        public string ValueFormat
+        {
+            get { return valueFormat; }
+
+            set
+            {
+                valueFormat = value;
+                valueFormatParsed = false;
+                compositeValueFormat = null;
+            }
+        }
+
+        string valueFormat;
+
+        // ValueFormat split once (for AppendValue) into the text before and after its one number and the number's
+        // format ("{0:0.0}dB": "", "0.0", "dB"), so the number is formatted into a buffer on the stack. Other shapes
+        // (several or aligned items, escaped braces) use CompositeFormat, which can box the value.
+        bool valueFormatParsed;
+        bool simpleValueFormat;
+        string valueFormatPrefix;
+        string valueFormatNumber;
+        string valueFormatSuffix;
+        CompositeFormat compositeValueFormat;
 
         double processValue;
         double editValue;
@@ -61,6 +83,101 @@ namespace AudioPlugSharp
         {
             return String.Format(ValueFormat, value);
         }
+
+        /// <summary>
+        /// Formats a value into text (replacing what it holds), without allocating once the builder has grown: for
+        /// controls that show the value while it changes. A parameter that overrides <see cref="FormatValue(double)"/>
+        /// (and not <see cref="AppendValue"/>) gets that text, which allocates.
+        /// </summary>
+        public void FormatValue(double value, StringBuilder text)
+        {
+            text.Clear();
+
+            if (UsesStringFormat)
+                text.Append(FormatValue(value));
+            else
+                AppendValue(value, text);
+        }
+
+        /// <summary>
+        /// Appends a formatted value (as <see cref="FormatValue(double)"/> formats it) without allocating. Override it
+        /// along with FormatValue(double) for text of your own.
+        /// </summary>
+        protected virtual void AppendValue(double value, StringBuilder text)
+        {
+            if (!valueFormatParsed)
+                ParseValueFormat();
+
+            if (simpleValueFormat)
+            {
+                Span<char> number = stackalloc char[64];
+
+                if (value.TryFormat(number, out int length, valueFormatNumber))
+                {
+                    text.Append(valueFormatPrefix).Append(number.Slice(0, length)).Append(valueFormatSuffix);
+
+                    return;
+                }
+            }
+
+            if (compositeValueFormat == null)
+                compositeValueFormat = CompositeFormat.Parse(ValueFormat);
+
+            text.AppendFormat(null, compositeValueFormat, value);
+        }
+
+        void ParseValueFormat()
+        {
+            valueFormatParsed = true;
+            simpleValueFormat = false;
+
+            string format = ValueFormat;
+
+            if (format == null)
+                return;
+
+            int open = format.IndexOf('{');
+            int close = format.IndexOf('}');
+
+            // One item, "{0}" or "{0:number format}", and no other braces.
+            if ((open < 0) || (close < open))
+                return;
+
+            if ((format.IndexOf('{', open + 1) >= 0) || (format.IndexOf('}', close + 1) >= 0))
+                return;
+
+            string item = format.Substring(open + 1, close - open - 1);
+
+            if ((item != "0") && !item.StartsWith("0:"))
+                return;
+
+            valueFormatPrefix = format.Substring(0, open);
+            valueFormatNumber = (item == "0") ? null : item.Substring(2);
+            valueFormatSuffix = format.Substring(close + 1);
+            simpleValueFormat = true;
+        }
+
+        // Whether FormatValue(double) is overridden in a class below the one that overrides AppendValue: then the
+        // StringBuilder formatting uses its text. Found once.
+        bool UsesStringFormat
+        {
+            get
+            {
+                if (usesStringFormat == null)
+                {
+                    Type type = GetType();
+                    Type stringFormatter = type.GetMethod(nameof(FormatValue), new[] { typeof(double) }).DeclaringType;
+                    Type appender = type.GetMethod(nameof(AppendValue), System.Reflection.BindingFlags.Instance |
+                        System.Reflection.BindingFlags.NonPublic).DeclaringType;
+
+                    usesStringFormat = stringFormatter.IsSubclassOf(appender);
+                }
+
+                return usesStringFormat.Value;
+            }
+        }
+
+        bool? usesStringFormat;
 
         public double NormalizedProcessValue
         {
@@ -305,6 +422,14 @@ namespace AudioPlugSharp
             DefaultValue = 0;
             RangePower = 3.0;
             ValueFormat = "{0:0.0}dB";
+        }
+
+        protected override void AppendValue(double value, StringBuilder text)
+        {
+            if (double.IsNegativeInfinity(value))
+                text.Append("-inf dB");
+            else
+                base.AppendValue(value, text);
         }
 
         public override string FormatValue(double value)

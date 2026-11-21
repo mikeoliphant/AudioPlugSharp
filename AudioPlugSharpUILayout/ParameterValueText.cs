@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using AudioPlugSharp;
 using UILayout;
 
@@ -37,8 +38,12 @@ public class ParameterValueText : UIElement
         get { return parameter; }
     }
 
-    /// <summary>The text shown: the parameter's formatted edit value as of the last <see cref="Update"/>.</summary>
-    public string Text { get; private set; } = "";
+    /// <summary>The text shown: the parameter's formatted edit value as of the last <see cref="Update"/>. Reused for
+    /// each new value (formatting into it doesn't allocate).</summary>
+    public StringBuilder Text { get; } = new StringBuilder(TextCapacity);
+
+    // Room for any value's text from the start, so the builder never grows.
+    const int TextCapacity = 64;
 
     public UIColor TextColor { get; set; }
     public UIFont TextFont { get; set; }
@@ -47,7 +52,8 @@ public class ParameterValueText : UIElement
     public EHorizontalAlignment TextAlignment { get; set; } = EHorizontalAlignment.Right;
 
     /// <summary>
-    /// Shows the parameter's edit value, if it changed since the last call (it allocates only then).
+    /// Shows the parameter's edit value, if it changed since the last call. Doesn't allocate, unless the parameter
+    /// formats its values only as strings (see AudioPluginParameter.FormatValue).
     /// </summary>
     public void Update()
     {
@@ -58,7 +64,7 @@ public class ParameterValueText : UIElement
 
         shownValue = value;
 
-        Text = parameter.FormatValue(value);
+        parameter.FormatValue(value, Text);
 
         UpdateContentLayout();
     }
