@@ -74,7 +74,7 @@ public class LevelMeter : NinePatchWrapper
         float width = ContentBounds.Width * Math.Clamp((db - FloorDb) / -FloorDb, 0, 1);
 
         // Narrower than the bar image, the nine-patch can't draw: no bar.
-        bar.Visible = width >= bar.Image.Width;
+        bar.Visible = width >= bar.Image.LogicalWidth;
         bar.DesiredWidth = width;
         bar.Color = (level >= ClipLevel) ? ClipColor : ((level >= HotLevel) ? HotColor : LowColor);
 

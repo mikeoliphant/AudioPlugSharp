@@ -22,9 +22,11 @@
 		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.6.1" />
 	</ItemGroup>
 
-	<!-- The audio controls' own textures (AudioTextures). -->
+	<!-- The audio controls' own textures (AudioTextures): a sheet and its manifest, rendered from SrcTextures by
+	     AudioPlugSharpImageProcessor. -->
 	<ItemGroup>
 		<EmbeddedResource Include="Textures\*.png" />
+		<EmbeddedResource Include="Textures\ImageManifest.xml" />
 	</ItemGroup>
 
 	<ItemGroup>

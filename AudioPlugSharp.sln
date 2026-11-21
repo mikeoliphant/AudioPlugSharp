@@ -62,6 +62,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AudioIOSharp", "Dependencie
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JackSharp", "Dependencies\AudioIOSharp\Dependencies\JackSharpCore\JackSharp\JackSharp.csproj", "{A3C7E918-6B2D-4F05-8E14-2D9B5C7A0E63}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AudioPlugSharpImageProcessor", "AudioPlugSharpImageProcessor\AudioPlugSharpImageProcessor.csproj", "{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -222,6 +224,14 @@ Global
 		{A3C7E918-6B2D-4F05-8E14-2D9B5C7A0E63}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A3C7E918-6B2D-4F05-8E14-2D9B5C7A0E63}.Release|x64.ActiveCfg = Release|Any CPU
 		{A3C7E918-6B2D-4F05-8E14-2D9B5C7A0E63}.Release|x64.Build.0 = Release|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Debug|x64.Build.0 = Debug|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Release|x64.ActiveCfg = Release|Any CPU
+		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
