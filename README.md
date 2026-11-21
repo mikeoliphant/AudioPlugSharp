@@ -39,6 +39,9 @@ sudo apt install dotnet-runtime-10.0
 
 On Ubuntu 22.04, first add the .NET backports repository with ```sudo add-apt-repository ppa:dotnet/backports```.
 
+## Logs
+AudioPlugSharp writes its logs to **%APPDATA%\AudioPlugSharp** on Windows (**~/.config/AudioPlugSharp** on Linux): one file per session, keeping the last ten. If a plugin doesn't load at all - for example because the .NET runtime is missing - look in **native.log** there.
+
 ## Upgrading From Earlier Versions
 Plugins written for version 0.7 need some changes, mostly in their user interface code: the DAW now provides the window your editor draws into. The C++/CLI bridge (**AudioPlugSharpVst3**) is replaced by **AudioPlugSharpBridge**. See the [migration notes](Docs/Migration-0.8.md) for details.
 

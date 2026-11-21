@@ -80,6 +80,9 @@ public static unsafe class NativeEntry
                 _initError = AbiLayout.Verify();
                 if (_initError == null)
                 {
+                    // An exception on a thread of the plugin's own ends the DAW: at least it's in the log.
+                    Logger.LogUnhandledExceptions();
+
                     // Avoid blocking gen2 collections while plugins are running.
                     GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
                     // The shared assemblies are small; compile them completely.

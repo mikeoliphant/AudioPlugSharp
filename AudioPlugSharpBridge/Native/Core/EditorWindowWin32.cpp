@@ -17,6 +17,7 @@
 //   editorClosing() removes it before SDL lets go of the window. Fullscreen moves the same HWND (and so the
 //   editor's OpenGL context) into a borderless popup covering its monitor, and back.
 #include "aps/EditorWindow.h"
+#include "aps/NativeLog.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -106,7 +107,7 @@ public:
                                 static_cast<int>(width), static_cast<int>(height), parent, nullptr, thisModule(),
                                 this);
         if (!hwnd_) {
-            std::fprintf(stderr, "[AudioPlugSharp] CreateWindowEx failed (%lu)\n", GetLastError());
+            nativeLog("CreateWindowEx failed (" + std::to_string(GetLastError()) + ")");
             return false;
         }
         SetWindowLongPtrW(hwnd_, GWLP_USERDATA, kWantsKeysMarker);
@@ -265,7 +266,7 @@ private:
         wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
         wc.lpszClassName = name;
         if (!RegisterClassExW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-            std::fprintf(stderr, "[AudioPlugSharp] RegisterClassEx failed (%lu)\n", GetLastError());
+            nativeLog("RegisterClassEx failed (" + std::to_string(GetLastError()) + ")");
             return nullptr;
         }
         registered = true;

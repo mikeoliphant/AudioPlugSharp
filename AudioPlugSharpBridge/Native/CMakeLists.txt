@@ -125,6 +125,7 @@ add_library(aps_native_core STATIC
     Core/ManagedPluginFactory.cpp
     Core/DotnetRuntime.cpp
     Core/DotnetRuntime.h
+    Core/NativeLog.cpp
     Include/aps/ManagedPluginFactory.h
     Include/aps/EditorWindow.h
     Include/aps/abi_support.hpp

@@ -1,10 +1,13 @@
 #include "DotnetRuntime.h"
 
+#include "aps/NativeLog.h"
+
 #include <nethost.h>
 #include <hostfxr.h>
 #include <coreclr_delegates.h>
 
 #include <cstdio>
+#include <cwchar>
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -36,11 +39,18 @@ void* getExport(void* lib, const char* name) {
 #endif
 }
 
+// hostfxr's own messages (why the runtime didn't start, which framework is missing) go to the native log.
 void HOSTFXR_CALLTYPE errorWriter(const char_t* message) {
 #ifdef _WIN32
-    std::fwprintf(stderr, L"[hostfxr] %ls\n", message);
+    const int length = static_cast<int>(std::wcslen(message));
+    const int bytes = WideCharToMultiByte(CP_UTF8, 0, message, length, nullptr, 0, nullptr, nullptr);
+
+    std::string utf8(static_cast<size_t>(bytes), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, message, length, utf8.data(), bytes, nullptr, nullptr);
+
+    nativeLog("hostfxr: " + utf8);
 #else
-    std::fprintf(stderr, "[hostfxr] %s\n", message);
+    nativeLog(std::string("hostfxr: ") + message);
 #endif
 }
 

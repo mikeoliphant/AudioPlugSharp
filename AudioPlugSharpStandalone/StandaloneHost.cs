@@ -98,6 +98,9 @@ public class StandaloneHost : IAudioHost
     /// </summary>
     public void Run()
     {
+        // Also for applications of their own (ForPlugin); once per process.
+        Logger.LogUnhandledExceptions();
+
         plugin.Host = this;
         processor.Initialize();
         PrepareParameters();

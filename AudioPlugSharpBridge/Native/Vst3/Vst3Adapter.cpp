@@ -22,6 +22,7 @@
 
 #include "aps/EditorWindow.h"
 #include "aps/ManagedPluginFactory.h"
+#include "aps/NativeLog.h"
 
 #include "pluginterfaces/base/funknown.h"
 #include "pluginterfaces/base/ibstream.h"
@@ -71,7 +72,13 @@ constexpr uint32 kAudioPlugSharpId = 0xB0FA8B5C;
 constexpr uint32 kProcessorId = 0xC4B5BA02;
 constexpr ParamID kParamBase = 128; // PLUGIN_PARAMETER_USER_START
 
-void moduleLog(const std::string& message) { std::fprintf(stderr, "[AudioPlugSharp VST3] %s\n", message.c_str()); }
+// The adapter's own errors: the native log (above all startup failures, before there is a managed log).
+void moduleLog(const std::string& message) { aps::nativeLog("VST3: " + message); }
+
+// Messages from managed code: stderr (VST3 has no host log; the managed side logs them itself).
+void managedMessage(std::string_view message) {
+    std::fprintf(stderr, "[AudioPlugSharp VST3] %.*s\n", static_cast<int>(message.size()), message.data());
+}
 
 bool iidEqual(const TUID a, const TUID b) { return std::memcmp(a, b, sizeof(TUID)) == 0; }
 
@@ -214,7 +221,7 @@ public:
         return info;
     }
     void log(aps::LogLevel level, std::string_view message) override {
-        if (level >= aps::LogLevel::Warning) moduleLog(std::string(message));
+        if (level >= aps::LogLevel::Warning) managedMessage(message);
     }
     void beginEdit(uint32_t) override {}
     void performEdit(uint32_t, double) override {}
@@ -424,6 +431,10 @@ public:
 
     // ---- IPluginBase (shared by IComponent and IEditController: the host may call it on both) ------
     tresult PLUGIN_API initialize(FUnknown* context) override {
+        return aps::guarded("VST3 initialize", tresult(kResultFalse), [&] { return initializeUnguarded(context); });
+    }
+
+    tresult initializeUnguarded(FUnknown* context) {
         if (initialized_) return kResultOk;
         if (context) {
             IHostApplication* app = nullptr;
@@ -729,7 +740,7 @@ public:
         return info;
     }
     void log(aps::LogLevel level, std::string_view message) override {
-        if (level >= aps::LogLevel::Info) moduleLog(std::string(message));
+        if (level >= aps::LogLevel::Info) managedMessage(message);
     }
     void beginEdit(uint32_t index) override {
         if (index >= params_.size()) return;
@@ -1139,7 +1150,10 @@ tresult PLUGIN_API View::isPlatformTypeSupported(FIDString type) {
 
 tresult PLUGIN_API View::attached(void* parent, FIDString type) {
     if (attached_ || !parent || isPlatformTypeSupported(type) != kResultTrue) return kResultFalse;
-    if (!plugin_->openEditor(reinterpret_cast<intptr_t>(parent), frame_)) return kResultFalse;
+    const bool opened = aps::guarded("VST3 attached", false, [&] {
+        return plugin_->openEditor(reinterpret_cast<intptr_t>(parent), frame_);
+    });
+    if (!opened) return kResultFalse;
     attached_ = true;
     return kResultOk;
 }
@@ -1200,7 +1214,35 @@ class Factory final : public IPluginFactory3 {
 public:
     virtual ~Factory() = default;
 
+    // The host calls these while loading the plugin (they start .NET): a C++ exception fails the load (and is logged).
     tresult PLUGIN_API getFactoryInfo(PFactoryInfo* info) override {
+        return aps::guarded("VST3 getFactoryInfo", tresult(kInternalError), [&] { return factoryInfo(info); });
+    }
+
+    int32 PLUGIN_API countClasses() override {
+        return aps::guarded("VST3 countClasses", int32(0), [] {
+            std::lock_guard lock(g.mutex);
+            return infoLocked() ? int32(1) : int32(0);
+        });
+    }
+
+    tresult PLUGIN_API getClassInfo(int32 index, PClassInfo* info) override {
+        return aps::guarded("VST3 getClassInfo", tresult(kInternalError), [&] { return classInfo(index, info); });
+    }
+
+    tresult PLUGIN_API getClassInfo2(int32 index, PClassInfo2* info) override {
+        return aps::guarded("VST3 getClassInfo2", tresult(kInternalError), [&] { return classInfo2(index, info); });
+    }
+
+    tresult PLUGIN_API getClassInfoUnicode(int32 index, PClassInfoW* info) override {
+        return aps::guarded("VST3 getClassInfoUnicode", tresult(kInternalError), [&] { return classInfoUnicode(index, info); });
+    }
+
+    tresult PLUGIN_API createInstance(FIDString cid, FIDString requested, void** obj) override {
+        return aps::guarded("VST3 createInstance", tresult(kInternalError), [&] { return instance(cid, requested, obj); });
+    }
+
+    tresult factoryInfo(PFactoryInfo* info) {
         if (!info) return kInvalidArgument;
         std::lock_guard lock(g.mutex);
         *info = PFactoryInfo{};
@@ -1213,12 +1255,7 @@ public:
         return kResultOk;
     }
 
-    int32 PLUGIN_API countClasses() override {
-        std::lock_guard lock(g.mutex);
-        return infoLocked() ? 1 : 0;
-    }
-
-    tresult PLUGIN_API getClassInfo(int32 index, PClassInfo* info) override {
+    tresult classInfo(int32 index, PClassInfo* info) {
         std::lock_guard lock(g.mutex);
         if (index != 0 || !info || !infoLocked()) return kInvalidArgument;
         *info = PClassInfo{};
@@ -1229,7 +1266,7 @@ public:
         return kResultOk;
     }
 
-    tresult PLUGIN_API getClassInfo2(int32 index, PClassInfo2* info) override {
+    tresult classInfo2(int32 index, PClassInfo2* info) {
         std::lock_guard lock(g.mutex);
         if (index != 0 || !info || !infoLocked()) return kInvalidArgument;
         *info = PClassInfo2{};
@@ -1245,7 +1282,7 @@ public:
         return kResultOk;
     }
 
-    tresult PLUGIN_API getClassInfoUnicode(int32 index, PClassInfoW* info) override {
+    tresult classInfoUnicode(int32 index, PClassInfoW* info) {
         std::lock_guard lock(g.mutex);
         if (index != 0 || !info || !infoLocked()) return kInvalidArgument;
         *info = PClassInfoW{};
@@ -1263,19 +1300,14 @@ public:
 
     tresult PLUGIN_API setHostContext(FUnknown*) override { return kResultOk; }
 
-    tresult PLUGIN_API createInstance(FIDString cid, FIDString requested, void** obj) override {
+    tresult instance(FIDString cid, FIDString requested, void** obj) {
         if (!cid || !requested || !obj) return kInvalidArgument;
         *obj = nullptr;
         {
             std::lock_guard lock(g.mutex);
             if (!infoLocked() || std::memcmp(cid, g.cid, sizeof(TUID)) != 0) return kNoInterface;
         }
-        Plugin* plugin = nullptr;
-        try {
-            plugin = new Plugin();
-        } catch (...) {
-            return kOutOfMemory;
-        }
+        Plugin* plugin = new Plugin();
         const tresult r = plugin->queryInterface(requested, obj);
         plugin->release();
         return r;

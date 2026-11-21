@@ -375,9 +375,18 @@ internal sealed unsafe class ManagedHost : IAudioHost
 
     // ---- logging ------------------------------------------------------------------------
 
-    /// <summary>[main] Writes to the native host's log.</summary>
+    /// <summary>[main] Writes to the native host's log (CLAP's host log, or stderr), and to AudioPlugSharp's log
+    /// (from Info up; errors written at once, as the process may be about to end).</summary>
     public void Log(LogLevel level, string message)
     {
+        if (level >= LogLevel.Info)
+        {
+            Logger.Log(level == LogLevel.Info ? message : $"{level}: {message}");
+
+            if (level >= LogLevel.Error)
+                Logger.Flush();
+        }
+
         try { _native.Log(level, message); }
         catch (AbiCallException) { /* host has no usable log; nothing more to do */ }
     }

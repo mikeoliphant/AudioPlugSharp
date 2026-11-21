@@ -11,6 +11,7 @@
 // window with its own idle timer and input translation) and opens the managed editor in it.
 #include "aps/EditorWindow.h"
 #include "aps/ManagedPluginFactory.h"
+#include "aps/NativeLog.h"
 
 #include <clap/clap.h>
 
@@ -53,7 +54,13 @@ struct Module {
 
 Module g;
 
-void moduleLog(const std::string& message) { std::fprintf(stderr, "[AudioPlugSharp CLAP] %s\n", message.c_str()); }
+// The adapter's own errors: the native log (above all startup failures, before there is a managed log).
+void moduleLog(const std::string& message) { aps::nativeLog("CLAP: " + message); }
+
+// Messages from managed code without a host log to take them: stderr (the managed side logs them itself).
+void managedMessage(std::string_view message) {
+    std::fprintf(stderr, "[AudioPlugSharp CLAP] %.*s\n", static_cast<int>(message.size()), message.data());
+}
 
 // Boots the runtime on first use. Caller holds g.mutex.
 aps::ManagedPluginFactory* factoryLocked() {
@@ -79,7 +86,7 @@ public:
         return info;
     }
     void log(aps::LogLevel level, std::string_view message) override {
-        if (level >= aps::LogLevel::Warning) moduleLog(std::string(message));
+        if (level >= aps::LogLevel::Warning) managedMessage(message);
     }
     void beginEdit(uint32_t) override {}
     void performEdit(uint32_t, double) override {}
@@ -223,7 +230,9 @@ public:
     explicit Instance(const clap_host_t* host) : host_(host) {
         clap_.desc = &g.descriptor;
         clap_.plugin_data = this;
-        clap_.init = [](const clap_plugin_t* p) { return self(p)->init(); };
+        clap_.init = [](const clap_plugin_t* p) {
+            return aps::guarded("CLAP plugin init", false, [p] { return self(p)->init(); });
+        };
         clap_.destroy = [](const clap_plugin_t* p) { delete self(p); };
         clap_.activate = [](const clap_plugin_t* p, double sr, uint32_t minFrames, uint32_t maxFrames) {
             return self(p)->activate(sr, minFrames, maxFrames);
@@ -256,7 +265,7 @@ public:
                                                                                 : CLAP_LOG_ERROR;
             hostLog_->log(host_, severity, text.c_str());
         } else {
-            moduleLog(text);
+            managedMessage(text);
         }
     }
     void beginEdit(uint32_t index) override { queueEdit({Edit::Begin, index, 0}); }
@@ -291,6 +300,7 @@ private:
         std::string error;
         api_ = factory->load(g.pluginAssembly, *this, error);
         if (!api_) {
+            moduleLog("could not create plugin: " + error);
             log(aps::LogLevel::Error, "could not create plugin: " + error);
             return false;
         }
@@ -777,6 +787,7 @@ private:
         editorWindow_ = aps::EditorWindow::create(parent, aps::toWindowPixels(editorInfo_.width, scale),
                                                   aps::toWindowPixels(editorInfo_.height, scale), *this);
         if (!editorWindow_) {
+            moduleLog("could not create the editor window");
             log(aps::LogLevel::Error, "could not create the editor window");
             return false;
         }
@@ -960,7 +971,7 @@ private:
         const intptr_t parent = !std::strcmp(window->api, CLAP_WINDOW_API_X11)
                                     ? static_cast<intptr_t>(window->x11)
                                     : reinterpret_cast<intptr_t>(window->ptr); // win32 / cocoa
-        return s->openEditor(parent);
+        return aps::guarded("CLAP gui set_parent", false, [s, parent] { return s->openEditor(parent); });
     }
     static bool guiSetTransient(const clap_plugin_t*, const clap_window_t*) { return false; }
     static void guiSuggestTitle(const clap_plugin_t*, const char*) {}
@@ -1037,42 +1048,43 @@ const clap_plugin_posix_fd_support_t Instance::fdSupport_{&Instance::onFd};
 // ---------------------------------------------------------------------------
 // Factory and entry point.
 // ---------------------------------------------------------------------------
+// The entry points the host calls while loading the plugin: a C++ exception fails the load (and is logged).
 const clap_plugin_factory_t kFactory{
     [](const clap_plugin_factory_t*) -> uint32_t {
-        std::lock_guard lock(g.mutex);
-        return descriptorLocked() ? 1u : 0u;
+        return aps::guarded("CLAP get_plugin_count", 0u, [] {
+            std::lock_guard lock(g.mutex);
+            return descriptorLocked() ? 1u : 0u;
+        });
     },
     [](const clap_plugin_factory_t*, uint32_t index) -> const clap_plugin_descriptor_t* {
         if (index != 0) return nullptr;
-        std::lock_guard lock(g.mutex);
-        return descriptorLocked();
+        return aps::guarded("CLAP get_plugin_descriptor", static_cast<const clap_plugin_descriptor_t*>(nullptr), [] {
+            std::lock_guard lock(g.mutex);
+            return descriptorLocked();
+        });
     },
     [](const clap_plugin_factory_t*, const clap_host_t* host, const char* pluginId) -> const clap_plugin_t* {
         if (!host || !pluginId || !clap_version_is_compatible(host->clap_version)) return nullptr;
-        {
-            std::lock_guard lock(g.mutex);
-            const auto* desc = descriptorLocked();
-            if (!desc || std::strcmp(desc->id, pluginId) != 0) return nullptr;
-        }
-        try {
+        return aps::guarded("CLAP create_plugin", static_cast<const clap_plugin_t*>(nullptr), [&] {
+            {
+                std::lock_guard lock(g.mutex);
+                const auto* desc = descriptorLocked();
+                if (!desc || std::strcmp(desc->id, pluginId) != 0) return static_cast<const clap_plugin_t*>(nullptr);
+            }
             return (new Instance(host))->clap();
-        } catch (...) {
-            return nullptr;
-        }
+        });
     },
 };
 
 bool entryInit(const char* pluginPath) {
-    try {
+    return aps::guarded("CLAP entry init", false, [&] {
         std::lock_guard lock(g.mutex);
         if (!g.clapPath.empty()) return true;
         g.clapPath = fs::path(std::u8string_view(reinterpret_cast<const char8_t*>(pluginPath)));
         g.dir = g.clapPath.parent_path();
         g.pluginAssembly = g.dir / (g.clapPath.stem().string() + ".dll");
         return true;
-    } catch (...) {
-        return false;
-    }
+    });
 }
 
 void entryDeinit() {

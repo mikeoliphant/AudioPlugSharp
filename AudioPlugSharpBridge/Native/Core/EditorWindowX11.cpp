@@ -12,6 +12,7 @@
 //   set on it, and back into the parent. The screen is X's whole screen: on several monitors it spans them all
 //   (per-monitor geometry needs XRandR; not yet).
 #include "aps/EditorWindow.h"
+#include "aps/NativeLog.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -111,7 +112,7 @@ public:
     bool create(::Window parent, uint32_t width, uint32_t height) {
         display_ = XOpenDisplay(nullptr);
         if (!display_) {
-            std::fprintf(stderr, "[AudioPlugSharp] XOpenDisplay failed (DISPLAY not set?)\n");
+            nativeLog("XOpenDisplay failed (DISPLAY not set?)");
             return false;
         }
         XSetWindowAttributes attributes{};
@@ -122,7 +123,7 @@ public:
         window_ = XCreateWindow(display_, parent, 0, 0, width, height, 0, CopyFromParent, InputOutput,
                                 CopyFromParent, CWEventMask | CWBackPixmap, &attributes);
         if (!window_) {
-            std::fprintf(stderr, "[AudioPlugSharp] XCreateWindow failed\n");
+            nativeLog("XCreateWindow failed");
             return false;
         }
         XMapWindow(display_, window_);

@@ -32,6 +32,8 @@ static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        Logger.LogUnhandledExceptions();
+
         try
         {
             return Run(args);
