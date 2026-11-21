@@ -105,7 +105,7 @@ public class StandaloneHost : IAudioHost
             settings.Remember(config);
             settings.Save(SaveFolder);
         };
-        var client = new Client(this);
+        var client = mainClient = new Client(this);
         try
         {
             // The engine's work doesn't need this thread, so waiting here is safe.
@@ -135,6 +135,7 @@ public class StandaloneHost : IAudioHost
     }
 
     AudioSettings settings = new();
+    IAudioClient? mainClient;
 
     // The saved configuration, with this run's choices on top. Another driver starts from what was last used with it.
     AudioConfig StartupConfig(AudioSettings settings)
@@ -440,14 +441,14 @@ public class StandaloneHost : IAudioHost
         try
         {
             strip = new StatusStrip(window, Pixels(height), window.ClientWidth, Pixels(StatusStrip.Height), scale,
-                s => new AudioSettingsPanel(engine!, AudioConfigApplied, () => s.SetOpen(false)));
+                s => new AudioSettingsPanel(engine!, mainClient!, AudioConfigApplied, () => s.SetOpen(false)));
 
             strip.Clicked += () =>
             {
                 if (editorOpen) editorWindow!.Focus(); // keys stay the editor's
             };
 
-            strip.OpenChanged += SizeWindowToContent; // the window grows downward for the panel, and back
+            strip.OpenChanged += PanelOpenChanged;
         }
         catch (Exception e)
         {
@@ -513,22 +514,58 @@ public class StandaloneHost : IAudioHost
         settings.Save(SaveFolder);
     }
 
-    // The window's client area for the editor at its size (or the strip alone), and the strip.
+    bool PanelOpen => strip?.IsOpen == true;
+
+    // The window's client area for the editor at its size (or the strip alone), and the strip. The settings panel needs
+    // a minimum width: the window widens to it while the panel is open, and the editor keeps its size (the reverse of
+    // ArrangeChildren).
     void SizeWindowToContent()
     {
         int width = editorOpen ? Pixels(editor!.EditorWidth) : Pixels(NoEditorWidth);
+
+        if (PanelOpen)
+        {
+            int panelWidth = Pixels(AudioSettingsPanel.MinWidth);
+
+            if (!editorOpen) width = Math.Max(width, panelWidth);
+            else if (width >= editorWidthAtOpen) width = Math.Max(panelWidth, editorWidthAtOpen) + width - editorWidthAtOpen;
+        }
+
         int height = editorOpen ? Pixels(editor!.EditorHeight) : 0;
 
         window!.SetClientSize(width, height + StripPixels);
     }
 
+    // The editor's width (pixels) when the settings panel opened.
+    int editorWidthAtOpen;
+
+    // The panel opened or closed: the window grows downward for it (and widens to its minimum), and back.
+    void PanelOpenChanged()
+    {
+        if (PanelOpen && editorWindow != null) editorWidthAtOpen = editorWindow.ClientWidth;
+
+        SizeWindowToContent();
+    }
+
     // The window's client area changed (the user resized it, or SizeWindowToContent): the editor takes all but the
     // strip at the bottom. While the editor is fullscreen its size is stored for when it comes back.
+    //
+    // While the settings panel is open, the window can be wider than the editor (the panel's minimum width): then the
+    // editor keeps the width it had, the window's width beyond that and the panel's minimum goes to the editor, and a
+    // window narrower than the editor narrows it.
     void ArrangeChildren(int width, int height)
     {
         int editorHeight = Math.Max(1, height - StripPixels);
+        int editorWidth = width;
 
-        editorWindow?.SetClientSize(width, editorHeight);
+        if (PanelOpen && editorOpen)
+        {
+            int extra = width - Math.Max(Pixels(AudioSettingsPanel.MinWidth), editorWidthAtOpen);
+
+            editorWidth = extra >= 0 ? editorWidthAtOpen + extra : Math.Min(width, editorWidthAtOpen);
+        }
+
+        editorWindow?.SetClientSize(editorWidth, editorHeight);
         strip?.SetBounds(editorWindow != null ? editorHeight : 0, width, StripPixels);
     }
 

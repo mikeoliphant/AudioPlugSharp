@@ -35,6 +35,11 @@
     <None Remove="Tests/**" />
   </ItemGroup>
 
+  <!-- The audio controls' own textures (AudioTextures). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Textures\*.png" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
     <ProjectReference Include="..\AudioPlugSharpWindowing\AudioPlugSharpWindowing.csproj" />

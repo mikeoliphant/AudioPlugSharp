@@ -20,8 +20,8 @@ static class Program
 {
     const string PluginName = "UILayout Test"; // the window title
     const int EditorWidth = 320, EditorHeight = 160;
-    const int StripHeight = 30; // StatusStrip.Height
-    const int PanelHeight = 220; // AudioSettingsPanel.PanelHeight
+    const int StripHeight = 36; // StatusStrip.Height
+    const int PanelMinWidth = 520; // AudioSettingsPanel.MinWidth: the window widens to it while the panel is open
     const uint KeyF11 = 0x7A;
 
     static int failures;
@@ -100,25 +100,71 @@ static class Program
             CheckStrip(EditorWidth, EditorHeight, "open");
             Capture(editor, "open");
 
-            // A click on the strip opens the settings panel below it: the window grows downward, the editor keeps its
-            // size. Another click closes it.
+            // The strip's Audio button (at its right end) opens the settings panel below the strip, in the strip's
+            // window: the window grows downward (and widens to the panel's minimum) and the editor keeps its size. A
+            // click elsewhere on the strip does nothing; the button again closes the panel.
             nint stripWindow = driver.Children(top).FirstOrDefault(c => c != editor);
 
             if (stripWindow != 0)
             {
-                string openWindow = $"{Px(EditorWidth)}x{Px(EditorHeight) + Px(StripHeight + PanelHeight)}";
+                void Click(int x, int y)
+                {
+                    driver.MouseButton(stripWindow, x, y, down: true);
+                    driver.MouseButton(stripWindow, x, y, down: false);
+                    Thread.Sleep(600);
+                }
 
-                driver.MouseButton(stripWindow, Px(20), Px(10), down: true);
-                driver.MouseButton(stripWindow, Px(20), Px(10), down: false);
-                Thread.Sleep(600);
+                int StripWidth() => int.Parse(driver.Size(stripWindow).Split('x')[0]);
 
-                Check(driver.Size(top) == openWindow && driver.Size(editor) == Expect(EditorWidth, EditorHeight) && driver.Size(stripWindow) == Expect(EditorWidth, StripHeight + PanelHeight),
-                    $"a click on the strip opens the settings panel (window {driver.Size(top)}, editor {driver.Size(editor)}, strip {driver.Size(stripWindow)}, expected {openWindow})");
+                Click(Px(20), Px(15));
+
+                Check(driver.Size(top) == ExpectWindow(EditorWidth, EditorHeight), $"a click on the strip's text doesn't open the panel (window {driver.Size(top)})");
+
+                Click(StripWidth() - Px(45), Px(15));
+
+                int openHeight = int.Parse(driver.Size(stripWindow).Split('x')[1]);
+                string openWindow = $"{Px(PanelMinWidth)}x{Px(EditorHeight) + openHeight}";
+
+                Check(driver.Size(top) == openWindow && driver.Size(editor) == Expect(EditorWidth, EditorHeight) && openHeight > Px(StripHeight * 4),
+                    $"the Audio button opens the settings panel (window {driver.Size(top)}, editor {driver.Size(editor)}, strip {driver.Size(stripWindow)}, expected {openWindow})");
+
                 Capture(stripWindow, "settings");
 
-                driver.MouseButton(stripWindow, Px(20), Px(10), down: true);
-                driver.MouseButton(stripWindow, Px(20), Px(10), down: false);
+                // The driver drop-down's list, with the mouse over its second row, and the buffer drop-down's list
+                // (captured only), each closed again by a click outside it.
+                driver.MouseButton(stripWindow, Px(300), Px(68), down: true);
+                driver.MouseButton(stripWindow, Px(300), Px(68), down: false);
+                Thread.Sleep(400);
+
+                driver.MouseMove(stripWindow, Px(300), Px(130), buttonHeld: false);
+                Thread.Sleep(300);
+
+                Capture(stripWindow, "settings-dropdown");
+
+                Click(Px(20), Px(15));
+
+                driver.MouseButton(stripWindow, Px(300), Px(349), down: true);
+                driver.MouseButton(stripWindow, Px(300), Px(349), down: false);
+                Thread.Sleep(400);
+
+                Capture(stripWindow, "settings-buffer");
+
+                Click(Px(20), Px(15));
+
+                // Widening the window while the panel is open widens the editor by as much; narrowing it back restores it.
+                driver.SetClientSize(top, Px(PanelMinWidth) + Px(100), Px(EditorHeight) + openHeight);
                 Thread.Sleep(600);
+
+                Check(driver.Size(editor) == Expect(EditorWidth + 100, EditorHeight),
+                    $"with the panel open, widening the window widens the editor (editor {driver.Size(editor)}, expected {Expect(EditorWidth + 100, EditorHeight)})");
+
+                driver.SetClientSize(top, Px(PanelMinWidth), Px(EditorHeight) + openHeight);
+                Thread.Sleep(600);
+
+                Check(driver.Size(editor) == Expect(EditorWidth, EditorHeight),
+                    $"and narrowing it back narrows the editor (editor {driver.Size(editor)}, expected {Expect(EditorWidth, EditorHeight)})");
+
+                Click(StripWidth() - Px(45), Px(15));
 
                 Check(driver.Size(top) == ExpectWindow(EditorWidth, EditorHeight) && driver.Size(editor) == Expect(EditorWidth, EditorHeight),
                     $"and another closes it (window {driver.Size(top)}, editor {driver.Size(editor)})");

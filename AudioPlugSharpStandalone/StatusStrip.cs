@@ -9,31 +9,40 @@ namespace AudioPlugSharpStandalone;
 public readonly record struct StatusItem(string Text, bool Warning = false);
 
 /// <summary>
-/// The strip along the bottom of the standalone's window: the audio device and how it's running. A child window below
-/// the editor's, with a UILayout layout of the host's own: the plugin's UILayout, if it has one, is another copy (the
+/// The strip along the bottom of the standalone's window: the audio device and how it's running, and an Audio button at
+/// the right that opens the audio settings below the strip (the window grows downward). A child window below the
+/// editor's, with a UILayout layout of the host's own: the plugin's UILayout, if it has one, is another copy (the
 /// plugin's load context), so neither changes the other's fonts, colors or settings. Items are shown in priority
-/// order, as many as fit the width. Runs on the UI thread.
+/// order, as many as fit beside the button. Runs on the UI thread.
 /// </summary>
 public class StatusStrip : IDisposable
 {
     /// <summary>The strip's height in logical units (the default font is 26 high).</summary>
-    public const int Height = 30;
+    public const int Height = 36;
 
     static readonly UIColor Background = new(36, 38, 44), TextColor = new(196, 200, 208), WarningColor = new(255, 180, 60);
     const float Spacing = 18, Margin = 8;
+
+    // The Audio button's room above and below it in the strip.
+    const int ButtonInset = 3;
+    const int DividerHeight = 1;
 
     readonly NativeWindow window;
     readonly MonoGameHost host;
     readonly MonoGameLayout layout;
     readonly HorizontalStack row;
     readonly AudioSettingsPanel? panel;
+    readonly FrameButton? audioButton;
+    readonly UIElement? divider;
     IReadOnlyList<StatusItem> items = [];
     float fittedWidth = -1;
+    readonly int panelHeight;
     bool disposed, open;
     bool? pendingOpen;
 
     /// <summary>Creates the strip's window in <paramref name="parent"/>'s client area (pixels). With a panel (made
-    /// once the strip's layout exists), clicking the strip opens it below the strip.</summary>
+    /// once the strip's layout exists), the strip has an Audio button that opens the panel below it, set off from the
+    /// strip by a divider line.</summary>
     public StatusStrip(NativeWindow parent, int y, int width, int height, double scale, Func<StatusStrip, AudioSettingsPanel>? createPanel = null)
     {
         window = parent.CreateChild(0, y, width, height);
@@ -52,6 +61,8 @@ public class StatusStrip : IDisposable
         {
             layout = new MonoGameLayout { DisplayScale = (float)scale };
             host.SetLayout(layout);
+
+            AudioTextures.Load();
 
             row = new HorizontalStack
             {
@@ -78,7 +89,29 @@ public class StatusStrip : IDisposable
 
             if (createPanel != null)
             {
+                // A toggle: pressed while the panel is open.
+                audioButton = new FrameButton("Audio", () => SetOpen(audioButton!.IsPressed))
+                {
+                    IsToggleButton = true,
+                    HorizontalAlignment = EHorizontalAlignment.Right,
+                    DesiredHeight = Height - 2 * ButtonInset,
+                };
+                stripRow.Children.Add(audioButton);
+
+                divider = new UIElement
+                {
+                    HorizontalAlignment = EHorizontalAlignment.Stretch,
+                    DesiredHeight = DividerHeight,
+                    BackgroundColor = Layout.Current.Theme.Border,
+                    Visible = false,
+                };
+                root.Children.Add(divider);
+
                 panel = createPanel(this);
+
+                panel.GetSize(out _, out float measured);
+                panelHeight = DividerHeight + (int)Math.Ceiling(measured);
+
                 panel.Visible = false;
                 root.Children.Add(panel);
             }
@@ -107,8 +140,11 @@ public class StatusStrip : IDisposable
     /// <summary>Whether the settings panel is open.</summary>
     public bool IsOpen => open;
 
+    /// <summary>The settings panel, if the strip has one.</summary>
+    public AudioSettingsPanel? Panel => panel;
+
     /// <summary>The height the strip's window needs, in logical units: the strip, and the panel when it's open.</summary>
-    public int TotalHeight => Height + (open ? AudioSettingsPanel.PanelHeight : 0);
+    public int TotalHeight => Height + (open ? panelHeight : 0);
 
     /// <summary>Opens or closes the panel, at the start of the next tick (not while the layout handles input).</summary>
     public void SetOpen(bool value)
@@ -155,7 +191,10 @@ public class StatusStrip : IDisposable
                 open = next;
 
                 if (open) panel!.Refresh();
-                panel!.Visible = open;
+                else panel!.StopTest();
+
+                panel.Visible = divider!.Visible = open;
+                audioButton!.SetPressed(open);
                 if (!open) host.ReleaseAllInput();
 
                 layout.UpdateLayout();
@@ -164,7 +203,16 @@ public class StatusStrip : IDisposable
             }
         }
 
+        if (open) panel!.Tick(secondsElapsed);
+
         float width = window.ClientWidth / layout.TotalScale - 2 * Margin;
+
+        if (audioButton != null)
+        {
+            audioButton.GetSize(out float buttonWidth, out _);
+            width -= buttonWidth + Spacing;
+        }
+
         if (width != fittedWidth) Fit(width);
 
         host.Tick((float)secondsElapsed);
@@ -192,21 +240,9 @@ public class StatusStrip : IDisposable
         layout.UpdateLayout();
     }
 
-    // A click on the strip opens or closes the panel; while it's open, the mouse is the panel's.
+    // The mouse is the layout's (the Audio button, the panel).
     bool OnInput(in WindowInputEvent e)
     {
-        bool onStrip = e.Y < Height * layout.TotalScale;
-
-        if (e.Type == WindowInputEventType.MouseDown && e.Button == MouseButton.Left && (onStrip || !open))
-        {
-            SetOpen(!open);
-            Clicked?.Invoke();
-
-            return true;
-        }
-
-        if (!open) return e.Type is WindowInputEventType.MouseMove or WindowInputEventType.MouseUp;
-
         switch (e.Type)
         {
             case WindowInputEventType.MouseMove:
@@ -218,6 +254,9 @@ public class StatusStrip : IDisposable
             case WindowInputEventType.MouseUp:
                 host.MouseButton((int)e.Button, e.Type == WindowInputEventType.MouseDown, e.X, e.Y);
 
+                // On the strip itself (not the panel): the host gives the keys back to the editor.
+                if (e.Type == WindowInputEventType.MouseDown && e.Y < Height * layout.TotalScale) Clicked?.Invoke();
+
                 return true;
 
             case WindowInputEventType.MouseWheel:
@@ -225,6 +264,11 @@ public class StatusStrip : IDisposable
                 host.MouseWheel(e.WheelDelta);
 
                 return true;
+
+            case WindowInputEventType.MouseLeave:
+                host.MouseLeave();
+
+                return false;
         }
 
         return false;
@@ -235,6 +279,8 @@ public class StatusStrip : IDisposable
         if (disposed) return;
 
         disposed = true;
+
+        panel?.StopTest(); // the plugin back on the device
 
         host.Dispose();
         window.Dispose();

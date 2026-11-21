@@ -84,6 +84,16 @@ unsafe class WindowsDriver : WindowDriver
 
     public override void MouseButton(nint window, int x, int y, bool down)
     {
+        // The real cursor goes to the click too: a window that captures the mouse on a press is sent a move to where
+        // the cursor really is, which would otherwise move the press there.
+        if (down)
+        {
+            var point = new POINT { X = x, Y = y };
+
+            ClientToScreen(window, &point);
+            SetCursorPos(point.X, point.Y);
+        }
+
         PostMessageW(window, down ? WM_LBUTTONDOWN : WM_LBUTTONUP, down ? 1 : 0, Point(x, y));
         Thread.Sleep(100);
     }
@@ -137,6 +147,8 @@ unsafe class WindowsDriver : WindowDriver
     [DllImport(User32, CharSet = CharSet.Unicode)] static extern nint FindWindowW(string className, string title);
     [DllImport(User32, CharSet = CharSet.Unicode)] static extern nint FindWindowExW(nint parent, nint after, string className, string? title);
     [DllImport(User32)] static extern int GetClientRect(nint hwnd, RECT* rect);
+    [DllImport(User32)] static extern int ClientToScreen(nint hwnd, POINT* point);
+    [DllImport(User32)] static extern int SetCursorPos(int x, int y);
     [DllImport(User32)] static extern int GetWindowRect(nint hwnd, RECT* rect);
     [DllImport(User32)] static extern uint GetDpiForWindow(nint hwnd);
     [DllImport(User32)] static extern nint MonitorFromWindow(nint hwnd, uint flags);
