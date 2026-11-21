@@ -53,7 +53,22 @@ Here are some examples of some larger projects using AudioPlugSharp:
 
 # Creating a Stand-Alone Application
 
-Stand-alone applications are being reworked for the cross-platform version. Until then, use version 0.7 and its [AudioPlugSharpHost](https://www.nuget.org/packages/AudioPlugSharpHost) (Windows) or [AudioPlugSharpJack](https://www.nuget.org/packages/AudioPlugSharpJack) (Jack Audio) packages.
+**AudioPlugSharpStandalone** runs your plugin as an application, on Windows and Linux, with its editor and a status bar showing the audio device and how busy the plugin is. Build it from this repository, then start it with your plugin's DLL from its build output:
+
+```bash
+dotnet build AudioPlugSharpStandalone -c Release
+AudioPlugSharpStandalone/bin/Release/net10.0/AudioPlugSharpStandalone path/to/MyPlugin.dll
+```
+
+Audio goes through ASIO (Windows) or JACK (where it is installed). Click **Audio** in the status bar to choose the driver, device, channels, sample rate and buffer size, and to test them with a tone or by looping the inputs back. Your choices and the plugin's state are saved, in a folder named after the plugin in your application data folder.
+
+Options:
+
+- **--save-folder <folder>** - keep the plugin's state and audio settings somewhere else
+- **--audio <driver>**, **--audio-device <name>**, **--sample-rate <hz>**, **--buffer-size <frames>** - choose the audio device from the command line
+- **--list-audio** - list the audio drivers and their devices
+
+MIDI is not supported yet.
 
 # AudioPlugSharp Building Instructions
 

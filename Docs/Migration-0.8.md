@@ -42,4 +42,4 @@ Knobs and sliders should now call the parameter's **BeginEdit()** and **EndEdit(
 
 ## Stand-Alone Applications
 
-**AudioPlugSharpHost** and **AudioPlugSharpJack** are not part of 0.8 yet. Stay on 0.7 for stand-alone applications for now.
+**AudioPlugSharpHost** and **AudioPlugSharpJack** are replaced by **AudioPlugSharpStandalone**, which runs your plugin's DLL as an application on Windows and Linux, with ASIO or JACK audio - see [Creating a Stand-Alone Application](../README.md#creating-a-stand-alone-application). It is not a library yet: you can't build it into an application of your own, and it has no MIDI. Stay on 0.7 if you need either.
