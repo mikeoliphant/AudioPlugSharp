@@ -1,20 +1,18 @@
 using System;
-using AudioPlugSharp;
 using UILayout;
 
 namespace AudioPlugSharpUILayout;
 
 /// <summary>
-/// A slider bound to a parameter, horizontal (low at the left) or vertical (low at the bottom): a recessed track,
-/// filled in the accent color up to a thumb. Drag the thumb, or press on the track to move the thumb there and drag on;
-/// double-click for the default. Each drag is one edit gesture (BeginEdit/EndEdit). Call <see cref="Update"/> each
-/// frame, for example in EditorUpdate: the slider follows the parameter's edit value (host automation) and shows hover.
-/// It stretches along its length; give it the room to slide in. Images: <see cref="AudioTextures"/>, tinted from the
-/// layout's theme.
+/// A slider for a value from 0 to 1 (<see cref="IValueControl"/>; <see cref="ParameterControl"/> binds one to a
+/// parameter), horizontal (low at the left) or vertical (low at the bottom): a recessed track, filled in the accent
+/// color up to a thumb. Drag the thumb, or press on the track to move the thumb there and drag on; turn the mouse wheel
+/// over it; hold Shift for fine adjustment (<see cref="ControlInput"/>); double-click for the default. It stretches
+/// along its length; give it the room to slide in. Images: <see cref="AudioTextures"/>, tinted from the layout's theme;
+/// the thumb's ring takes the accent color on hover and while editing.
 /// </summary>
-public class ParameterSlider : Dock
+public class ValueSlider : Dock, IValueControl
 {
-    AudioPluginParameter parameter;
     bool vertical;
     NinePatchWrapper track;
     NinePatchWrapper fill;
@@ -23,12 +21,16 @@ public class ParameterSlider : Dock
     ImageElement thumbRing;
     float thumbSize;
     float trackThickness;
-    double shownValue = double.NaN;
+    double value = -1;
     float dragOffset;
 
-    public ParameterSlider(AudioPluginParameter parameter, bool vertical = false)
+    // Fine adjustment (Shift) in a drag: the value moves from an anchor, relative to the touch, at a lower speed
+    bool fineActive;
+    float fineAnchorPosition;
+    double fineAnchorValue;
+
+    public ValueSlider(bool vertical = false)
     {
-        this.parameter = parameter;
         this.vertical = vertical;
 
         UITheme theme = Layout.Current.Theme;
@@ -113,16 +115,33 @@ public class ParameterSlider : Dock
         Children.Add(fill);
         Children.Add(thumb);
 
-        Update();
+        Value = 0.5;
     }
 
-    public AudioPluginParameter Parameter
+    public double Value
     {
-        get { return parameter; }
+        get { return value; }
+
+        set
+        {
+            value = Math.Clamp(value, 0, 1);
+
+            if (value == this.value)
+                return;
+
+            this.value = value;
+
+            UpdateContentLayout();
+        }
     }
 
-    /// <summary>Whether the slider is being dragged (an edit gesture is open).</summary>
-    public bool IsDragging { get; private set; }
+    public double DefaultValue { get; set; } = 0.5;
+
+    public bool IsEditing { get; private set; }
+
+    public Action EditStarted { get; set; }
+    public Action ValueChanged { get; set; }
+    public Action EditEnded { get; set; }
 
     public UIColor TrackColor
     {
@@ -142,32 +161,20 @@ public class ParameterSlider : Dock
         set { thumbBody.Color = value; }
     }
 
-    /// <summary>The thumb's ring color, and its color on hover and while dragging.</summary>
+    /// <summary>The thumb's ring color, and its color on hover and while editing.</summary>
     public UIColor RingColor { get; set; }
     public UIColor ActiveRingColor { get; set; }
 
-    /// <summary>
-    /// Shows the parameter's edit value, if it changed since the last call, and hover. Doesn't allocate.
-    /// </summary>
     public void Update()
     {
-        UIColor ringColor = (IsDragging || IsMouseOver) ? ActiveRingColor : RingColor;
+        UIColor ringColor = (IsEditing || IsMouseOver) ? ActiveRingColor : RingColor;
 
-        if (thumbRing.Color != ringColor)
-        {
-            thumbRing.Color = ringColor;
-
-            Layout.Current.AddDirtyRect(ContentBounds);
-        }
-
-        double value = parameter.NormalizedEditValue;
-
-        if (value.Equals(shownValue))
+        if (thumbRing.Color == ringColor)
             return;
 
-        shownValue = value;
+        thumbRing.Color = ringColor;
 
-        UpdateContentLayout();
+        Layout.Current.AddDirtyRect(ContentBounds);
     }
 
     // How far the thumb moves: the length less the thumb
@@ -176,11 +183,10 @@ public class ParameterSlider : Dock
     // Also called when the slider's bounds change (a resize), so the thumb and fill follow the length.
     public override void UpdateContentLayout()
     {
-        float value = (float)Math.Clamp(parameter.NormalizedEditValue, 0, 1);
         float inset = (thumbSize - trackThickness) / 2;
 
         // The thumb's offset from the low end, and the fill from the track's low end to the thumb's center
-        float thumbOffset = value * Travel;
+        float thumbOffset = (float)value * Travel;
         float fillLength = thumbOffset + (thumbSize / 2) - inset;
 
         if (vertical)
@@ -208,6 +214,17 @@ public class ParameterSlider : Dock
         Layout.Current.AddDirtyRect(ContentBounds);
     }
 
+    // A value from the user, reported if it changed
+    void Change(double newValue)
+    {
+        double before = value;
+
+        Value = newValue;
+
+        if ((value != before) && (ValueChanged != null))
+            ValueChanged();
+    }
+
     // Where the touch is along the slider, from its low end's edge in the direction the value grows
     float Position(in Touch touch)
     {
@@ -224,15 +241,21 @@ public class ParameterSlider : Dock
             case ETouchState.Pressed:
                 CaptureTouch(touch);
 
-                IsDragging = true;
+                IsEditing = true;
 
-                parameter.BeginEdit();
+                if (EditStarted != null)
+                    EditStarted();
 
                 float position = Position(touch);
-                float thumbStart = (float)Math.Clamp(parameter.NormalizedEditValue, 0, 1) * Travel;
+                float thumbStart = (float)value * Travel;
 
-                // On the thumb, drag it from where it was taken; elsewhere, its center jumps to the touch
-                if ((position >= thumbStart) && (position <= (thumbStart + thumbSize)))
+                fineActive = ControlInput.IsFine;
+                fineAnchorPosition = position;
+                fineAnchorValue = value;
+
+                // On the thumb (or in fine adjustment), drag it from where it was taken; elsewhere, its center jumps
+                // to the touch
+                if (fineActive || ((position >= thumbStart) && (position <= (thumbStart + thumbSize))))
                 {
                     dragOffset = position - thumbStart;
                 }
@@ -246,24 +269,23 @@ public class ParameterSlider : Dock
 
             case ETouchState.Moved:
             case ETouchState.Held:
-                if (IsDragging)
+                if (IsEditing)
                     MoveTo(Position(touch));
                 break;
 
             case ETouchState.Released:
             case ETouchState.Invalid:
-                if (IsDragging)
+                if (IsEditing)
                 {
                     if (doubleTap)
-                        parameter.NormalizedEditValue = parameter.NormalizedDefaultValue;
+                        Change(DefaultValue);
 
-                    IsDragging = false;
+                    IsEditing = false;
 
                     ReleaseTouch();
 
-                    parameter.EndEdit();
-
-                    Update();
+                    if (EditEnded != null)
+                        EditEnded();
                 }
                 break;
         }
@@ -271,7 +293,7 @@ public class ParameterSlider : Dock
         return true;
     }
 
-    // The thumb's grabbed point to the position
+    // The thumb's grabbed point to the position; in fine adjustment, the value from its anchor at the fine speed
     void MoveTo(float position)
     {
         float travel = Travel;
@@ -279,8 +301,42 @@ public class ParameterSlider : Dock
         if (travel <= 0)
             return;
 
-        parameter.NormalizedEditValue = Math.Clamp((position - dragOffset) / travel, 0, 1);
+        bool fine = ControlInput.IsFine;
 
-        Update();
+        // Shift pressed or released mid-drag: go on from here, the thumb staying where it is
+        if (fine != fineActive)
+        {
+            fineActive = fine;
+
+            if (fine)
+            {
+                fineAnchorPosition = position;
+                fineAnchorValue = value;
+            }
+            else
+            {
+                dragOffset = position - ((float)value * travel);
+            }
+        }
+
+        Change(fine ?
+            fineAnchorValue + (((position - fineAnchorPosition) / travel) * ControlInput.FineScale) :
+            (position - dragOffset) / travel);
+    }
+
+    public override bool HandleMouseWheel(int delta)
+    {
+        if (IsEditing)
+            return true;
+
+        if (EditStarted != null)
+            EditStarted();
+
+        Change(ControlInput.WheelValue(value, delta));
+
+        if (EditEnded != null)
+            EditEnded();
+
+        return true;
     }
 }

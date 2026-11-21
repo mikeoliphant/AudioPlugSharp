@@ -1,24 +1,20 @@
-using AudioPlugSharp;
+using System;
 using UILayout;
 
 namespace AudioPlugSharpUILayout;
 
 /// <summary>
-/// An on/off switch bound to a parameter: a lamp, lit when the parameter is on (its normalized value at least 0.5).
-/// A click toggles it, as one edit gesture (BeginEdit/EndEdit) setting the parameter to its maximum or minimum. Call
-/// <see cref="Update"/> each frame, for example in EditorUpdate: the switch follows the parameter's edit value (host
-/// automation). Images: <see cref="AudioTextures"/>, tinted with <see cref="LampColor"/> (green by default).
+/// An on/off switch (<see cref="IValueControl"/>, 0 or 1; <see cref="ParameterControl"/> binds one to a parameter): a
+/// lamp, lit when on (a value of at least 0.5). A click toggles it, as one edit. Images: <see cref="AudioTextures"/>,
+/// tinted with <see cref="LampColor"/> (green by default).
 /// </summary>
-public class ParameterSwitch : Button
+public class LampSwitch : Button, IValueControl
 {
-    AudioPluginParameter parameter;
     ImageElement onLamp;
     ImageElement offLamp;
 
-    public ParameterSwitch(AudioPluginParameter parameter)
+    public LampSwitch()
     {
-        this.parameter = parameter;
-
         HorizontalAlignment = EHorizontalAlignment.Center;
         VerticalAlignment = EVerticalAlignment.Center;
 
@@ -29,26 +25,45 @@ public class ParameterSwitch : Button
 
         LampColor = new UIColor(76, 214, 68);
 
-        // A toggle button changes state on press: the parameter follows it
+        // A toggle button changes state on press: report it as one edit
         ClickAction = delegate
         {
-            parameter.BeginEdit();
+            if (EditStarted != null)
+                EditStarted();
 
-            parameter.NormalizedEditValue = IsPressed ? 1 : 0;
+            if (ValueChanged != null)
+                ValueChanged();
 
-            parameter.EndEdit();
+            if (EditEnded != null)
+                EditEnded();
         };
-
-        Update();
     }
 
-    public AudioPluginParameter Parameter
+    public double Value
     {
-        get { return parameter; }
+        get { return IsPressed ? 1 : 0; }
+
+        set
+        {
+            bool on = value >= 0.5;
+
+            if (on == IsPressed)
+                return;
+
+            SetPressed(on);
+
+            Layout.Current.AddDirtyRect(ContentBounds);
+        }
     }
 
-    /// <summary>Whether the parameter is on: its normalized edit value at least 0.5.</summary>
-    public bool IsOn => parameter.NormalizedEditValue >= 0.5;
+    public double DefaultValue { get; set; }
+
+    /// <summary>Always false: a click is over at once.</summary>
+    public bool IsEditing => false;
+
+    public Action EditStarted { get; set; }
+    public Action ValueChanged { get; set; }
+    public Action EditEnded { get; set; }
 
     /// <summary>The lamp's color, lit (the unlit lamp is a dark shade of it).</summary>
     public UIColor LampColor
@@ -62,14 +77,7 @@ public class ParameterSwitch : Button
         }
     }
 
-    /// <summary>Shows whether the parameter is on, if it changed. Doesn't allocate.</summary>
     public void Update()
     {
-        if (IsPressed == IsOn)
-            return;
-
-        SetPressed(IsOn);
-
-        Layout.Current.AddDirtyRect(ContentBounds);
     }
 }

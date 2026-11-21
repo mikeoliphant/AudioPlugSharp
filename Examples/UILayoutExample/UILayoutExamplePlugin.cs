@@ -7,10 +7,10 @@ using UILayout;
 namespace UILayoutExample
 {
     /// <summary>
-    /// Stereo gain and mute with an embedded UILayout editor showing AudioPlugSharpUILayout's controls: the gain as a
-    /// knob, a vertical slider and a horizontal slider, the mute as a switch (each control sends edit gestures to the
-    /// host and follows the parameter's edit value, so the gain controls follow each other and host automation), the
-    /// gain's value as text, and an output level meter fed from the audio thread.
+    /// Stereo gain and mute with an embedded UILayout editor showing AudioPlugSharpUILayout's parameter controls: the
+    /// gain as a knob, a vertical slider and a horizontal slider, the mute as a switch (each sends edit gestures to the
+    /// host, pops its value in while it changes, and follows the parameter's edit value, so the gain controls follow
+    /// each other and host automation), and an output level meter fed from the audio thread.
     /// </summary>
     public class UILayoutExamplePlugin : AudioPluginUILayout
     {
@@ -22,11 +22,7 @@ namespace UILayoutExample
         // Output peak, written by the audio thread (as float bits) and read by the editor
         int peakBits;
 
-        ParameterKnob knob;
-        ParameterSlider verticalSlider;
-        ParameterSlider slider;
-        ParameterSwitch muteSwitch;
-        ParameterValueText gainText;
+        ParameterControl[] controls;
         LevelMeter meter;
 
         public UILayoutExamplePlugin()
@@ -62,7 +58,7 @@ namespace UILayoutExample
                 ValueFormat = "{0:0.0}dB",
             });
 
-            // On or off: on at a normalized value of at least 0.5 (ParameterSwitch sets 1 or 0)
+            // On or off: on at a normalized value of at least 0.5 (ParameterControl.Switch sets 1 or 0)
             AddParameter(mute = new AudioPluginParameter
             {
                 ID = "mute",
@@ -147,38 +143,29 @@ namespace UILayoutExample
                 ChildSpacing = 12,
             };
 
-            // Fixed row heights: header 26 (the font), controls 72 (the vertical slider's length), meter 16
-            Dock header = new Dock { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = 26 };
-            header.Children.Add(new TextBlock("Gain") { TextColor = theme.Text, HorizontalAlignment = EHorizontalAlignment.Left });
-            // As wide as the widest value it can show, with the text right-aligned in it: the header's layout doesn't change
-            header.Children.Add(gainText = new ParameterValueText(gain) { HorizontalAlignment = EHorizontalAlignment.Right });
-            root.Children.Add(header);
-
-            HorizontalStack controls = new HorizontalStack
+            // The gain as a named knob and an unnamed vertical slider, the mute as a named switch
+            HorizontalStack top = new HorizontalStack
             {
                 HorizontalAlignment = EHorizontalAlignment.Stretch,
-                DesiredHeight = 72,
-                ChildSpacing = 12,
+                ChildSpacing = 24,
             };
-            root.Children.Add(controls);
+            root.Children.Add(top);
 
-            controls.Children.Add(knob = new ParameterKnob(gain));
-            controls.Children.Add(verticalSlider = new ParameterSlider(gain, vertical: true));
-            controls.Children.Add(slider = new ParameterSlider(gain));
+            ParameterControl gainKnob = ParameterControl.Knob(gain);
+            ParameterControl gainFader = ParameterControl.Slider(gain, vertical: true);
+            ParameterControl muteSwitch = ParameterControl.Switch(mute);
+            gainFader.ShowName = false;
 
-            // The mute switch, labelled
-            VerticalStack muteStack = new VerticalStack
-            {
-                HorizontalAlignment = EHorizontalAlignment.Center,
-                VerticalAlignment = EVerticalAlignment.Center,
-            };
-            muteStack.Children.Add(muteSwitch = new ParameterSwitch(mute));
-            muteStack.Children.Add(new TextBlock("Mute")
-            {
-                TextColor = theme.MutedText,
-                HorizontalAlignment = EHorizontalAlignment.Center,
-            });
-            controls.Children.Add(muteStack);
+            top.Children.Add(gainKnob);
+            top.Children.Add(gainFader);
+            top.Children.Add(muteSwitch);
+
+            // The gain again as a horizontal slider across the editor
+            ParameterControl gainSlider = ParameterControl.Slider(gain);
+            gainSlider.ShowName = false;
+            root.Children.Add(gainSlider);
+
+            controls = new ParameterControl[] { gainKnob, gainFader, muteSwitch, gainSlider };
 
             root.Children.Add(meter = new LevelMeter
             {
@@ -204,11 +191,7 @@ namespace UILayoutExample
 
         protected override void EditorClosing()
         {
-            knob = null;
-            verticalSlider = null;
-            slider = null;
-            muteSwitch = null;
-            gainText = null;
+            controls = null;
             meter = null;
         }
 
@@ -218,14 +201,11 @@ namespace UILayoutExample
         /// </summary>
         void SyncControls()
         {
-            if (knob == null)
+            if (controls == null)
                 return;
 
-            knob.Update();
-            verticalSlider.Update();
-            slider.Update();
-            muteSwitch.Update();
-            gainText.Update();
+            foreach (ParameterControl control in controls)
+                control.Update();
         }
     }
 }

@@ -8,8 +8,8 @@ namespace UILayoutTestPlugin
 {
     /// <summary>
     /// The test hosts' UILayout plugin (ClapTestHost, Vst3TestHost run their detailed editor checks on it): stereo
-    /// gain with a gain slider (editor -> host as an edit gesture, host -> editor by following the parameter's edit
-    /// value), an output level meter (AudioPlugSharpUILayout's LevelMeter) fed from the audio thread, and MIDI CC 7
+    /// gain with a gain slider (AudioPlugSharpUILayout's ParameterControl with a ValueSlider: editor -> host as an edit
+    /// gesture, host -> editor by following the parameter's edit value), an output level meter (AudioPlugSharpUILayout's LevelMeter) fed from the audio thread, and MIDI CC 7
     /// mapped to the gain.
     ///
     /// Beyond the UILayoutExample it starts from, it exercises what the hosts check: the editor is resizable (resize
@@ -29,7 +29,7 @@ namespace UILayoutTestPlugin
         // Output peak, written by the audio thread (as float bits) and read by the editor
         int peakBits;
 
-        GainSlider slider;
+        ParameterControl slider;
         ParameterValueText gainText;
         LevelMeter meter;
 
@@ -174,10 +174,16 @@ namespace UILayoutTestPlugin
 
             root.Children.Add(header);
 
-            root.Children.Add(slider = new GainSlider(gain)
+            // The hosts find the slider by its black track (a row that is mostly black), so its track and fill are black
+            root.Children.Add(slider = new ParameterControl(gain, new ValueSlider
+            {
+                TrackColor = UIColor.Black,
+                FillColor = UIColor.Black,
+            })
             {
                 HorizontalAlignment = EHorizontalAlignment.Stretch,
                 DesiredHeight = 32,
+                ShowName = false,
             });
 
             // AudioPlugSharpUILayout's meter (the standalone's too)
@@ -265,53 +271,8 @@ namespace UILayoutTestPlugin
             if ((slider == null) || (gainText == null))
                 return;
 
-            if (!slider.IsDragging)
-                slider.SetLevel((float)gain.NormalizedEditValue);
-
+            slider.Update();
             gainText.Update();
-        }
-
-        /// <summary>
-        /// Editor -> host: one edit gesture per drag (begin on press, values while moving, end on release)
-        /// </summary>
-        class GainSlider : HorizontalSlider
-        {
-            AudioPluginParameter parameter;
-
-            public bool IsDragging { get; private set; }
-
-            public GainSlider(AudioPluginParameter parameter)
-                : base("HorizontalSlider")
-            {
-                this.parameter = parameter;
-
-                // A value inside the drag's gesture
-                ChangeAction = delegate (float level)
-                {
-                    parameter.NormalizedEditValue = level;
-                };
-            }
-
-            public override bool HandleTouch(in Touch touch)
-            {
-                if (touch.TouchState == ETouchState.Pressed)
-                {
-                    IsDragging = true;
-
-                    parameter.BeginEdit();
-                }
-
-                bool handled = base.HandleTouch(touch);
-
-                if ((touch.TouchState == ETouchState.Released) && IsDragging)
-                {
-                    IsDragging = false;
-
-                    parameter.EndEdit();
-                }
-
-                return handled;
-            }
         }
     }
 }
