@@ -30,9 +30,8 @@ namespace UILayoutTestPlugin
         int peakBits;
 
         GainSlider slider;
-        TextBlock gainText;
+        ParameterValueText gainText;
         LevelMeter meter;
-        double shownGainDb = double.NaN;
 
         // Fullscreen cursor hiding
         const float CursorHideSeconds = 1;
@@ -162,7 +161,8 @@ namespace UILayoutTestPlugin
             // Fixed row heights: header 26 (the font), slider 32, meter 16
             Dock header = new Dock { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = 26 };
             header.Children.Add(new TextBlock("Gain") { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Left });
-            header.Children.Add(gainText = new TextBlock("") { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Right });
+            // As wide as the widest value it can show, with the text right-aligned in it: the header's layout doesn't change
+            header.Children.Add(gainText = new ParameterValueText(gain) { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Right });
 
             // Hover: the border takes the accent color while the mouse is over it, and drops it when the mouse
             // leaves the editor window
@@ -187,7 +187,6 @@ namespace UILayoutTestPlugin
                 DesiredHeight = 16,
             });
 
-            shownGainDb = double.NaN;
             SyncControls();
 
             return root;
@@ -269,16 +268,7 @@ namespace UILayoutTestPlugin
             if (!slider.IsDragging)
                 slider.SetLevel((float)gain.NormalizedEditValue);
 
-            double db = Math.Round(gain.EditValue, 1);
-
-            // Only update the text when the shown value changes
-            if (db != shownGainDb)
-            {
-                shownGainDb = db;
-
-                gainText.Text = gain.FormatValue(db);
-                gainText.UpdateContentLayout();
-            }
+            gainText.Update();
         }
 
         /// <summary>

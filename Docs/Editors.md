@@ -43,6 +43,10 @@ For knobs and sliders, call the parameter's **BeginEdit()** when the user grabs 
 
 Bind controls that work in a 0-1 range to **NormalizedEditValue**: it also works for parameters whose minimum is -inf dB.
 
+## Audio Controls
+
+**AudioPlugSharpUILayout** adds controls for audio alongside UILayout's own. **LevelMeter** shows a level on a decibel scale, in green, then orange from -6 dB and red when clipping. Set its **Level** (the peak amplitude, 1 is full scale) in **EditorUpdate**. The [UILayoutExample](../Examples/UILayoutExample/UILayoutExamplePlugin.cs) shows how to pass the peak from the audio thread and let the meter fall.
+
 ## Size and Scaling
 
 **EditorWidth** and **EditorHeight** are in pixels at 100% display scale. On high-DPI screens the editor is scaled up automatically, and your user interface code doesn't need to change.

@@ -8,7 +8,8 @@ namespace UILayoutExample
 {
     /// <summary>
     /// Stereo gain with an embedded UILayout editor: a gain slider (editor -> host as an edit gesture, host ->
-    /// editor by following the parameter's edit value) and an output level meter fed from the audio thread.
+    /// editor by following the parameter's edit value) and an output level meter (AudioPlugSharpUILayout's
+    /// LevelMeter) fed from the audio thread.
     /// </summary>
     public class UILayoutExamplePlugin : AudioPluginUILayout
     {
@@ -20,9 +21,8 @@ namespace UILayoutExample
         int peakBits;
 
         GainSlider slider;
-        TextBlock gainText;
+        ParameterValueText gainText;
         LevelMeter meter;
-        double shownGainDb = double.NaN;
 
         public UILayoutExamplePlugin()
         {
@@ -130,7 +130,8 @@ namespace UILayoutExample
             // Fixed row heights: header 26 (the font), slider 32, meter 16
             Dock header = new Dock { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = 26 };
             header.Children.Add(new TextBlock("Gain") { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Left });
-            header.Children.Add(gainText = new TextBlock("") { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Right });
+            // As wide as the widest value it can show, with the text right-aligned in it: the header's layout doesn't change
+            header.Children.Add(gainText = new ParameterValueText(gain) { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Right });
             root.Children.Add(header);
 
             root.Children.Add(slider = new GainSlider(gain)
@@ -145,7 +146,6 @@ namespace UILayoutExample
                 DesiredHeight = 16,
             });
 
-            shownGainDb = double.NaN;
             SyncControls();
 
             return root;
@@ -157,7 +157,9 @@ namespace UILayoutExample
 
             float peak = BitConverter.Int32BitsToSingle(Interlocked.Exchange(ref peakBits, 0));
 
-            meter?.Update(peak, secondsElapsed);
+            // Rise immediately, fall with a quarter-second time constant
+            if (meter != null)
+                meter.Level = Math.Max(meter.Level * MathF.Exp(-secondsElapsed / 0.25f), peak);
         }
 
         protected override void EditorClosing()
@@ -178,16 +180,7 @@ namespace UILayoutExample
             if (!slider.IsDragging)
                 slider.SetLevel((float)gain.NormalizedEditValue);
 
-            double db = Math.Round(gain.EditValue, 1);
-
-            // Only update the text when the shown value changes
-            if (db != shownGainDb)
-            {
-                shownGainDb = db;
-
-                gainText.Text = gain.FormatValue(db);
-                gainText.UpdateContentLayout();
-            }
+            gainText.Update();
         }
 
         /// <summary>
@@ -230,38 +223,6 @@ namespace UILayoutExample
                 }
 
                 return handled;
-            }
-        }
-
-        /// <summary>
-        /// A horizontal bar: the output peak (0 dB at the right end), held and decaying
-        /// </summary>
-        class LevelMeter : UIElement
-        {
-            static readonly UIColor Background = new UIColor(16, 18, 22);
-            static readonly UIColor Green = new UIColor(64, 200, 96);
-            static readonly UIColor Red = new UIColor(230, 64, 48);
-
-            float level; // 0..1, -60 dB .. 0 dB
-
-            public void Update(float peak, float secondsElapsed)
-            {
-                float db = (peak > 0) ? (20 * MathF.Log10(peak)) : -60;
-                float target = Math.Clamp((db + 60) / 60, 0, 1);
-
-                // Rise immediately, fall in about 1.5 seconds
-                level = (target >= level) ? target : Math.Max(target, level - (secondsElapsed * 1.5f));
-            }
-
-            protected override void DrawContents()
-            {
-                GraphicsContext2D g = Layout.Current.GraphicsContext;
-                RectF bounds = ContentBounds;
-
-                g.DrawRectangle(bounds, Background);
-
-                if (level > 0)
-                    g.DrawRectangle(new RectF(bounds.X, bounds.Y, bounds.Width * level, bounds.Height), (level >= 1) ? Red : Green);
             }
         }
     }
