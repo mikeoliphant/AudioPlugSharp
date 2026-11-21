@@ -3,8 +3,31 @@ namespace StandaloneTests;
 /// <summary>Finds, inspects and drives another process's windows, with synthetic input.</summary>
 abstract class WindowDriver
 {
-    /// <summary>Waits (up to 10 s) for the top-level window with this title and the editor window inside it.</summary>
-    public abstract bool Find(string title, out nint top, out nint editor);
+    /// <summary>
+    /// Waits (up to 10 s) for the top-level window with this title and the editor window inside it: the child at the
+    /// top (the status strip is the child below it).
+    /// </summary>
+    public bool Find(string title, out nint top, out nint editor)
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            top = FindTopLevel(title);
+            editor = top != 0 ? Children(top).FirstOrDefault(c => Position(c).Y == 0) : 0;
+            if (editor != 0) return true;
+            Thread.Sleep(100);
+        }
+        top = editor = 0;
+        return false;
+    }
+
+    /// <summary>The top-level window with this title, or 0.</summary>
+    protected abstract nint FindTopLevel(string title);
+
+    /// <summary>The window's child windows.</summary>
+    public abstract nint[] Children(nint window);
+
+    /// <summary>The window's position in its parent's client area (pixels).</summary>
+    public abstract (int X, int Y) Position(nint window);
 
     /// <summary>The window's client size in pixels, as "WxH".</summary>
     public abstract string Size(nint window);

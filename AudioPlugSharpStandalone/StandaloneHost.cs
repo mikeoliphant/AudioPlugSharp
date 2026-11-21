@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AudioIOSharp;
 using AudioPlugSharp;
 using AudioPlugSharpWindowing;
@@ -34,6 +35,8 @@ public class StandaloneHost : IAudioHost
     // second (a device can resync as it starts, before anything is heard) and after it.
     long blocks, frames, startupDropouts, dropouts;
     const double StartupSeconds = 1;
+    // The time spent processing (Stopwatch ticks, never reset), for the plugin's load in the status strip.
+    long busyTicks;
 
     // What went on while processing, recorded on the audio thread without allocating and logged only when processing
     // stops, so finding out about dropouts can't cause more: each dropout's position, with the garbage collections and GC
@@ -92,9 +95,10 @@ public class StandaloneHost : IAudioHost
         LoadState();
         BitsPerSample = (processor.SampleFormatsSupported & EAudioBitsPerSample.Bits32) != 0 ? EAudioBitsPerSample.Bits32 : EAudioBitsPerSample.Bits64;
 
-        AudioSettings settings = AudioSettings.Load(SaveFolder);
+        settings = AudioSettings.Load(SaveFolder);
         engine = new AudioEngine(StartupConfig(settings), AudioEngine.PlatformDrivers(plugin.PluginName), settings.For);
         engine.Log += (level, message) => Logger.Log($"Audio: {message}");
+        engine.StateChanged += () => audioStateChanged = true; // shown in the status strip, on the UI thread
         // The engine went back to no device after the device failed: that's the configuration from now on.
         engine.ConfigChanged += config =>
         {
@@ -129,6 +133,8 @@ public class StandaloneHost : IAudioHost
             if (processFailure != null) Logger.Log("Processing failed: " + processFailure);
         }
     }
+
+    AudioSettings settings = new();
 
     // The saved configuration, with this run's choices on top. Another driver starts from what was last used with it.
     AudioConfig StartupConfig(AudioSettings settings)
@@ -248,6 +254,7 @@ public class StandaloneHost : IAudioHost
             buffers.ClearOutputs();
             return;
         }
+        long blockStart = Stopwatch.GetTimestamp();
         CurrentAudioBufferSize = (uint)frames;
         blockEventsDispatched = false;
         changedCount = 0;
@@ -275,6 +282,7 @@ public class StandaloneHost : IAudioHost
             parameters[changed[i]].ResetParameterChange();
 
         CurrentProjectSample += frames;
+        Volatile.Write(ref busyTicks, busyTicks + Stopwatch.GetTimestamp() - blockStart);
         int lost = buffers.Xruns + (buffers.Skipped > 0 ? 1 : 0);
         if (lost > 0)
         {
@@ -290,7 +298,7 @@ public class StandaloneHost : IAudioHost
             }
         }
         blocks++;
-        this.frames += frames;
+        Volatile.Write(ref this.frames, this.frames + frames);
     }
 
     // Processing stopped (the device closed or changed its format): how it went, in the log.
@@ -403,52 +411,80 @@ public class StandaloneHost : IAudioHost
     }
 
     // ---- window and editor (UI thread) --------------------------------------------------------------------------
+    //
+    // The window's client area is the editor with the status strip below it, the full width. The editor keeps the
+    // size it asks for; the window is sized around the two. Without an editor (or editor support), the window is the
+    // strip alone. If the strip can't be created (no OpenGL), the window is the editor alone.
 
     NativeWindow? window, editorWindow;
+    StatusStrip? strip;
     bool editorOpen;
     double scale = 1;
     int uiThreadId;
+    const uint NoEditorWidth = 400;
 
     void RunWindow()
     {
         uiThreadId = Environment.CurrentManagedThreadId;
         NativeWindowType? type = NativeWindow.PlatformWindowType;
+        bool showEditor = editor != null && editor.HasUserInterface && type != null && editor.IsEditorWindowTypeSupported((EditorWindowType)type.Value);
+        uint width = showEditor ? editor!.EditorWidth : NoEditorWidth, height = showEditor ? editor!.EditorHeight : 0;
 
-        if (editor == null || !editor.HasUserInterface || type == null || !editor.IsEditorWindowTypeSupported((EditorWindowType)type.Value))
+        window = NativeWindow.CreateTopLevel(plugin.PluginName, (int)width, (int)height + StatusStrip.Height, showEditor && editor!.CanResizeEditor);
+
+        scale = window.Scale;
+        window.SetClientSize(Pixels(width), Pixels(height) + Pixels(StatusStrip.Height));
+
+        // Before the editor's window: a window gives keyboard focus to the child created last, which should be the
+        // editor's.
+        try
         {
-            // Nothing to show but the window itself, which keeps the plugin running until it is closed.
-            window = NativeWindow.CreateTopLevel(plugin.PluginName, 400, 100, resizable: false);
-            window.Closed += WindowLoop.Quit;
-            window.Show();
-            WindowLoop.Run();
-            window.Dispose();
-            return;
+            strip = new StatusStrip(window, Pixels(height), window.ClientWidth, Pixels(StatusStrip.Height), scale,
+                s => new AudioSettingsPanel(engine!, AudioConfigApplied, () => s.SetOpen(false)));
+
+            strip.Clicked += () =>
+            {
+                if (editorOpen) editorWindow!.Focus(); // keys stay the editor's
+            };
+
+            strip.OpenChanged += SizeWindowToContent; // the window grows downward for the panel, and back
+        }
+        catch (Exception e)
+        {
+            Logger.Log("No status strip: " + e.Message);
+
+            if (!showEditor) height = 100;
+
+            window.SetClientSize(Pixels(width), Pixels(height));
         }
 
-        window = NativeWindow.CreateTopLevel(plugin.PluginName, (int)editor.EditorWidth, (int)editor.EditorHeight, editor.CanResizeEditor);
-        scale = window.Scale;
-        window.SetClientSize(Pixels(editor.EditorWidth), Pixels(editor.EditorHeight));
+        if (showEditor)
+        {
+            editorWindow = window.CreateChild(0, 0, window.ClientWidth, Pixels(height));
+            editor!.OpenEditor(editorWindow.Handle, (EditorWindowType)editorWindow.WindowType, scale);
+            editorOpen = true;
 
-        editorWindow = window.CreateChild(0, 0, window.ClientWidth, window.ClientHeight);
-        editor.OpenEditor(editorWindow.Handle, (EditorWindowType)editorWindow.WindowType, scale);
-        editorOpen = true;
-        editorWindow.KeepControl(); // after the editor wrapped the window (SDL)
+            editorWindow.KeepControl(); // after the editor wrapped the window (SDL)
 
-        editorWindow.Input += EditorInput;
-        editorWindow.Resized += EditorWindowResized;
-        window.Resized += (width, height) => editorWindow.SetClientSize(width, height); // stored while fullscreen
+            editorWindow.Input += EditorInput;
+            editorWindow.Resized += EditorWindowResized;
+        }
+
+        window.Resized += ArrangeChildren;
         window.ScaleChanged += ScaleChanged;
         window.CloseRequested += () =>
         {
-            CloseEditor(); // while its window still exists
+            CloseEditor(); // while their windows still exist
+            CloseStrip();
+
             return true;
         };
         window.Closed += WindowLoop.Quit;
 
-        using (WindowLoop.StartTimer(TimeSpan.FromSeconds(1 / 60.0), EditorIdle))
+        using (WindowLoop.StartTimer(TimeSpan.FromSeconds(1 / 60.0), Idle))
         {
             window.Show();
-            editorWindow.Focus();
+            editorWindow?.Focus();
             try
             {
                 WindowLoop.Run();
@@ -456,6 +492,7 @@ public class StandaloneHost : IAudioHost
             finally
             {
                 CloseEditor();
+                CloseStrip();
                 window.Dispose();
             }
         }
@@ -463,13 +500,47 @@ public class StandaloneHost : IAudioHost
 
     int Pixels(uint units) => Math.Max(1, (int)Math.Round(units * scale));
 
+    int Pixels(int units) => Pixels((uint)units);
+
     uint Units(int pixels) => (uint)Math.Max(1, Math.Round(pixels / scale));
 
-    void EditorIdle(double secondsElapsed)
+    int StripPixels => strip != null ? Pixels(strip.TotalHeight) : 0;
+
+    // [UI thread] The settings panel moved the engine to a configuration: it's the one to start with next time.
+    void AudioConfigApplied(AudioConfig config)
     {
-        if (!editorOpen) return;
-        ApplyWindowRequests();
-        editor!.EditorIdle(secondsElapsed);
+        settings.Remember(config);
+        settings.Save(SaveFolder);
+    }
+
+    // The window's client area for the editor at its size (or the strip alone), and the strip.
+    void SizeWindowToContent()
+    {
+        int width = editorOpen ? Pixels(editor!.EditorWidth) : Pixels(NoEditorWidth);
+        int height = editorOpen ? Pixels(editor!.EditorHeight) : 0;
+
+        window!.SetClientSize(width, height + StripPixels);
+    }
+
+    // The window's client area changed (the user resized it, or SizeWindowToContent): the editor takes all but the
+    // strip at the bottom. While the editor is fullscreen its size is stored for when it comes back.
+    void ArrangeChildren(int width, int height)
+    {
+        int editorHeight = Math.Max(1, height - StripPixels);
+
+        editorWindow?.SetClientSize(width, editorHeight);
+        strip?.SetBounds(editorWindow != null ? editorHeight : 0, width, StripPixels);
+    }
+
+    void Idle(double secondsElapsed)
+    {
+        if (editorOpen)
+        {
+            ApplyWindowRequests();
+            editor!.EditorIdle(secondsElapsed);
+        }
+
+        UpdateStatus(secondsElapsed);
     }
 
     bool EditorInput(in WindowInputEvent e)
@@ -496,17 +567,21 @@ public class StandaloneHost : IAudioHost
         uint units = Units(width), unitsHigh = Units(height);
         if (units == editor.EditorWidth && unitsHigh == editor.EditorHeight) return;
         if (!editor.SetEditorSize(units, unitsHigh) && !editorWindow!.IsFullscreen)
-            window!.SetClientSize(Pixels(editor.EditorWidth), Pixels(editor.EditorHeight)); // the size it took instead
+            SizeWindowToContent(); // the size it took instead
     }
 
-    // The main window moved to a monitor with another scale: the editor redraws at it, at the same logical size.
+    // The main window moved to a monitor with another scale: the editor and strip redraw at it, at the same logical
+    // size.
     void ScaleChanged(double newScale)
     {
         if (newScale == scale) return;
+
         scale = newScale;
-        if (!editorOpen) return;
-        editor!.SetEditorScale(scale);
-        window!.SetClientSize(Pixels(editor.EditorWidth), Pixels(editor.EditorHeight));
+
+        if (editorOpen) editor!.SetEditorScale(scale);
+        strip?.SetScale(scale);
+
+        SizeWindowToContent();
     }
 
     void CloseEditor()
@@ -519,6 +594,60 @@ public class StandaloneHost : IAudioHost
         Volatile.Write(ref pendingCursorVisible, NoRequest);
         Volatile.Write(ref pendingFullscreen, NoRequest);
         IsEditorFullscreen = false;
+    }
+
+    void CloseStrip()
+    {
+        strip?.Dispose();
+        strip = null;
+    }
+
+    // ---- status strip (UI thread) -------------------------------------------------------------------------------
+
+    volatile bool audioStateChanged = true;
+    AudioState? audioState;
+    double sinceStatus;
+    long statusBusyTicks, statusFrames;
+    double loadPercent = double.NaN;
+    const double StatusInterval = 0.5;
+
+    // The engine's state when it changes; the load and dropouts twice a second.
+    void UpdateStatus(double secondsElapsed)
+    {
+        if (strip == null || engine == null) return;
+
+        bool changed = false;
+
+        if (audioStateChanged || audioState == null)
+        {
+            audioStateChanged = false;
+            audioState = engine.State;
+            changed = true;
+        }
+
+        sinceStatus += secondsElapsed;
+
+        if (sinceStatus >= StatusInterval)
+        {
+            sinceStatus = 0;
+
+            long busy = Volatile.Read(ref busyTicks), processed = Volatile.Read(ref frames);
+            long busyDelta = busy - statusBusyTicks, framesDelta = processed - statusFrames;
+            statusBusyTicks = busy;
+            statusFrames = processed;
+
+            // The time processing took, as a share of the time the audio covered. Frames start again from 0 when the
+            // device restarts: that interval is skipped.
+            if (framesDelta > 0 && SampleRate > 0)
+                loadPercent = busyDelta / (double)Stopwatch.Frequency / (framesDelta / SampleRate) * 100;
+
+            changed = true;
+        }
+
+        if (changed)
+            strip.Show(StatusStrip.Describe(audioState, engine.Config, processing ? loadPercent : double.NaN, Interlocked.Read(ref dropouts)));
+
+        strip.Tick(secondsElapsed);
     }
 
     // ---- IAudioHost: editor window services (any thread) --------------------------------------------------------

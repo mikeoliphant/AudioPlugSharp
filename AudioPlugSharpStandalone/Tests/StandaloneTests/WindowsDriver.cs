@@ -15,17 +15,23 @@ unsafe class WindowsDriver : WindowDriver
         SetProcessDpiAwarenessContext(-4);
     }
 
-    public override bool Find(string title, out nint top, out nint editor)
+    protected override nint FindTopLevel(string title) => FindWindowW("AudioPlugSharpWindowing.TopLevel", title);
+
+    public override nint[] Children(nint window)
     {
-        for (int i = 0; i < 100; i++)
-        {
-            top = FindWindowW("AudioPlugSharpWindowing.TopLevel", title);
-            editor = top != 0 ? FindWindowExW(top, 0, "AudioPlugSharpWindowing.Child", null) : 0;
-            if (editor != 0) return true;
-            Thread.Sleep(100);
-        }
-        top = editor = 0;
-        return false;
+        var children = new List<nint>();
+        for (nint child = FindWindowExW(window, 0, "AudioPlugSharpWindowing.Child", null); child != 0;
+             child = FindWindowExW(window, child, "AudioPlugSharpWindowing.Child", null))
+            children.Add(child);
+        return children.ToArray();
+    }
+
+    public override (int X, int Y) Position(nint window)
+    {
+        RECT r;
+        GetWindowRect(window, &r);
+        MapWindowPoints(0, GetParent(window), (POINT*)&r, 1);
+        return (r.Left, r.Top);
     }
 
     public override string Size(nint window)
@@ -117,6 +123,7 @@ unsafe class WindowsDriver : WindowDriver
     }
 
     [StructLayout(LayoutKind.Sequential)] struct RECT { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
     [StructLayout(LayoutKind.Sequential)] struct MONITORINFO { public uint Size; public RECT Monitor, Work; public uint Flags; }
     [StructLayout(LayoutKind.Sequential)]
     struct BITMAPINFOHEADER
@@ -140,6 +147,7 @@ unsafe class WindowsDriver : WindowDriver
     [DllImport(User32)] static extern nint SendMessageW(nint hwnd, uint msg, nint wp, nint lp);
     [DllImport(User32)] static extern int PostMessageW(nint hwnd, uint msg, nint wp, nint lp);
     [DllImport(User32)] static extern nint GetParent(nint hwnd);
+    [DllImport(User32)] static extern int MapWindowPoints(nint from, nint to, POINT* points, uint count);
     [DllImport(User32)] static extern nint GetDC(nint hwnd);
     [DllImport(User32)] static extern int ReleaseDC(nint hwnd, nint dc);
     [DllImport(User32)] static extern int PrintWindow(nint hwnd, nint dc, uint flags);

@@ -3,7 +3,9 @@
   <!--
     Runs an AudioPlugSharp plugin as an application. StandaloneHost implements IAudioHost, owns the plugin and its
     window, and drives its editor as the DAW adapters do. Managed only. Audio through AudioIOSharp
-    (Dependencies/AudioIOSharp): ASIO, JACK, or its internal clock when there's no device.
+    (Dependencies/AudioIOSharp): ASIO, JACK, or its internal clock when there's no device. The status strip below the
+    editor is a UILayout layout of the host's own (Dependencies/UILayout): a plugin's UILayout is a separate copy, in
+    the plugin's load context.
 
     As a program, it runs any plugin from its build output: AudioPlugSharpStandalone <plugin.dll>. As a library, an
     application can run its own plugin: new StandaloneHost(new MyPlugin()).Run().
@@ -18,6 +20,8 @@
     <!-- Every method compiled once, fully optimized: tiering recompiles methods seconds after they first run, which
          can cause dropouts at small buffer sizes (see AudioIOSharp's README). -->
     <TieredCompilation>false</TieredCompilation>
+    <!-- As for AudioPlugSharpUILayout: a checkout with its own UILayout sets this, so only one copy is built. -->
+    <UILayoutDir Condition="'$(UILayoutDir)' == ''">$(MSBuildThisFileDirectory)..\Dependencies\UILayout\</UILayoutDir>
   </PropertyGroup>
 
   <!-- Windows: with the Windows Desktop framework, as the DAW bridge, so WPF plugins run too. -->
@@ -35,6 +39,12 @@
     <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
     <ProjectReference Include="..\AudioPlugSharpWindowing\AudioPlugSharpWindowing.csproj" />
     <ProjectReference Include="..\Dependencies\AudioIOSharp\AudioIOSharp\AudioIOSharp.csproj" />
+    <ProjectReference Include="$(UILayoutDir)UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The UILayout project keeps its MonoGame reference private; the strip uses MonoGame types (colors). -->
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.6.1" />
   </ItemGroup>
 
 </Project>

@@ -8,7 +8,8 @@ namespace StandaloneTests;
 /// StandaloneTests &lt;AudioPlugSharpStandalone executable&gt; &lt;UILayoutTestPlugin.dll&gt; [--captures &lt;dir&gt;]
 ///
 /// Runs the plugin in the standalone host, in both editor modes (AUDIOPLUGSHARP_EDITOR_RENDER_THREAD=0 and 1), and
-/// checks, by driving the window from outside: the window opens at the editor's size; a drag on the gain slider
+/// checks, by driving the window from outside: the window opens at the editor's size, with the status strip below the
+/// editor; a drag on the gain slider
 /// reaches the plugin; the editor follows a resize and (Windows) a display scale change; F11 makes it fullscreen and
 /// back; closing exits cleanly and saves the state; it reopens at the saved size. Captures of the editor go to
 /// --captures. Exits with 0 when everything passed.
@@ -19,6 +20,8 @@ static class Program
 {
     const string PluginName = "UILayout Test"; // the window title
     const int EditorWidth = 320, EditorHeight = 160;
+    const int StripHeight = 30; // StatusStrip.Height
+    const int PanelHeight = 220; // AudioSettingsPanel.PanelHeight
     const uint KeyF11 = 0x7A;
 
     static int failures;
@@ -80,10 +83,48 @@ static class Program
             double scale = driver.Scale(top);
             int Px(int units) => (int)Math.Round(units * scale);
             string Expect(int width, int height) => $"{Px(width)}x{Px(height)}";
+            string ExpectWindow(int width, int height) => $"{Px(width)}x{Px(height) + Px(StripHeight)}";
 
-            Check(driver.Size(top) == Expect(EditorWidth, EditorHeight) && driver.Size(editor) == Expect(EditorWidth, EditorHeight),
-                $"opens at the editor's size (window {driver.Size(top)}, editor {driver.Size(editor)}, expected {Expect(EditorWidth, EditorHeight)})");
+            // The strip: the full width, below the editor.
+            void CheckStrip(int width, int height, string when)
+            {
+                nint strip = driver.Children(top).FirstOrDefault(c => c != editor);
+                string at = strip != 0 ? $"{driver.Size(strip)} at y {driver.Position(strip).Y}" : "none";
+                Check(strip != 0 && driver.Size(strip) == Expect(width, StripHeight) && driver.Position(strip).Y == Px(height),
+                    $"{when}: the status strip is below the editor ({at}, expected {Expect(width, StripHeight)} at y {Px(height)})");
+                if (strip != 0) Capture(strip, $"strip-{when}");
+            }
+
+            Check(driver.Size(top) == ExpectWindow(EditorWidth, EditorHeight) && driver.Size(editor) == Expect(EditorWidth, EditorHeight),
+                $"opens at the editor's size, with the strip (window {driver.Size(top)}, editor {driver.Size(editor)}, expected {ExpectWindow(EditorWidth, EditorHeight)} and {Expect(EditorWidth, EditorHeight)})");
+            CheckStrip(EditorWidth, EditorHeight, "open");
             Capture(editor, "open");
+
+            // A click on the strip opens the settings panel below it: the window grows downward, the editor keeps its
+            // size. Another click closes it.
+            nint stripWindow = driver.Children(top).FirstOrDefault(c => c != editor);
+
+            if (stripWindow != 0)
+            {
+                string openWindow = $"{Px(EditorWidth)}x{Px(EditorHeight) + Px(StripHeight + PanelHeight)}";
+
+                driver.MouseButton(stripWindow, Px(20), Px(10), down: true);
+                driver.MouseButton(stripWindow, Px(20), Px(10), down: false);
+                Thread.Sleep(600);
+
+                Check(driver.Size(top) == openWindow && driver.Size(editor) == Expect(EditorWidth, EditorHeight) && driver.Size(stripWindow) == Expect(EditorWidth, StripHeight + PanelHeight),
+                    $"a click on the strip opens the settings panel (window {driver.Size(top)}, editor {driver.Size(editor)}, strip {driver.Size(stripWindow)}, expected {openWindow})");
+                Capture(stripWindow, "settings");
+
+                driver.MouseButton(stripWindow, Px(20), Px(10), down: true);
+                driver.MouseButton(stripWindow, Px(20), Px(10), down: false);
+                Thread.Sleep(600);
+
+                Check(driver.Size(top) == ExpectWindow(EditorWidth, EditorHeight) && driver.Size(editor) == Expect(EditorWidth, EditorHeight),
+                    $"and another closes it (window {driver.Size(top)}, editor {driver.Size(editor)})");
+
+                CheckStrip(EditorWidth, EditorHeight, "settings closed");
+            }
 
             // A drag on the gain slider, from its handle (0 dB) to the left: one edit gesture, saved below.
             int y = Px(99);
@@ -94,9 +135,10 @@ static class Program
             Thread.Sleep(300);
             Capture(editor, "dragged");
 
-            driver.SetClientSize(top, Px(500), Px(300));
+            driver.SetClientSize(top, Px(500), Px(300) + Px(StripHeight));
             Thread.Sleep(600);
             Check(driver.Size(editor) == Expect(500, 300), $"follows a resize (editor {driver.Size(editor)}, expected {Expect(500, 300)})");
+            CheckStrip(500, 300, "resized");
             Capture(editor, "resized");
 
             if (driver.CanChangeScale)

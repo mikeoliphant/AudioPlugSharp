@@ -23,23 +23,16 @@ unsafe class X11Driver : WindowDriver
         root = XDefaultRootWindow(display);
     }
 
-    public override bool Find(string title, out nint top, out nint editor)
+    // By name: a window manager may have put the window into a frame of its own.
+    protected override nint FindTopLevel(string title) => (nint)FindNamed(root, title);
+
+    public override nint[] Children(nint window) => Children((nuint)window).Select(c => (nint)c).ToArray();
+
+    public override (int X, int Y) Position(nint window)
     {
-        for (int i = 0; i < 100; i++)
-        {
-            // By name: a window manager may have put the window into a frame of its own.
-            nuint found = FindNamed(root, title);
-            nuint[] children = found != 0 ? Children(found) : [];
-            if (children.Length > 0)
-            {
-                top = (nint)found;
-                editor = (nint)children[0];
-                return true;
-            }
-            Thread.Sleep(100);
-        }
-        top = editor = 0;
-        return false;
+        byte* attributes = stackalloc byte[136]; // XWindowAttributes: x at 0, y at 4
+        XGetWindowAttributes(display, (nuint)window, attributes);
+        return (*(int*)attributes, *(int*)(attributes + 4));
     }
 
     nuint FindNamed(nuint window, string name)
