@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- A knob's body: a filled circle, tinted with the body color. -->
+  <circle cx="24" cy="24" r="21" fill="#ffffff"/>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- A knob's pointer, pointing up (the middle of the range), rotated about the image's center. Same size as the
+       body, so it turns about the knob's center. -->
+  <line x1="24" y1="7" x2="24" y2="19" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -4,9 +4,10 @@ using UILayout;
 namespace AudioPlugSharpUILayout;
 
 /// <summary>
-/// A level meter: the meter background nine-patch (<see cref="AudioTextures"/>), with its bar nine-patch filled to the
-/// level on a decibel scale (<see cref="FloorDb"/> to 0 dB) in the meter colors: low, then hot from
-/// <see cref="HotLevel"/>, then clipping from <see cref="ClipLevel"/>. Too low a level for the bar image's width shows
+/// A level meter: the meter background nine-patch (<see cref="AudioTextures"/>, in its
+/// <see cref="NinePatchWrapper.Color"/>), with its bar nine-patch filled to the level on a decibel scale
+/// (<see cref="FloorDb"/> to 0 dB) in the meter colors: low, then hot from <see cref="HotLevel"/>, then clipping from
+/// <see cref="ClipLevel"/>. The background and the hot color come from the layout's theme. Too low a level for the bar image's width shows
 /// no bar. The owner sets <see cref="Level"/> each frame (for a falling meter, the higher of the new peak and the last
 /// level decayed). Audio-specific, so in AudioPlugSharp rather than UILayout.
 /// </summary>
@@ -18,9 +19,14 @@ public class LevelMeter : NinePatchWrapper
     public LevelMeter()
         : base(Layout.Current.GetImage(AudioTextures.MeterBackground))
     {
+        UITheme theme = Layout.Current.Theme;
+
         HorizontalAlignment = EHorizontalAlignment.Left;
         VerticalAlignment = EVerticalAlignment.Center;
-        Color = MeterBackgroundColor;
+
+        // Recessed: the background darkened, on dark and light themes alike
+        Color = theme.Background * 0.75f;
+        HotColor = theme.Warning;
 
         // The bar covers the background, not inside its corners.
         Padding = new LayoutPadding(0);
@@ -36,11 +42,10 @@ public class LevelMeter : NinePatchWrapper
         Child = bar;
     }
 
-    /// <summary>The meters' colors: the background, and the bar when low, hot and clipping.</summary>
-    public static UIColor MeterBackgroundColor { get; set; } = new UIColor(20, 22, 26);
-    public static UIColor LowColor { get; set; } = new UIColor(80, 190, 90);
-    public static UIColor HotColor { get; set; } = new UIColor(255, 180, 60);
-    public static UIColor ClipColor { get; set; } = new UIColor(230, 60, 50);
+    /// <summary>The bar's colors when low, hot (the theme's warning color by default) and clipping.</summary>
+    public UIColor LowColor { get; set; } = new UIColor(80, 190, 90);
+    public UIColor HotColor { get; set; }
+    public UIColor ClipColor { get; set; } = new UIColor(230, 60, 50);
 
     /// <summary>The level at the meter's left end, in dB.</summary>
     public float FloorDb { get; set; } = -60;

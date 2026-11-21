@@ -16,6 +16,15 @@ public static class AudioTextures
     public const string MeterBackground = "Audio.MeterBackground";
     public const string MeterBar = "Audio.MeterBar";
 
+    /// <summary>
+    /// A knob's shadow, body, highlight (translucent), ring (outline) and pointer: same-size images, layered (white).
+    /// </summary>
+    public const string KnobShadow = "Audio.KnobShadow";
+    public const string KnobBody = "Audio.KnobBody";
+    public const string KnobHighlight = "Audio.KnobHighlight";
+    public const string KnobRing = "Audio.KnobRing";
+    public const string KnobPointer = "Audio.KnobPointer";
+
     public static void Load()
     {
         var loader = new AssemblyResourceContentLoader(typeof(AudioTextures).Assembly);

@@ -22,6 +22,14 @@ class AudioImageProcessor : ImageSheetProcessor.ImageSheetProcessor
         AddSvg("MeterBackground");
         AddSvg("MeterBar");
 
+        // Knobs: shadow, body, highlight, ring and pointer the same size, layered and centered (the pointer rotated
+        // about its center).
+        AddSvg("KnobShadow");
+        AddSvg("KnobBody");
+        AddSvg("KnobHighlight");
+        AddSvg("KnobRing");
+        AddSvg("KnobPointer");
+
         EndSpriteSheetGroup();
     }
 }

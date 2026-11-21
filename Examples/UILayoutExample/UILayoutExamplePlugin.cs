@@ -7,9 +7,9 @@ using UILayout;
 namespace UILayoutExample
 {
     /// <summary>
-    /// Stereo gain with an embedded UILayout editor: a gain slider (editor -> host as an edit gesture, host ->
-    /// editor by following the parameter's edit value) and an output level meter (AudioPlugSharpUILayout's
-    /// LevelMeter) fed from the audio thread.
+    /// Stereo gain with an embedded UILayout editor: a gain knob (AudioPlugSharpUILayout's ParameterKnob) and a gain
+    /// slider (editor -> host as an edit gesture, host -> editor by following the parameter's edit value), and an
+    /// output level meter (AudioPlugSharpUILayout's LevelMeter) fed from the audio thread.
     /// </summary>
     public class UILayoutExamplePlugin : AudioPluginUILayout
     {
@@ -20,6 +20,7 @@ namespace UILayoutExample
         // Output peak, written by the audio thread (as float bits) and read by the editor
         int peakBits;
 
+        ParameterKnob knob;
         GainSlider slider;
         ParameterValueText gainText;
         LevelMeter meter;
@@ -118,25 +119,38 @@ namespace UILayoutExample
 
         protected override UIElement CreateEditorUI()
         {
+            // Colors from the layout's theme, as the AudioPlugSharpUILayout controls take theirs
+            UITheme theme = Layout.Current.Theme;
+
             VerticalStack root = new VerticalStack
             {
                 HorizontalAlignment = EHorizontalAlignment.Stretch,
                 VerticalAlignment = EVerticalAlignment.Stretch,
-                BackgroundColor = new UIColor(32, 36, 44),
+                BackgroundColor = theme.Background,
                 Padding = new LayoutPadding(16),
                 ChildSpacing = 12,
             };
 
-            // Fixed row heights: header 26 (the font), slider 32, meter 16
+            // Fixed row heights: header 26 (the font), knob 48 (with the slider beside it), meter 16
             Dock header = new Dock { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = 26 };
-            header.Children.Add(new TextBlock("Gain") { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Left });
+            header.Children.Add(new TextBlock("Gain") { TextColor = theme.Text, HorizontalAlignment = EHorizontalAlignment.Left });
             // As wide as the widest value it can show, with the text right-aligned in it: the header's layout doesn't change
-            header.Children.Add(gainText = new ParameterValueText(gain) { TextColor = UIColor.White, HorizontalAlignment = EHorizontalAlignment.Right });
+            header.Children.Add(gainText = new ParameterValueText(gain) { HorizontalAlignment = EHorizontalAlignment.Right });
             root.Children.Add(header);
 
-            root.Children.Add(slider = new GainSlider(gain)
+            HorizontalStack controls = new HorizontalStack
             {
                 HorizontalAlignment = EHorizontalAlignment.Stretch,
+                ChildSpacing = 12,
+            };
+            root.Children.Add(controls);
+
+            controls.Children.Add(knob = new ParameterKnob(gain));
+
+            controls.Children.Add(slider = new GainSlider(gain)
+            {
+                HorizontalAlignment = EHorizontalAlignment.Stretch,
+                VerticalAlignment = EVerticalAlignment.Center,
                 DesiredHeight = 32,
             });
 
@@ -164,6 +178,7 @@ namespace UILayoutExample
 
         protected override void EditorClosing()
         {
+            knob = null;
             slider = null;
             gainText = null;
             meter = null;
@@ -174,8 +189,10 @@ namespace UILayoutExample
         /// </summary>
         void SyncControls()
         {
-            if ((slider == null) || (gainText == null))
+            if ((knob == null) || (slider == null) || (gainText == null))
                 return;
+
+            knob.Update();
 
             if (!slider.IsDragging)
                 slider.SetLevel((float)gain.NormalizedEditValue);

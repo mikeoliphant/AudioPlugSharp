@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- A soft light on the top of a knob's body, fading out by its middle; drawn over the body, tinted with the
+       highlight color (white). Translucent, so it lightens any body color by about as much. -->
+  <defs>
+    <linearGradient id="light" x1="0" y1="3" x2="0" y2="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="24" cy="24" r="21" fill="url(#light)"/>
+</svg>

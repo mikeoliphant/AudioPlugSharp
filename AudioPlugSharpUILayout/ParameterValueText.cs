@@ -28,7 +28,7 @@ public class ParameterValueText : UIElement
         this.parameter = parameter;
 
         TextFont = Layout.Current.DefaultFont;
-        TextColor = Layout.Current.DefaultForegroundColor;
+        TextColor = Layout.Current.Theme.Text;
 
         Update();
     }

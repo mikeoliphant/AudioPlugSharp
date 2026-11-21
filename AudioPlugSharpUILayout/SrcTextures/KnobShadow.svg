@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- A knob's soft shadow, under its body and a little below it, tinted with the shadow color. -->
+  <defs>
+    <radialGradient id="shadow" cx="24" cy="26" r="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0.8" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="24" cy="26" r="22" fill="url(#shadow)"/>
+</svg>
