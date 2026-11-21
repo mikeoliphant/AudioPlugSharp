@@ -8,7 +8,8 @@
     the plugin's load context.
 
     As a program, it runs any plugin from its build output: AudioPlugSharpStandalone <plugin.dll>. As a library, an
-    application can run its own plugin: new StandaloneHost(new MyPlugin()).Run().
+    application can run its own plugin: StandaloneHost.ForPlugin<MyPlugin>().Run(). Either way the plugin loads in a
+    context of its own (PluginLoader).
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

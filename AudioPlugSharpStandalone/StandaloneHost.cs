@@ -10,10 +10,13 @@ namespace AudioPlugSharpStandalone;
 /// editor in a window of its own and drives it as the DAW adapters do (IAudioPluginEditor: open, idle, input,
 /// resize, scale, close), so the same editor code runs in a DAW and standalone.
 ///
+/// An application of its own for a plugin built into it:
 /// <code>
 /// [STAThread]
-/// static void Main() => new StandaloneHost(new MyPlugin()).Run();
+/// static void Main() => StandaloneHost.ForPlugin&lt;MyPlugin&gt;().Run();
 /// </code>
+/// The plugin always runs in a load context of its own (<see cref="PluginLoader"/>), as in a DAW: the host's status
+/// bar has its own UILayout, and UILayout supports one layout per copy.
 ///
 /// The plugin's state is restored when it starts and saved when it closes (<see cref="SaveFolder"/>). Audio runs
 /// through AudioIOSharp: ASIO, JACK, or its internal clock (no device, the default). The audio configuration is saved
@@ -52,7 +55,14 @@ public class StandaloneHost : IAudioHost
     long startPauseTicks;
     DateTime startTime;
 
-    public StandaloneHost(IAudioPlugin plugin)
+    /// <summary>A host for a plugin built into the application (see the class summary).</summary>
+    public static StandaloneHost ForPlugin<TPlugin>() where TPlugin : IAudioPlugin, new()
+    {
+        return new StandaloneHost(PluginLoader.Load(typeof(TPlugin)));
+    }
+
+    // The plugin must come from PluginLoader (a load context of its own).
+    internal StandaloneHost(IAudioPlugin plugin)
     {
         this.plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
         processor = plugin.Processor;

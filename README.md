@@ -68,6 +68,20 @@ Options:
 - **--audio <driver>**, **--audio-device <name>**, **--sample-rate <hz>**, **--buffer-size <frames>** - choose the audio device from the command line
 - **--list-audio** - list the audio drivers and their devices
 
+To make an application of your own for your plugin, create a console project that references **AudioPlugSharpStandalone** and your plugin project, with this as its program:
+
+```csharp
+using AudioPlugSharpStandalone;
+
+class Program
+{
+    [STAThread]
+    static void Main() => StandaloneHost.ForPlugin<MyPlugin>().Run();
+}
+```
+
+Also add `<TieredCompilation>false</TieredCompilation>` to the project's properties, as AudioPlugSharpStandalone does: it avoids dropouts at small buffer sizes.
+
 MIDI is not supported yet.
 
 # AudioPlugSharp Building Instructions

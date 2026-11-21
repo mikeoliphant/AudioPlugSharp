@@ -5,10 +5,10 @@ using AudioPlugSharp;
 namespace AudioPlugSharpStandalone;
 
 /// <summary>
-/// Loads a plugin from its build output, as the DAW bridge does: the plugin assembly and its dependencies (UILayout,
-/// MonoGame, SDL, ...) load into a context of their own, resolved through the plugin's .deps.json (a plugin project
-/// gets one from the AudioPlugSharpBridge package, or with EnableDynamicLoading). AudioPlugSharp is shared with the
-/// host, so the plugin's types are the host's.
+/// Loads a plugin, as the DAW bridge does: the plugin assembly and its dependencies (UILayout, MonoGame, SDL, ...) load
+/// into a context of their own, resolved through the plugin's .deps.json (a plugin project gets one from the
+/// AudioPlugSharpBridge package, or with EnableDynamicLoading), or the application's for a plugin built into it.
+/// AudioPlugSharp is shared with the host, so the plugin's types are the host's.
 /// </summary>
 public static class PluginLoader
 {
@@ -30,15 +30,40 @@ public static class PluginLoader
         return (IAudioPlugin)Activator.CreateInstance(type)!;
     }
 
+    /// <summary>
+    /// Creates a plugin built into the application, in a context of its own as for a plugin loaded by path: its
+    /// assembly and dependencies resolve through the application's .deps.json, so it gets its own copies of them (the
+    /// host's status bar has its own UILayout, and UILayout supports one layout per copy).
+    /// </summary>
+    public static IAudioPlugin Load(Type pluginType)
+    {
+        if (!typeof(IAudioPlugin).IsAssignableFrom(pluginType) || (pluginType.GetConstructor(Type.EmptyTypes) == null))
+            throw new ArgumentException($"{pluginType} isn't an IAudioPlugin with a parameterless constructor", nameof(pluginType));
+
+        string application = Assembly.GetEntryAssembly()?.Location ?? "";
+
+        if (application == "")
+            throw new InvalidOperationException("The application's assembly has no file (single-file publishing isn't supported)");
+
+        AssemblyName assemblyName = pluginType.Assembly.GetName();
+
+        var context = new PluginLoadContext(application, assemblyName.Name!);
+        Assembly assembly = context.LoadFromAssemblyName(assemblyName);
+        Type type = assembly.GetType(pluginType.FullName!, throwOnError: true)!;
+
+        return (IAudioPlugin)Activator.CreateInstance(type)!;
+    }
+
     class PluginLoadContext : AssemblyLoadContext
     {
         static readonly Assembly ApiAssembly = typeof(IAudioPlugin).Assembly;
         readonly AssemblyDependencyResolver resolver;
 
-        public PluginLoadContext(string pluginPath)
-            : base(Path.GetFileNameWithoutExtension(pluginPath))
+        // Resolves through the .deps.json of the assembly at resolverPath: the plugin's own, or the application's.
+        public PluginLoadContext(string resolverPath, string? name = null)
+            : base(name ?? Path.GetFileNameWithoutExtension(resolverPath))
         {
-            resolver = new AssemblyDependencyResolver(pluginPath);
+            resolver = new AssemblyDependencyResolver(resolverPath);
         }
 
         protected override Assembly? Load(AssemblyName name)
