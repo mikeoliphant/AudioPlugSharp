@@ -5,6 +5,8 @@ AudioPlugSharp lets you write audio plugins in C# and use them in DAWs on Window
 
 # Current Release
 
+**Note:** the packages on NuGet are for the previous version (0.7), which made Windows-only VST3 plugins. This version isn't on NuGet yet (**AudioPlugSharpBridge** isn't there at all): to use it now, build it from this repository - see [Building Instructions](#audioplugsharp-building-instructions).
+
 NuGet packages are available:
 
 [AudioPlugSharp](https://www.nuget.org/packages/AudioPlugSharp) (Needed for all plugins)
