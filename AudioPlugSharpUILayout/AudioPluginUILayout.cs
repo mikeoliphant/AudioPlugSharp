@@ -92,7 +92,8 @@ namespace AudioPlugSharpUILayout
         }
 
         /// <summary>
-        /// Build the editor's root element. Called on open, after the graphics device and default textures exist.
+        /// Build the editor's root element. Called on open, after the graphics device, UILayout's default textures and
+        /// <see cref="AudioTextures"/> exist.
         /// </summary>
         protected abstract UIElement CreateEditorUI();
 
@@ -152,6 +153,9 @@ namespace AudioPlugSharpUILayout
                 // DisplayScale: the layout's own Scale stays the plugin's (for example a user zoom setting)
                 layout.DisplayScale = (float)editorScale;
                 host.SetLayout(layout);
+
+                AudioTextures.Load();
+
                 layout.RootUIElement = CreateEditorUI();
                 layout.UpdateLayout();
             }

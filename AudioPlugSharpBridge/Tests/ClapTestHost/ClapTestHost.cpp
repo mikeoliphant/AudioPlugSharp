@@ -668,7 +668,9 @@ void test(const clap_plugin_entry_t* entry) {
     };
     for (int i = 0; i < 2; ++i) {
         const int background = first.countNear(x0(i), kMargin, x0(i) + int(width), kMargin + int(height), 32, 36, 44, 4);
-        const int meterGreen = first.countNear(x0(i), kMargin, x0(i) + int(width), kMargin + int(height), 64, 200, 96, 12);
+        // LevelMeter's bar: low or hot color (the test signal peaks at -6 dB, its hot threshold)
+        const int meterGreen = first.countNear(x0(i), kMargin, x0(i) + int(width), kMargin + int(height), 80, 190, 90, 12) +
+                               first.countNear(x0(i), kMargin, x0(i) + int(width), kMargin + int(height), 255, 180, 60, 12);
         sliderY = sliderRow(first, i);
         std::printf("    editor %d: %d background pixels, %d meter pixels, slider at y %d\n", i, background, meterGreen, sliderY);
         check(background > int(width * height) / 3, "editor draws its background");

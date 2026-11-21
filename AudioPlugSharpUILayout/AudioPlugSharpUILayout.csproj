@@ -22,6 +22,11 @@
 		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.6.1" />
 	</ItemGroup>
 
+	<!-- The audio controls' own textures (AudioTextures). -->
+	<ItemGroup>
+		<EmbeddedResource Include="Textures\*.png" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="$(UILayoutDir)UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />
 		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />

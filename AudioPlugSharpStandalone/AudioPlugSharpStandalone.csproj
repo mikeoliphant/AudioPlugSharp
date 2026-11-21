@@ -35,13 +35,10 @@
     <None Remove="Tests/**" />
   </ItemGroup>
 
-  <!-- The audio controls' own textures (AudioTextures). -->
-  <ItemGroup>
-    <EmbeddedResource Include="Textures\*.png" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
+    <!-- The audio controls (LevelMeter, AudioTextures). Plugins load their own copy in their own context. -->
+    <ProjectReference Include="..\AudioPlugSharpUILayout\AudioPlugSharpUILayout.csproj" />
     <ProjectReference Include="..\AudioPlugSharpWindowing\AudioPlugSharpWindowing.csproj" />
     <ProjectReference Include="..\Dependencies\AudioIOSharp\AudioIOSharp\AudioIOSharp.csproj" />
     <ProjectReference Include="$(UILayoutDir)UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />

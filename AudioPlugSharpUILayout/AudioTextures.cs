@@ -1,11 +1,12 @@
 using UILayout;
 
-namespace AudioPlugSharpStandalone;
+namespace AudioPlugSharpUILayout;
 
 /// <summary>
 /// The audio controls' own textures (embedded in Textures/), loaded into the current layout by name, as UILayout loads
-/// its default textures. Audio-specific, so here rather than in UILayout; they'd move with the controls to a toolset
-/// for AudioPlugSharp's UILayout editors. Call <see cref="Load"/> once a layout is current, before making the controls.
+/// its default textures. Audio-specific, so here rather than in UILayout. <see cref="AudioPluginUILayout"/> loads them
+/// into its editor's layout before CreateEditorUI; a layout of another kind (the standalone's status strip) calls
+/// <see cref="Load"/> once it is current, before making the controls.
 /// </summary>
 public static class AudioTextures
 {

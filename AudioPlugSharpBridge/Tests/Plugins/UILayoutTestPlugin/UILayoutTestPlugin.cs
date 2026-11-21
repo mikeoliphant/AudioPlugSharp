@@ -9,7 +9,8 @@ namespace UILayoutTestPlugin
     /// <summary>
     /// The test hosts' UILayout plugin (ClapTestHost, Vst3TestHost run their detailed editor checks on it): stereo
     /// gain with a gain slider (editor -> host as an edit gesture, host -> editor by following the parameter's edit
-    /// value), an output level meter fed from the audio thread, and MIDI CC 7 mapped to the gain.
+    /// value), an output level meter (AudioPlugSharpUILayout's LevelMeter) fed from the audio thread, and MIDI CC 7
+    /// mapped to the gain.
     ///
     /// Beyond the UILayoutExample it starts from, it exercises what the hosts check: the editor is resizable (resize
     /// and DPI checks), Alt+Enter or F11 toggles fullscreen (editor window services, IAudioHost), and while
@@ -179,6 +180,7 @@ namespace UILayoutTestPlugin
                 DesiredHeight = 32,
             });
 
+            // AudioPlugSharpUILayout's meter (the standalone's too)
             root.Children.Add(meter = new LevelMeter
             {
                 HorizontalAlignment = EHorizontalAlignment.Stretch,
@@ -197,7 +199,9 @@ namespace UILayoutTestPlugin
 
             float peak = BitConverter.Int32BitsToSingle(Interlocked.Exchange(ref peakBits, 0));
 
-            meter?.Update(peak, secondsElapsed);
+            // Rise immediately, fall with a quarter-second time constant
+            if (meter != null)
+                meter.Level = Math.Max(meter.Level * MathF.Exp(-secondsElapsed / 0.25f), peak);
 
             UpdateWindowServices(secondsElapsed);
         }
@@ -317,38 +321,6 @@ namespace UILayoutTestPlugin
                 }
 
                 return handled;
-            }
-        }
-
-        /// <summary>
-        /// A horizontal bar: the output peak (0 dB at the right end), held and decaying
-        /// </summary>
-        class LevelMeter : UIElement
-        {
-            static readonly UIColor Background = new UIColor(16, 18, 22);
-            static readonly UIColor Green = new UIColor(64, 200, 96);
-            static readonly UIColor Red = new UIColor(230, 64, 48);
-
-            float level; // 0..1, -60 dB .. 0 dB
-
-            public void Update(float peak, float secondsElapsed)
-            {
-                float db = (peak > 0) ? (20 * MathF.Log10(peak)) : -60;
-                float target = Math.Clamp((db + 60) / 60, 0, 1);
-
-                // Rise immediately, fall in about 1.5 seconds
-                level = (target >= level) ? target : Math.Max(target, level - (secondsElapsed * 1.5f));
-            }
-
-            protected override void DrawContents()
-            {
-                GraphicsContext2D g = Layout.Current.GraphicsContext;
-                RectF bounds = ContentBounds;
-
-                g.DrawRectangle(bounds, Background);
-
-                if (level > 0)
-                    g.DrawRectangle(new RectF(bounds.X, bounds.Y, bounds.Width * level, bounds.Height), (level >= 1) ? Red : Green);
             }
         }
     }

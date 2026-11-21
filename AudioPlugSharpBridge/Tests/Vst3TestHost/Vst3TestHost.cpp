@@ -852,7 +852,9 @@ void test(const Tested& t) {
             return -1;
         };
         for (int i = 0; i < 2; ++i) {
-            const int meterGreen = first.countNear(x0(i), kMargin, x0(i) + width, kMargin + height, 64, 200, 96, 12);
+            // LevelMeter's bar: low or hot color (the test signal peaks at -6 dB, its hot threshold)
+            const int meterGreen = first.countNear(x0(i), kMargin, x0(i) + width, kMargin + height, 80, 190, 90, 12) +
+                                   first.countNear(x0(i), kMargin, x0(i) + width, kMargin + height, 255, 180, 60, 12);
             sliderY = sliderRow(first, i);
             std::printf("    editor %d: %d meter pixels, slider at y %d\n", i, meterGreen, sliderY);
             check(meterGreen > 500, "level meter shows the processed audio");
