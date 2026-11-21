@@ -108,15 +108,21 @@ public class StandaloneHost : IAudioHost
         var client = mainClient = new Client(this);
         try
         {
-            // The engine's work doesn't need this thread, so waiting here is safe.
-            engine.Start().GetAwaiter().GetResult();
-            engine.Attach(client).GetAwaiter().GetResult();
-            settings.Remember(engine.Config);
-            settings.Save(SaveFolder);
+            // The device opens while the window does (an ASIO driver can take a second or more); its configuration is
+            // saved once it's open (Idle).
+            startup = Task.Run(async () =>
+            {
+                await engine.Start();
+                await engine.Attach(client);
+            });
+
             RunWindow();
         }
         finally
         {
+            // The engine's work doesn't need this thread, so waiting here is safe.
+            FinishStartup(wait: true);
+
             engine.Detach(client).GetAwaiter().GetResult();
             settings.Remember(engine.Config);
             engine.Dispose();
@@ -136,6 +142,31 @@ public class StandaloneHost : IAudioHost
 
     AudioSettings settings = new();
     IAudioClient? mainClient;
+
+    // Opening the device at startup, until it's done.
+    Task? startup;
+
+    // [UI thread] Once the device opened at startup (or failed to), saves the configuration in use. With wait, waits
+    // for it first (when the window has closed).
+    void FinishStartup(bool wait)
+    {
+        if (startup == null || (!wait && !startup.IsCompleted))
+            return;
+
+        try
+        {
+            startup.GetAwaiter().GetResult();
+
+            settings.Remember(engine!.Config);
+            settings.Save(SaveFolder);
+        }
+        catch (Exception e)
+        {
+            Logger.Log("Audio didn't start: " + e);
+        }
+
+        startup = null;
+    }
 
     // The saved configuration, with this run's choices on top. Another driver starts from what was last used with it.
     AudioConfig StartupConfig(AudioSettings settings)
@@ -579,6 +610,8 @@ public class StandaloneHost : IAudioHost
 
     void Idle(double secondsElapsed)
     {
+        FinishStartup(wait: false);
+
         if (editorOpen)
         {
             ApplyWindowRequests();

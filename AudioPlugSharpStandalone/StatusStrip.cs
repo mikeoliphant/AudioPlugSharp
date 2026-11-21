@@ -204,7 +204,8 @@ public class StatusStrip : IDisposable
             }
         }
 
-        if (open) panel!.Tick(secondsElapsed);
+        // Open or not: device work started while it was open finishes.
+        panel?.Tick(secondsElapsed);
 
         float width = window.ClientWidth / layout.TotalScale - 2 * Margin;
 
@@ -281,7 +282,9 @@ public class StatusStrip : IDisposable
 
         disposed = true;
 
-        panel?.StopTest(); // the plugin back on the device
+        // The plugin back on the device, and nothing left to run after the engine stops.
+        panel?.StopTest();
+        panel?.FinishWork();
 
         host.Dispose();
         window.Dispose();

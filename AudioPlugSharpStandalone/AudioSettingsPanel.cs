@@ -9,8 +9,11 @@ namespace AudioPlugSharpStandalone;
 /// The audio settings, shown above the status strip when it's opened (the strip stays below as the panel's status
 /// bar), laid out as SpiceForge's audio dialog, in outlined sections: the driver, the device and its control panel, and
 /// the input and output channels; rate and buffer size; a test (a tone or the inputs looped back) with a level meter
-/// per chosen channel; then Cancel/OK. OK and Test apply the settings (and save them). Device queries and applying
-/// wait for the engine on the UI thread (the engine's work doesn't need this thread).
+/// per chosen channel; then Cancel/OK. OK and Test apply the settings (and save them).
+///
+/// Device work (looking for devices, reading one, applying, the test, the control panel) runs off the UI thread, one
+/// step at a time, with a message saying what it waits for; each step's result is used on the UI thread, in
+/// <see cref="Tick"/>. Meanwhile OK, Test and Control panel do nothing; Cancel still closes.
 /// </summary>
 public class AudioSettingsPanel : VerticalStack
 {
@@ -31,11 +34,20 @@ public class AudioSettingsPanel : VerticalStack
     readonly FrameButton controlPanel, test;
     readonly CheckList<string> inputs = new(StringComparer.OrdinalIgnoreCase), outputs = new(StringComparer.OrdinalIgnoreCase);
     readonly MeterRow inputMeters = new(), outputMeters = new();
-    readonly TextBlock error;
+    readonly TextBlock message;
 
     AudioDeviceInfo? info;
     AudioTestClient? testClient;
     readonly List<float> peaks = new();
+
+    // The device work to do, in order, and the step running: what it waits for, and what to do with its task once done.
+    readonly Queue<(Func<Task> Start, string Waiting, Action<Task> Then)> work = new();
+    Task? running;
+    string waiting = "";
+    Action<Task>? then;
+
+    // The last error, shown when nothing is running.
+    string error = "";
 
     /// <param name="mainClient">What runs on the device when the test doesn't: the plugin.</param>
     /// <param name="applied">A configuration is now in use (to save).</param>
@@ -100,9 +112,9 @@ public class AudioSettingsPanel : VerticalStack
 
         Children.Add(Section(testRow, Row("In", inputMeters), Row("Out", outputMeters)));
 
-        error = Text("", Layout.Current.Theme.Warning);
-        error.DesiredHeight = LineHeight;
-        Children.Add(error);
+        message = Text("", Layout.Current.Theme.Warning);
+        message.DesiredHeight = LineHeight;
+        Children.Add(message);
 
         var buttons = new HorizontalStack { HorizontalAlignment = EHorizontalAlignment.Right, DesiredHeight = ButtonsHeight, ChildSpacing = Spacing };
         buttons.Children.Add(Button("Cancel", Cancel));
@@ -144,12 +156,121 @@ public class AudioSettingsPanel : VerticalStack
 
     static FrameButton Button(string text, Action click) => new(text, click);
 
+    // ---- device work, off the UI thread ----------------------------------------------------------------------------
+
+    /// <summary>Whether device work is queued or running.</summary>
+    public bool Busy => running != null || work.Count > 0;
+
+    // Queues a step: start (on a pool thread: some drivers' calls block) shows the waiting message until it's done, then
+    // next gets its task on the UI thread.
+    void Run(Func<Task> start, string waitingFor, Action<Task> next)
+    {
+        work.Enqueue((() => Task.Run(start), waitingFor, next));
+
+        StartNext();
+    }
+
+    void Run<T>(Func<Task<T>> start, string waitingFor, Action<Task<T>> next)
+    {
+        work.Enqueue((() => Task.Run(start), waitingFor, task => next((Task<T>)task)));
+
+        StartNext();
+    }
+
+    void StartNext()
+    {
+        if (running == null && work.Count > 0)
+        {
+            (Func<Task> start, string waitingFor, Action<Task> next) = work.Dequeue();
+
+            running = start();
+            waiting = waitingFor;
+            then = next;
+        }
+
+        ShowMessage();
+    }
+
+    // The step's error, if it failed (shown, after the prefix).
+    bool Failed(Task task, string prefix = "")
+    {
+        if (!task.IsFaulted)
+            return false;
+
+        Exception e = task.Exception!.InnerException ?? task.Exception;
+
+        error = prefix + e.Message;
+
+        return true;
+    }
+
+    // What's running, or else the last error.
+    void ShowMessage()
+    {
+        bool busy = running != null;
+        string text = busy ? waiting + "..." : error;
+
+        if (text == message.Text)
+            return;
+
+        message.Text = text;
+        message.TextColor = busy ? Layout.Current.Theme.MutedText : Layout.Current.Theme.Warning;
+
+        Layout.Current.UpdateLayout();
+    }
+
+    /// <summary>[UI thread] Carries on with device work that finished, and updates the meters. Call every frame, open
+    /// or not (work started before the panel closed still finishes).</summary>
+    public void Tick(double secondsElapsed)
+    {
+        if (running is { IsCompleted: true } done)
+        {
+            Action<Task> next = then!;
+
+            running = null;
+            then = null;
+
+            next(done);
+
+            StartNext();
+        }
+
+        if (testClient == null) return;
+
+        float decay = (float)Math.Exp(-secondsElapsed / 0.25);
+
+        testClient.TakeInputPeaks(peaks);
+        inputMeters.Update(testClient.InputNames, peaks, decay);
+
+        testClient.TakeOutputPeaks(peaks);
+        outputMeters.Update(testClient.OutputNames, peaks, decay);
+    }
+
+    /// <summary>[UI thread] Runs the device work left to its end, waiting for it. Called when the window closes, before
+    /// the engine stops.</summary>
+    public void FinishWork()
+    {
+        while (running != null)
+        {
+            try
+            {
+                running.Wait();
+            }
+            catch (AggregateException)
+            {
+                // The step's own continuation sees it.
+            }
+
+            Tick(0);
+        }
+    }
+
     // ---- showing the settings ---------------------------------------------------------------------------------------
 
     /// <summary>Shows the configuration in use. Called when the panel opens.</summary>
     public void Refresh()
     {
-        error.Text = "";
+        error = "";
 
         AudioConfig config = engine.Config;
 
@@ -163,56 +284,69 @@ public class AudioSettingsPanel : VerticalStack
     // the first.
     void DriverChanged()
     {
-        error.Text = "";
+        error = "";
 
         ShowConfig(engine.ConfigFor(driver.Value!));
     }
 
     void DeviceChanged()
     {
-        error.Text = "";
+        error = "";
 
         LoadDeviceInfo(null, null, null, null);
     }
 
+    // The driver's devices, then the chosen one's channels and formats. A result for a driver no longer chosen is
+    // dropped (a newer one is on its way).
     void ShowConfig(AudioConfig config)
     {
-        IReadOnlyList<string> names = [];
+        string queried = driver.Value!;
 
-        try
+        Run(() => engine.Driver(queried).Devices(), "Looking for devices", task =>
         {
-            names = engine.Driver(driver.Value!).Devices().GetAwaiter().GetResult();
-        }
-        catch (Exception e)
-        {
-            error.Text = e.Message;
-        }
+            if (driver.Value != queried)
+                return;
 
-        device.SetItems(names.Select(n => (n, n)));
-        device.SelectValue(n => string.Equals(n, config.Device, StringComparison.OrdinalIgnoreCase));
+            IReadOnlyList<string> names = Failed(task) ? [] : task.Result;
 
-        // Channels are kept only for the device they were chosen on.
-        bool sameDevice = config.Device != null && string.Equals(device.Value, config.Device, StringComparison.OrdinalIgnoreCase);
+            device.SetItems(names.Select(n => (n, n)));
+            device.SelectValue(n => string.Equals(n, config.Device, StringComparison.OrdinalIgnoreCase));
 
-        LoadDeviceInfo(sameDevice ? config.Inputs : null, sameDevice ? config.Outputs : null, config.SampleRate, config.BufferSize);
+            // Channels are kept only for the device they were chosen on.
+            bool sameDevice = config.Device != null && string.Equals(device.Value, config.Device, StringComparison.OrdinalIgnoreCase);
+
+            LoadDeviceInfo(sameDevice ? config.Inputs : null, sameDevice ? config.Outputs : null, config.SampleRate, config.BufferSize);
+        });
     }
 
-    // The device's channels, rates and buffer sizes, with the given ones chosen (null: the device's defaults).
+    // The device's channels, rates and buffer sizes, with the given ones chosen (null: the device's defaults). A result
+    // for a device no longer chosen is dropped.
     void LoadDeviceInfo(IReadOnlyList<string>? chosenInputs, IReadOnlyList<string>? chosenOutputs, int? wantedRate, int? wantedBuffer)
     {
-        info = null;
+        string? queriedDriver = driver.Value, queriedDevice = device.Value;
 
-        if (device.Value != null)
+        if (queriedDevice == null)
         {
-            try
-            {
-                info = engine.Driver(driver.Value!).Info(device.Value).GetAwaiter().GetResult();
-            }
-            catch (Exception e)
-            {
-                error.Text = e.Message; // ASIO: another driver is running; OK still applies
-            }
+            ShowDeviceInfo(null, chosenInputs, chosenOutputs, wantedRate, wantedBuffer);
+
+            return;
         }
+
+        Run(() => engine.Driver(queriedDriver!).Info(queriedDevice), "Reading the device", task =>
+        {
+            if ((driver.Value != queriedDriver) || (device.Value != queriedDevice))
+                return;
+
+            // ASIO: another driver is running (OK still applies).
+            AudioDeviceInfo? read = Failed(task) ? null : task.Result;
+
+            ShowDeviceInfo(read, chosenInputs, chosenOutputs, wantedRate, wantedBuffer);
+        });
+    }
+
+    void ShowDeviceInfo(AudioDeviceInfo? read, IReadOnlyList<string>? chosenInputs, IReadOnlyList<string>? chosenOutputs, int? wantedRate, int? wantedBuffer)
+    {
+        info = read;
 
         // A device's defaults: its first input, its first two outputs (as the engine takes a null list).
         inputs.SetItems(Channels(info?.Inputs), chosenInputs ?? info?.Inputs.Take(1) ?? []);
@@ -267,36 +401,38 @@ public class AudioSettingsPanel : VerticalStack
         BufferSize = buffer.Value,
     };
 
-    // Moves the engine to the settings shown. Returns whether it took.
-    bool Apply()
+    // Moves the engine to the settings shown, then (if it took) carries on with tookEffect, or else with failed.
+    void Apply(Action tookEffect, Action? failed = null)
     {
-        error.Text = "";
+        error = "";
 
-        try
+        AudioConfig selected = Selected();
+
+        Run(() => engine.SetConfig(selected), "Opening the device", task =>
         {
-            AudioConfig config = engine.SetConfig(Selected()).GetAwaiter().GetResult();
+            if (Failed(task, "Not applied: "))
+            {
+                Logger.Log("Audio settings " + error);
 
-            applied(config);
+                failed?.Invoke();
 
-            return true;
-        }
-        catch (Exception e)
-        {
-            Logger.Log("Audio settings not applied: " + e.Message);
+                return;
+            }
 
-            error.Text = "Not applied: " + e.Message;
+            applied(task.Result);
 
-            Layout.Current.UpdateLayout();
-
-            return false;
-        }
+            tookEffect();
+        });
     }
 
     void Ok()
     {
+        if (Busy)
+            return;
+
         StopTest();
 
-        if (Apply()) close();
+        Apply(close);
     }
 
     void Cancel()
@@ -308,19 +444,21 @@ public class AudioSettingsPanel : VerticalStack
 
     void ShowControlPanel()
     {
-        try
+        if (Busy)
+            return;
+
+        error = "";
+
+        string? controlDriver = driver.Value, controlDevice = device.Value;
+
+        Run(() => engine.ShowControlPanel(controlDriver, controlDevice), "Waiting for the control panel", task =>
         {
-            engine.ShowControlPanel(driver.Value, device.Value).GetAwaiter().GetResult();
+            if (Failed(task))
+                return;
 
             // The driver may have changed its rate or buffer sizes.
             LoadDeviceInfo(inputs.Checked, outputs.Checked, rate.Value, buffer.Value);
-        }
-        catch (Exception e)
-        {
-            error.Text = e.Message;
-
-            Layout.Current.UpdateLayout();
-        }
+        });
     }
 
     // ---- the test ---------------------------------------------------------------------------------------------------
@@ -334,32 +472,35 @@ public class AudioSettingsPanel : VerticalStack
             return;
         }
 
-        // With the settings above, applied first.
-        if (!Apply())
-        {
-            test.SetPressed(false);
+        // The button stays up until the test runs.
+        test.SetPressed(false);
 
+        if (Busy)
             return;
-        }
 
+        // With the settings above, applied first.
+        Apply(StartTest);
+    }
+
+    void StartTest()
+    {
         var client = new AudioTestClient(signal.Value);
 
-        try
+        Run(() => engine.Attach(client), "Starting the test", task =>
         {
-            engine.Attach(client).GetAwaiter().GetResult();
+            if (Failed(task))
+                return;
 
             testClient = client;
             test.Text = "Stop test";
             test.SetPressed(true);
-        }
-        catch (Exception e)
-        {
-            error.Text = e.Message;
 
-            test.SetPressed(false);
-        }
+            Layout.Current.UpdateLayout();
 
-        Layout.Current.UpdateLayout();
+            // Closed while it started: the plugin goes back on the device.
+            if (!Visible)
+                StopTest();
+        });
     }
 
     /// <summary>Stops the test, if it runs, and puts the plugin back on the device. Called when the panel closes.</summary>
@@ -370,14 +511,7 @@ public class AudioSettingsPanel : VerticalStack
         testClient.FadeOut(TimeSpan.FromMilliseconds(250));
         testClient = null;
 
-        try
-        {
-            engine.Attach(mainClient).GetAwaiter().GetResult();
-        }
-        catch (Exception e)
-        {
-            error.Text = e.Message;
-        }
+        Run(() => engine.Attach(mainClient), "Stopping the test", task => Failed(task));
 
         test.Text = "Test";
         test.SetPressed(false);
@@ -386,20 +520,6 @@ public class AudioSettingsPanel : VerticalStack
         outputMeters.Clear();
 
         Layout.Current.UpdateLayout();
-    }
-
-    /// <summary>[UI thread] Updates the meters. Call every frame while the panel is open.</summary>
-    public void Tick(double secondsElapsed)
-    {
-        if (testClient == null) return;
-
-        float decay = (float)Math.Exp(-secondsElapsed / 0.25);
-
-        testClient.TakeInputPeaks(peaks);
-        inputMeters.Update(testClient.InputNames, peaks, decay);
-
-        testClient.TakeOutputPeaks(peaks);
-        outputMeters.Update(testClient.OutputNames, peaks, decay);
     }
 
     /// <summary>A level meter per chosen channel. Shown always; levels while the test runs, on the channels it opened.</summary>
