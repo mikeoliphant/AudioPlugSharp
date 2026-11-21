@@ -536,13 +536,18 @@ public class StandaloneHost : IAudioHost
         window!.SetClientSize(width, height + StripPixels);
     }
 
-    // The editor's width (pixels) when the settings panel opened.
+    // The editor's size (pixels) when the settings panel opened.
     int editorWidthAtOpen;
+    int editorHeightAtOpen;
 
     // The panel opened or closed: the window grows downward for it (and widens to its minimum), and back.
     void PanelOpenChanged()
     {
-        if (PanelOpen && editorWindow != null) editorWidthAtOpen = editorWindow.ClientWidth;
+        if (PanelOpen && editorWindow != null)
+        {
+            editorWidthAtOpen = editorWindow.ClientWidth;
+            editorHeightAtOpen = editorWindow.ClientHeight;
+        }
 
         SizeWindowToContent();
     }
@@ -552,7 +557,8 @@ public class StandaloneHost : IAudioHost
     //
     // While the settings panel is open, the window can be wider than the editor (the panel's minimum width): then the
     // editor keeps the width it had, the window's width beyond that and the panel's minimum goes to the editor, and a
-    // window narrower than the editor narrows it.
+    // window narrower than the editor narrows it. A window too short for the editor and the panel (Windows keeps a
+    // window about as tall as the screen at most) cuts off the panel's bottom, not the editor.
     void ArrangeChildren(int width, int height)
     {
         int editorHeight = Math.Max(1, height - StripPixels);
@@ -563,6 +569,8 @@ public class StandaloneHost : IAudioHost
             int extra = width - Math.Max(Pixels(AudioSettingsPanel.MinWidth), editorWidthAtOpen);
 
             editorWidth = extra >= 0 ? editorWidthAtOpen + extra : Math.Min(width, editorWidthAtOpen);
+
+            editorHeight = Math.Max(editorHeight, Math.Min(editorHeightAtOpen, height));
         }
 
         editorWindow?.SetClientSize(editorWidth, editorHeight);

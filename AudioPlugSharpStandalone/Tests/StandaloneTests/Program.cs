@@ -125,7 +125,13 @@ static class Program
                 int openHeight = int.Parse(driver.Size(stripWindow).Split('x')[1]);
                 string openWindow = $"{Px(PanelMinWidth)}x{Px(EditorHeight) + openHeight}";
 
-                Check(driver.Size(top) == openWindow && driver.Size(editor) == Expect(EditorWidth, EditorHeight) && openHeight > Px(StripHeight * 4),
+                // A screen too short for it (CI runners have 1024x768) keeps the window shorter: the panel's bottom is
+                // cut off, but the editor keeps its size.
+                string[] openSize = driver.Size(top).Split('x');
+                bool windowOpened = (int.Parse(openSize[0]) == Px(PanelMinWidth)) && (int.Parse(openSize[1]) > Px(EditorHeight + StripHeight * 4)) &&
+                    (int.Parse(openSize[1]) <= Px(EditorHeight) + openHeight);
+
+                Check(windowOpened && driver.Size(editor) == Expect(EditorWidth, EditorHeight) && openHeight > Px(StripHeight * 4),
                     $"the Audio button opens the settings panel (window {driver.Size(top)}, editor {driver.Size(editor)}, strip {driver.Size(stripWindow)}, expected {openWindow})");
 
                 Capture(stripWindow, "settings");
@@ -163,6 +169,16 @@ static class Program
 
                 Check(driver.Size(editor) == Expect(EditorWidth, EditorHeight),
                     $"and narrowing it back narrows the editor (editor {driver.Size(editor)}, expected {Expect(EditorWidth, EditorHeight)})");
+
+                // A window too short for the editor and the panel (as on a short screen) cuts off the panel, not the editor.
+                driver.SetClientSize(top, Px(PanelMinWidth), Px(EditorHeight) + (openHeight / 2));
+                Thread.Sleep(600);
+
+                Check(driver.Size(editor) == Expect(EditorWidth, EditorHeight),
+                    $"a window too short for the panel keeps the editor's size (editor {driver.Size(editor)}, expected {Expect(EditorWidth, EditorHeight)})");
+
+                driver.SetClientSize(top, Px(PanelMinWidth), Px(EditorHeight) + openHeight);
+                Thread.Sleep(600);
 
                 Click(StripWidth() - Px(45), Px(15));
 
