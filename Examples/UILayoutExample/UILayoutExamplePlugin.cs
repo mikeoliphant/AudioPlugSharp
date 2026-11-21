@@ -7,21 +7,25 @@ using UILayout;
 namespace UILayoutExample
 {
     /// <summary>
-    /// Stereo gain with an embedded UILayout editor: a gain knob (AudioPlugSharpUILayout's ParameterKnob) and a gain
-    /// slider (editor -> host as an edit gesture, host -> editor by following the parameter's edit value), and an
-    /// output level meter (AudioPlugSharpUILayout's LevelMeter) fed from the audio thread.
+    /// Stereo gain and mute with an embedded UILayout editor showing AudioPlugSharpUILayout's controls: the gain as a
+    /// knob, a vertical slider and a horizontal slider, the mute as a switch (each control sends edit gestures to the
+    /// host and follows the parameter's edit value, so the gain controls follow each other and host automation), the
+    /// gain's value as text, and an output level meter fed from the audio thread.
     /// </summary>
     public class UILayoutExamplePlugin : AudioPluginUILayout
     {
         FloatAudioIOPort input;
         FloatAudioIOPort output;
         AudioPluginParameter gain;
+        AudioPluginParameter mute;
 
         // Output peak, written by the audio thread (as float bits) and read by the editor
         int peakBits;
 
         ParameterKnob knob;
-        GainSlider slider;
+        ParameterSlider verticalSlider;
+        ParameterSlider slider;
+        ParameterSwitch muteSwitch;
         ParameterValueText gainText;
         LevelMeter meter;
 
@@ -40,7 +44,7 @@ namespace UILayoutExample
             SampleFormatsSupported = EAudioBitsPerSample.Bits32;
 
             EditorWidth = 320;
-            EditorHeight = 160;
+            EditorHeight = 176;
         }
 
         public override void Initialize()
@@ -56,6 +60,17 @@ namespace UILayoutExample
                 Name = "Gain",
                 MaxValue = 12,
                 ValueFormat = "{0:0.0}dB",
+            });
+
+            // On or off: on at a normalized value of at least 0.5 (ParameterSwitch sets 1 or 0)
+            AddParameter(mute = new AudioPluginParameter
+            {
+                ID = "mute",
+                Name = "Mute",
+                MinValue = 0,
+                MaxValue = 1,
+                DefaultValue = 0,
+                ValueFormat = "{0:0}",
             });
 
             // MIDI volume (CC 7) controls the gain
@@ -76,6 +91,7 @@ namespace UILayoutExample
             Span<float> outRight = output.GetAudioBuffer(1);
 
             float linearGain = (float)AudioPluginParameter.DBToLinear(gain.ProcessValue);
+            float muteGain = (mute.ProcessValue >= 0.5) ? 0 : 1;
             float peak = 0;
 
             int currentSample = 0;
@@ -92,8 +108,8 @@ namespace UILayoutExample
                     if (ramp)
                         linearGain = (float)AudioPluginParameter.DBToLinear(gain.GetInterpolatedProcessValue(i));
 
-                    float left = inLeft[i] * linearGain;
-                    float right = inRight[i] * linearGain;
+                    float left = inLeft[i] * linearGain * muteGain;
+                    float right = inRight[i] * linearGain * muteGain;
 
                     outLeft[i] = left;
                     outRight[i] = right;
@@ -131,7 +147,7 @@ namespace UILayoutExample
                 ChildSpacing = 12,
             };
 
-            // Fixed row heights: header 26 (the font), knob 48 (with the slider beside it), meter 16
+            // Fixed row heights: header 26 (the font), controls 72 (the vertical slider's length), meter 16
             Dock header = new Dock { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = 26 };
             header.Children.Add(new TextBlock("Gain") { TextColor = theme.Text, HorizontalAlignment = EHorizontalAlignment.Left });
             // As wide as the widest value it can show, with the text right-aligned in it: the header's layout doesn't change
@@ -141,18 +157,28 @@ namespace UILayoutExample
             HorizontalStack controls = new HorizontalStack
             {
                 HorizontalAlignment = EHorizontalAlignment.Stretch,
+                DesiredHeight = 72,
                 ChildSpacing = 12,
             };
             root.Children.Add(controls);
 
             controls.Children.Add(knob = new ParameterKnob(gain));
+            controls.Children.Add(verticalSlider = new ParameterSlider(gain, vertical: true));
+            controls.Children.Add(slider = new ParameterSlider(gain));
 
-            controls.Children.Add(slider = new GainSlider(gain)
+            // The mute switch, labelled
+            VerticalStack muteStack = new VerticalStack
             {
-                HorizontalAlignment = EHorizontalAlignment.Stretch,
+                HorizontalAlignment = EHorizontalAlignment.Center,
                 VerticalAlignment = EVerticalAlignment.Center,
-                DesiredHeight = 32,
+            };
+            muteStack.Children.Add(muteSwitch = new ParameterSwitch(mute));
+            muteStack.Children.Add(new TextBlock("Mute")
+            {
+                TextColor = theme.MutedText,
+                HorizontalAlignment = EHorizontalAlignment.Center,
             });
+            controls.Children.Add(muteStack);
 
             root.Children.Add(meter = new LevelMeter
             {
@@ -179,68 +205,27 @@ namespace UILayoutExample
         protected override void EditorClosing()
         {
             knob = null;
+            verticalSlider = null;
             slider = null;
+            muteSwitch = null;
             gainText = null;
             meter = null;
         }
 
         /// <summary>
-        /// Host -> editor: follow the parameter's edit value (the host may automate it)
+        /// Host -> editor: the controls follow their parameters' edit values (the host may automate them), and show
+        /// hover
         /// </summary>
         void SyncControls()
         {
-            if ((knob == null) || (slider == null) || (gainText == null))
+            if (knob == null)
                 return;
 
             knob.Update();
-
-            if (!slider.IsDragging)
-                slider.SetLevel((float)gain.NormalizedEditValue);
-
+            verticalSlider.Update();
+            slider.Update();
+            muteSwitch.Update();
             gainText.Update();
-        }
-
-        /// <summary>
-        /// Editor -> host: one edit gesture per drag (begin on press, values while moving, end on release)
-        /// </summary>
-        class GainSlider : HorizontalSlider
-        {
-            AudioPluginParameter parameter;
-
-            public bool IsDragging { get; private set; }
-
-            public GainSlider(AudioPluginParameter parameter)
-                : base("HorizontalSlider")
-            {
-                this.parameter = parameter;
-
-                // A value inside the drag's gesture
-                ChangeAction = delegate (float level)
-                {
-                    parameter.NormalizedEditValue = level;
-                };
-            }
-
-            public override bool HandleTouch(in Touch touch)
-            {
-                if (touch.TouchState == ETouchState.Pressed)
-                {
-                    IsDragging = true;
-
-                    parameter.BeginEdit();
-                }
-
-                bool handled = base.HandleTouch(touch);
-
-                if ((touch.TouchState == ETouchState.Released) && IsDragging)
-                {
-                    IsDragging = false;
-
-                    parameter.EndEdit();
-                }
-
-                return handled;
-            }
         }
     }
 }

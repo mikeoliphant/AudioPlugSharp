@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6">
+  <!-- A horizontal slider's track and fill: a nine-patch stretched only lengthwise (drawn at its own height), round
+       ends of radius 3 within 4-pixel corners (a straight pixel before the 2-pixel middle). -->
+  <rect x="0" y="0" width="10" height="6" rx="3" ry="3" fill="#ffffff"/>
+</svg>

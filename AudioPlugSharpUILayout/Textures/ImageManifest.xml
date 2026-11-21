@@ -43,16 +43,72 @@
           <Height>48</Height>
         </ImageManifestSheetImage>
         <ImageManifestSheetImage>
-          <ImageName>Audio.MeterBackground</ImageName>
+          <ImageName>Audio.SwitchOn</ImageName>
+          <XOffset>101</XOffset>
+          <YOffset>51</YOffset>
+          <Width>32</Width>
+          <Height>32</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.SwitchOff</ImageName>
+          <XOffset>151</XOffset>
+          <YOffset>1</YOffset>
+          <Width>32</Width>
+          <Height>32</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.ThumbShadow</ImageName>
           <XOffset>1</XOffset>
           <YOffset>101</YOffset>
+          <Width>20</Width>
+          <Height>20</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.ThumbBody</ImageName>
+          <XOffset>185</XOffset>
+          <YOffset>1</YOffset>
+          <Width>20</Width>
+          <Height>20</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.ThumbHighlight</ImageName>
+          <XOffset>23</XOffset>
+          <YOffset>101</YOffset>
+          <Width>20</Width>
+          <Height>20</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.ThumbRing</ImageName>
+          <XOffset>207</XOffset>
+          <YOffset>1</YOffset>
+          <Width>20</Width>
+          <Height>20</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.SliderTrack</ImageName>
+          <XOffset>101</XOffset>
+          <YOffset>85</YOffset>
+          <Width>10</Width>
+          <Height>6</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.SliderTrackVertical</ImageName>
+          <XOffset>135</XOffset>
+          <YOffset>51</YOffset>
+          <Width>6</Width>
+          <Height>10</Height>
+        </ImageManifestSheetImage>
+        <ImageManifestSheetImage>
+          <ImageName>Audio.MeterBackground</ImageName>
+          <XOffset>151</XOffset>
+          <YOffset>35</YOffset>
           <Width>8</Width>
           <Height>8</Height>
         </ImageManifestSheetImage>
         <ImageManifestSheetImage>
           <ImageName>Audio.MeterBar</ImageName>
-          <XOffset>101</XOffset>
-          <YOffset>51</YOffset>
+          <XOffset>185</XOffset>
+          <YOffset>23</YOffset>
           <Width>8</Width>
           <Height>8</Height>
         </ImageManifestSheetImage>

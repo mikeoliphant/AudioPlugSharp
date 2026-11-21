@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="-12 -12 88 88">
+  <!-- A switch's lit lamp, from SpiceForge's LampOn: bright in the middle, darkening to a black rim with a soft edge.
+       In gray (each stop's brightness is its green level in the original), tinted with the lamp color: green
+       (76, 214, 68) gives the original. The same size and position as SwitchOff. -->
+  <defs>
+    <radialGradient id="lamp" cx="32" cy="32" r="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.21" stop-color="#ffffff"/>
+      <stop offset="0.29" stop-color="#fbfbfb"/>
+      <stop offset="0.43" stop-color="#eeeeee"/>
+      <stop offset="0.57" stop-color="#d4d4d4"/>
+      <stop offset="0.71" stop-color="#9c9c9c"/>
+      <stop offset="0.79" stop-color="#666666"/>
+      <stop offset="0.857" stop-color="#363636" stop-opacity="0.97"/>
+      <stop offset="0.893" stop-color="#252525" stop-opacity="0.89"/>
+      <stop offset="0.929" stop-color="#191919" stop-opacity="0.67"/>
+      <stop offset="0.964" stop-color="#000000" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.1"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="url(#lamp)"/>
+</svg>
