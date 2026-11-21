@@ -267,6 +267,11 @@ namespace AudioPlugSharpUILayout
                     host.MouseWheel(inputEvent.WheelDelta);
                     return true;
 
+                case EditorInputEventType.MouseLeave:
+                    host.MouseLeave();
+
+                    return false;
+
                 case EditorInputEventType.KeyDown:
                 case EditorInputEventType.KeyUp:
                     host.Key((Keys)inputEvent.Key, inputEvent.Type == EditorInputEventType.KeyDown);
