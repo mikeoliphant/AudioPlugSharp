@@ -1,0 +1,9 @@
+<Project>
+
+  <!--
+    For plugin projects inside this repository (Examples/, Tests/Plugins/), through their Directory.Build.props:
+    the same settings a plugin gets from the AudioPlugSharpBridge package. Not packed.
+  -->
+  <Import Project="AudioPlugSharpBridge.props" />
+
+</Project>

@@ -50,6 +50,7 @@ namespace AudioPlugSharp
         public bool HasUserInterface { get; protected set; }
         public uint EditorWidth { get; protected set; }
         public uint EditorHeight { get; protected set; }
+        public virtual bool CanResizeEditor => false;
 
         public AudioPluginBase()
         {
@@ -85,7 +86,7 @@ namespace AudioPlugSharp
             parameterDict[parameter.ID] = parameter;
 
             parameter.ProcessValue = parameter.DefaultValue;
-            parameter.EditValue = parameter.DefaultValue;
+            parameter.SetEditValue(parameter.DefaultValue, reportToHost: false); // not an edit
         }
 
         public AudioPluginParameter GetParameter(string paramID)
@@ -228,28 +229,53 @@ namespace AudioPlugSharp
         // IAudioPluginEditor Methods
         //
 
-        public virtual double GetDpiScale()
+        // No editor by default: editors come from a base class such as AudioPluginUILayout, or from overriding
+        // these.
+
+        public virtual bool IsEditorWindowTypeSupported(EditorWindowType windowType)
         {
-            return 1.0;
+            return false;
         }
 
-        public virtual void InitializeEditor()
+        public virtual void OpenEditor(IntPtr window, EditorWindowType windowType, double scale)
         {
-            Logger.Log("Initialize Editor");
+            throw new NotSupportedException("This plugin has no editor");
         }
 
-        public virtual void ResizeEditor(uint newWidth, uint newHeight)
-        {
-            EditorWidth = newWidth;
-            EditorHeight = newHeight;
-        }
-
-        public virtual void ShowEditor(IntPtr parentWindow)
+        public virtual void EditorIdle(double secondsElapsed)
         {
         }
 
-        public virtual void HideEditor()
+        public virtual bool EditorInput(in EditorInputEvent inputEvent)
         {
+            return false;
+        }
+
+        public virtual bool SetEditorSize(uint width, uint height)
+        {
+            if (!CanResizeEditor)
+                return (width == EditorWidth) && (height == EditorHeight);
+
+            EditorWidth = width;
+            EditorHeight = height;
+
+            return true;
+        }
+
+        public virtual void SetEditorScale(double scale)
+        {
+        }
+
+        public virtual void CloseEditor()
+        {
+        }
+
+        /// <summary>
+        /// Window pixels for a size in logical units at a UI scale (at least 1).
+        /// </summary>
+        public static int ToWindowPixels(uint units, double scale)
+        {
+            return Math.Max(1, (int)Math.Round(units * ((scale > 0) ? scale : 1.0)));
         }
     }
 }

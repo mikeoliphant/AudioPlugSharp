@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using AudioPlugSharp;
 
 [assembly: System.Windows.ThemeInfo(
@@ -13,23 +10,24 @@ using AudioPlugSharp;
     )]
 
 namespace AudioPlugSharpWPF
-{    
+{
+    /// <summary>
+    /// A plugin whose editor is a WPF UserControl (Windows only). The control is hosted in an HwndSource: a child
+    /// window of the editor window the host provides, which takes its input directly from Windows, so the idle and
+    /// input calls of IAudioPluginEditor are not needed. WPF runs on the host's UI thread, which must be STA (as
+    /// DAWs' UI threads are).
+    /// </summary>
     public class AudioPluginWPF : AudioPluginBase
     {
-        [DllImport("User32.dll")]
-        private static extern IntPtr MonitorFromPoint([In] System.Drawing.Point pt, [In] uint dwFlags);
+        const int WS_CHILD = 0x40000000, WS_VISIBLE = 0x10000000, WS_CLIPCHILDREN = 0x02000000;
+        const uint SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010;
 
-        [DllImport("Shcore.dll")]
-        private static extern IntPtr GetDpiForMonitor([In] IntPtr hmonitor, [In] DpiType dpiType, [Out] out uint dpiX, [Out] out uint dpiY);
+        [DllImport("user32.dll")]
+        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
 
-        public enum DpiType
-        {
-            Effective = 0,
-            Angular = 1,
-            Raw = 2,
-        }
+        HwndSource editorSource;
+        double editorScale = 1.0;
 
-        public EditorWindow EditorWindow { get; set; }
         public UserControl EditorView { get; set; }
 
         public AudioPluginWPF()
@@ -38,45 +36,80 @@ namespace AudioPlugSharpWPF
             CacheLoadContext = true;
         }
 
-        public override double GetDpiScale()
-        {
-            uint dpiX;
-            uint dpiY;
-
-            var pnt = new System.Drawing.Point(0, 0);
-            var mon = MonitorFromPoint(pnt, 2);
-            GetDpiForMonitor(mon, DpiType.Effective, out dpiX, out dpiY);
-
-            return (double)dpiX / 96.0;
-        }
-
         public virtual UserControl GetEditorView()
         {
             return new EditorView();
         }
 
-        public override void ResizeEditor(uint newWidth, uint newHeight)
+        public override bool IsEditorWindowTypeSupported(EditorWindowType windowType)
         {
-            base.ResizeEditor(newWidth, newHeight);
-
-            if (EditorWindow != null)
-            {
-                EditorWindow.SetSize(EditorWidth, EditorHeight);
-            }
+            return windowType == EditorWindowType.Win32;
         }
 
-        public override void ShowEditor(IntPtr parentWindow)
+        public override void OpenEditor(IntPtr window, EditorWindowType windowType, double scale)
         {
+            if (!IsEditorWindowTypeSupported(windowType))
+                throw new NotSupportedException("WPF editors need a Win32 window");
+
+            CloseEditor();
+
             Logger.Log("Open editor. Thread ID is: " + System.Threading.Thread.CurrentThread.ManagedThreadId);
 
             if (EditorView == null)
                 EditorView = GetEditorView();
 
-            EditorWindow = new EditorWindow(this, EditorView);
+            EditorView.DataContext = Processor;
 
-            EditorWindow.SetSize(EditorWidth, EditorHeight);
+            editorScale = (scale > 0) ? scale : 1.0;
 
-            EditorWindow.Show(parentWindow);
+            // Pixels; WPF lays the view out in DIPs at the window's DPI, which match the logical units when the scale
+            // is the window's DPI (the OS scale). A host scale that differs from it is not applied to WPF content.
+            var parameters = new HwndSourceParameters("AudioPlugSharpWPF")
+            {
+                ParentWindow = window,
+                WindowStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
+                PositionX = 0,
+                PositionY = 0,
+                Width = ToWindowPixels(EditorWidth, editorScale),
+                Height = ToWindowPixels(EditorHeight, editorScale),
+            };
+
+            editorSource = new HwndSource(parameters);
+            editorSource.RootVisual = EditorView;
+        }
+
+        public override bool SetEditorSize(uint width, uint height)
+        {
+            if (!base.SetEditorSize(width, height))
+                return false;
+
+            ResizeEditorWindow();
+
+            return true;
+        }
+
+        public override void SetEditorScale(double scale)
+        {
+            editorScale = (scale > 0) ? scale : 1.0;
+
+            ResizeEditorWindow();
+        }
+
+        void ResizeEditorWindow()
+        {
+            if (editorSource != null)
+                SetWindowPos(editorSource.Handle, IntPtr.Zero, 0, 0, ToWindowPixels(EditorWidth, editorScale), ToWindowPixels(EditorHeight, editorScale), SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+
+        public override void CloseEditor()
+        {
+            if (editorSource == null)
+                return;
+
+            // Detach the view so it can be shown again in the next window.
+            editorSource.RootVisual = null;
+            editorSource.Dispose();
+            editorSource = null;
         }
     }
 }

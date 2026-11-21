@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Stereo gain with an embedded UILayout editor (AudioPluginUILayout). Cross-platform.
+	-->
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\AudioPlugSharpUILayout\AudioPlugSharpUILayout.csproj" />
+		<ProjectReference Include="..\..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
+
+</Project>

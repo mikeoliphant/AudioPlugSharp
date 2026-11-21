@@ -61,8 +61,38 @@ namespace AudioPlugSharp
             }
             catch
             {
+                // No log file: at least stderr.
+                WriteToStdErr = true;
             }
         }
+
+        /// <summary>
+        /// Writes what's queued now, on the calling thread (instead of within a quarter second): for errors, which may
+        /// come just before the process ends.
+        /// </summary>
+        public static void Flush()
+        {
+            WriteLogs();
+        }
+
+        /// <summary>
+        /// Logs unhandled exceptions (and writes them at once, before the process ends). Once per process; the DAW
+        /// bridge and the standalone host call it.
+        /// </summary>
+        public static void LogUnhandledExceptions()
+        {
+            if (Interlocked.Exchange(ref loggingUnhandled, 1) == 1)
+                return;
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                Log("Unhandled exception" + (e.IsTerminating ? " (the process ends)" : "") + ": " + e.ExceptionObject);
+
+                Flush();
+            };
+        }
+
+        static int loggingUnhandled;
 
         public static void Log(string logEntry)
         {
@@ -79,26 +109,22 @@ namespace AudioPlugSharp
 
         static void DeleteOldLogs()
         {
-            string[] logFiles = Directory.GetFiles(logPath, "*.log");
+            // Only this logger's files, named by their time (not the native side's native.log).
+            Dictionary<string, long> fileTimes = new Dictionary<string, long>();
 
-            if (logFiles.Length >= NumLogsToRetain)
+            foreach (string logFile in Directory.GetFiles(logPath, "*.log"))
             {
-                Dictionary<string, long> fileTimes = new Dictionary<string, long>();
-
-                foreach (string logFile in logFiles)
-                {
-                    DateTime fileTime = DateTime.MinValue;
-
-                    DateTime.TryParseExact(Path.GetFileNameWithoutExtension(logFile), logFileDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out fileTime);
-
+                if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(logFile), logFileDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime fileTime))
                     fileTimes[logFile] = fileTime.Ticks;
-                }
-
-                Array.Sort(logFiles, delegate (string file1, string file2)
-                {
-                    return fileTimes[file2].CompareTo(fileTimes[file1]);
-                });
             }
+
+            string[] logFiles = new string[fileTimes.Count];
+            fileTimes.Keys.CopyTo(logFiles, 0);
+
+            Array.Sort(logFiles, delegate (string file1, string file2)
+            {
+                return fileTimes[file2].CompareTo(fileTimes[file1]);
+            });
 
             for (int i = NumLogsToRetain - 1; i < logFiles.Length; i++)
             {
@@ -127,29 +153,35 @@ namespace AudioPlugSharp
             while (true);
         }
 
+        // From the log thread, and from any thread through Flush (or ImmediateMode): one at a time.
+        static readonly object writeLock = new object();
+
         static void WriteLogs()
         {
-            string logEntry;
-            bool wroteEntries = false;
-
-            while (logQueue.TryDequeue(out logEntry))
+            lock (writeLock)
             {
-                try
-                {
-                    logWriter.WriteLine(logEntry);
-                }
-                catch { }
+                string logEntry;
+                bool wroteEntries = false;
 
-                wroteEntries = true;
-            }
-
-            if (wroteEntries)
-            {
-                try
+                while (logQueue.TryDequeue(out logEntry))
                 {
-                    logWriter.Flush();
+                    try
+                    {
+                        logWriter.WriteLine(logEntry);
+                    }
+                    catch { }
+
+                    wroteEntries = true;
                 }
-                catch { }
+
+                if (wroteEntries)
+                {
+                    try
+                    {
+                        logWriter.Flush();
+                    }
+                    catch { }
+                }
             }
         }
 

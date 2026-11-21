@@ -27,7 +27,8 @@
                                             <DataTemplate>
                                                 <StackPanel>
                                                     <local:Dial x:Name="ParameterDial"
-                                                        Minimum="{Binding MinValue}" Maximum="{Binding MaxValue}" DefaultValue="{Binding DefaultValue}" Value="{Binding EditValue}"
+                                                        DefaultValue="{Binding NormalizedDefaultValue, Mode=OneWay}" Value="{Binding NormalizedEditValue}"
+                                                        EditStarted="Dial_EditStarted" EditEnded="Dial_EditEnded"
                                                         Margin="2,2,2,0"/>
                                                     <Popup PlacementTarget="{Binding ElementName=ParameterDial}" Placement="Center" VerticalOffset="25"
                                                             IsOpen="{Binding IsMouseCaptured, ElementName=ParameterDial, Mode=OneWay}"

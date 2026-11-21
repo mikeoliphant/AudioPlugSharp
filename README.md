@@ -1,39 +1,53 @@
 # AudioPlugSharp
-Easily create VST3 audio plugins in C#
+Easily create CLAP and VST3 audio plugins in C#
 
-AudioPlugSharp provides a C++/CLI bridge to load managed audio plugins into VST hosts. User interfaces can be created with built-in support for WPF. Windows Forms interfaces are also possible.
+AudioPlugSharp lets you write audio plugins in C# and use them in DAWs on Windows and Linux, as CLAP and VST3 plugins. User interfaces can be created with [UILayout](https://github.com/mikeoliphant/UILayout) (Windows and Linux) or WPF (Windows only) - see [Plugin Editors](Docs/Editors.md).
 
 # Current Release
+
+**Note:** the packages on NuGet are for the previous version (0.7), which made Windows-only VST3 plugins. This version isn't on NuGet yet (**AudioPlugSharpBridge** isn't there at all): to use it now, build it from this repository - see [Building Instructions](#audioplugsharp-building-instructions).
 
 NuGet packages are available:
 
 [AudioPlugSharp](https://www.nuget.org/packages/AudioPlugSharp) (Needed for all plugins)
 
-[AudioPlugSharpVst3](https://www.nuget.org/packages/AudioPlugSharp) (Need for all VST3 plugins)
+[AudioPlugSharpBridge](https://www.nuget.org/packages/AudioPlugSharpBridge) (Needed to load your plugin in a DAW - it creates the CLAP and VST3 plugin files)
 
 [AudioPlugSharpWPF](https://www.nuget.org/packages/AudioPlugSharpWPF) (Also needed for WPF user interfaces)
 
-[AudioPlugSharpHost](https://www.nuget.org/packages/AudioPlugSharpHost) (For createing stand-alone Windows applictions)
-
-[AudioPlugSharpJack](https://www.nuget.org/packages/AudioPlugSharpJack) (For createing cross-platform Jack Audio clients)
+For UILayout user interfaces, reference the **AudioPlugSharpUILayout** project from this repository (it is not on NuGet yet).
 
 # Plugin Project Setup and Deployment
 
 ## NuGet Packages
-Using the NuGet packages is the recommended way to build a project using AudioPlugSharp.
+Add the **AudioPlugSharpBridge** package to your plugin project (it brings in AudioPlugSharp). When you build, it creates your plugin in the output folder, ready to install:
 
-If you use the AudioPlugSharp/AudioPlugSharpWPF NuGet packages, copying the appropriate files to your output folder will be handled for you. You simply need to copy the files from the output folder to a folder on your VST plugin path (usually "**C:\Program Files\Common Files\VST3**").
+- **clap/MyPlugin** - copy this folder to your CLAP plugin folder (**C:\Program Files\Common Files\CLAP** on Windows, **~/.clap** on Linux)
+- **vst3/MyPlugin.vst3** - copy this to your VST3 plugin folder (**C:\Program Files\Common Files\VST3** on Windows, **~/.vst3** on Linux)
 
-## Direct Referecing
-If you are referencing AudioPlugSharp manually, your plugin project will need an assembly dependency on **AudioPlugSharp.dll** (and **AudioPlugSharpWPF.dll** if you are using it).
+The plugin is created for the platform you build on. To create Linux plugins on Windows (or the other way around), add for example **-p:AudioPlugSharpBridgeRuntimeIdentifier=linux-x64** (or **linux-arm64**, **win-x64**) to your build.
 
-For deployment, you need to copy **"AudioPlugSharpVst.vst3"** to your output folder, and rename it to be **"YourPluginDllNameBridge.vst3"**. So if your plugin dll is called **"MyPlugin.dll"**, then you would rename **"AudioPlugSharpVst.vst3"** to **"MyPluginBridge.vst3"**. You also need to copy **"AudioPlugSharpVst.runtimeconfig.json"** (or **"wpf.runtimeconfig.json"** if you are using WPF in your plugin) to your output folder as **"YourPluginDllNameBridge.runtimeconfig.json"**. You also need to copy **"Ijwhost.dll"** to your output folder.
-  
-These steps can be done using a Post-build event. Have a look at the included sample plugins for examples - keep in mind you may need to change the source folder of the "copy" commands depending on where your copy of AudioPlugSharp is.
+## Requirements
+Plugins need the .NET 10 runtime (or newer) to be installed. On Windows, install the **.NET Desktop Runtime**, which also covers WPF.
+
+On Linux, plugins work on Ubuntu 22.04 or newer (or similarly recent distributions), on x64 and arm64. To install the .NET runtime on Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install dotnet-runtime-10.0
+```
+
+On Ubuntu 22.04, first add the .NET backports repository with ```sudo add-apt-repository ppa:dotnet/backports```.
+
+## Logs
+AudioPlugSharp writes its logs to **%APPDATA%\AudioPlugSharp** on Windows (**~/.config/AudioPlugSharp** on Linux): one file per session, keeping the last ten. If a plugin doesn't load at all - for example because the .NET runtime is missing - look in **native.log** there.
+
+## Upgrading From Earlier Versions
+Plugins written for version 0.7 need some changes, mostly in their user interface code: the DAW now provides the window your editor draws into. The C++/CLI bridge (**AudioPlugSharpVst3**) is replaced by **AudioPlugSharpBridge**. See the [migration notes](Docs/Migration-0.8.md) for details.
 
 # Examples
 
-See the [SimpleExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/SimpleExample/SimpleExamplePlugin.cs), [MidiExample](https://github.com/mikeoliphant/AudioPlugSharp/tree/master/MidiExample) and [WPFExample](https://github.com/mikeoliphant/AudioPlugSharp/blob/master/WPFExample/WPFExamplePlugin.cs) projects for example usage.
+See the [SimpleExample](Examples/SimpleExample/SimpleExamplePlugin.cs), [MidiExample](Examples/MidiExample/MidiExamplePlugin.cs), [UILayoutExample](Examples/UILayoutExample/UILayoutExamplePlugin.cs) and [WPFExample](Examples/WPFExample/WPFExamplePlugin.cs) projects for example usage.
 
 Here are some examples of some larger projects using AudioPlugSharp:
 
@@ -41,23 +55,55 @@ Here are some examples of some larger projects using AudioPlugSharp:
 
 [Stompbox](https://github.com/mikeoliphant/StompboxUI), guitar amplifier and effects simulation.
 
-[LiveSPICE VST](https://github.com/dsharlet/LiveSPICE/tree/master/LiveSPICEVst), real time SPICE simulation for audio signals.
 
 # Creating a Stand-Alone Application
 
-The [AudioPlugSharpHost library](https://github.com/mikeoliphant/AudioPlugSharp/tree/master/AudioPlugSharpHost) can be used to easily create a stand-alone Windows application for your plugin.
+**AudioPlugSharpStandalone** runs your plugin as an application, on Windows and Linux, with its editor and a status bar showing the audio device and how busy the plugin is. Build it from this repository, then start it with your plugin's DLL from its build output:
+
+```bash
+dotnet build AudioPlugSharpStandalone -c Release
+AudioPlugSharpStandalone/bin/Release/net10.0/AudioPlugSharpStandalone path/to/MyPlugin.dll
+```
+
+Audio goes through ASIO (Windows) or JACK (where it is installed). Click **Audio** in the status bar to choose the driver, device, channels, sample rate and buffer size, and to test them with a tone or by looping the inputs back. Your choices and the plugin's state are saved, in a folder named after the plugin in your application data folder.
+
+Options:
+
+- **--save-folder <folder>** - keep the plugin's state and audio settings somewhere else
+- **--audio <driver>**, **--audio-device <name>**, **--sample-rate <hz>**, **--buffer-size <frames>** - choose the audio device from the command line
+- **--list-audio** - list the audio drivers and their devices
+
+To make an application of your own for your plugin, create a console project that references **AudioPlugSharpStandalone** and your plugin project, with this as its program:
+
+```csharp
+using AudioPlugSharpStandalone;
+
+class Program
+{
+    [STAThread]
+    static void Main() => StandaloneHost.ForPlugin<MyPlugin>().Run();
+}
+```
+
+Also add `<TieredCompilation>false</TieredCompilation>` to the project's properties, as AudioPlugSharpStandalone does: it avoids dropouts at small buffer sizes.
+
+MIDI is not supported yet.
 
 # AudioPlugSharp Building Instructions
 
-You will need to have CMake (https://cmake.org) installed.
+You will need the .NET 10 SDK, CMake (https://cmake.org) and a C++ compiler (Visual Studio on Windows; GCC or Clang and the X11 development files, such as **libx11-dev**, on Linux). On Ubuntu:
+
+```bash
+sudo apt install dotnet-sdk-10.0 cmake g++ libx11-dev
+```
 
 From a shell, run the following:
 
 ```bash
 git clone --recursive https://github.com/mikeoliphant/AudioPlugSharp
 cd AudioPlugSharp
-cd vstbuild
-cmake.exe -G "Visual Studio 18 2026" -A x64 ../vst3sdk -DSMTG_CREATE_PLUGIN_LINK=0
+cmake -S AudioPlugSharpBridge/Native -B build
+cmake --build build --config Release
 ```
 
-Then you can load the solution in Visual Studio and build. **Note that you will need to change the last line above if you have a different version of Visual Studio.**
+This builds everything, including CLAP and VST3 versions of the examples in **build/bin/clap** and **build/bin/vst3**. You can also load **AudioPlugSharp.sln** in Visual Studio to work on the C# code.

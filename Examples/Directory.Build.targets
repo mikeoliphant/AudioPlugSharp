@@ -1,0 +1,4 @@
+<Project>
+  <!-- Plugin projects here make DAW bundles as with the AudioPlugSharpBridge package (see the imported file). -->
+  <Import Project="../AudioPlugSharpBridge/build/InRepo.targets" />
+</Project>

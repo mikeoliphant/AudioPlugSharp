@@ -87,6 +87,12 @@ namespace AudioPlugSharp
         protected IntPtr backingAudioBufferPtrs = IntPtr.Zero;
 
         /// <summary>
+        /// True when backingAudioBufferPtrs was allocated by this port (CreateBackingBuffer). Without a backing
+        /// buffer it points at the host's buffers, which must never be freed here.
+        /// </summary>
+        protected bool ownsBackingBuffer = false;
+
+        /// <summary>
         /// Sets the maximum number of samples that will be processed, and the number of bits per sample
         /// </summary>
         /// <param name="maxSamples">The maximum number of samples that will be processed in a block</param>
@@ -101,9 +107,18 @@ namespace AudioPlugSharp
             {
                 CreateBackingBuffer(maxSamples);
             }
+            else
+            {
+                // For example 32 -> 64 bit on a DoubleAudioIOPort: the host's buffers are used directly
+                FreeBackingBuffer();
+            }
         }
 
         protected virtual void CreateBackingBuffer(uint numSamples)
+        {
+        }
+
+        protected virtual void FreeBackingBuffer()
         {
         }
 
@@ -188,7 +203,23 @@ namespace AudioPlugSharp
 
         protected override unsafe void CreateBackingBuffer(uint numSamples)
         {
-            if (backingAudioBufferPtrs != IntPtr.Zero)
+            FreeBackingBuffer();
+
+            backingAudioBufferPtrs = Marshal.AllocHGlobal((int)NumChannels * Marshal.SizeOf(typeof(IntPtr)));
+            ownsBackingBuffer = true;
+
+            T** bufferPtrs = (T**)backingAudioBufferPtrs;
+
+            for (int i = 0; i < NumChannels; i++)
+            {
+                bufferPtrs[i] = (T*)Marshal.AllocHGlobal((int)numSamples * sizeof(T));
+            }
+        }
+
+        protected override unsafe void FreeBackingBuffer()
+        {
+            // Only our own allocation: without a backing buffer, the pointer is the host's (SetAudioBufferPtrs)
+            if (ownsBackingBuffer && (backingAudioBufferPtrs != IntPtr.Zero))
             {
                 for (int i = 0; i < NumChannels; i++)
                 {
@@ -200,14 +231,8 @@ namespace AudioPlugSharp
                 Marshal.FreeHGlobal(backingAudioBufferPtrs);
             }
 
-            backingAudioBufferPtrs = Marshal.AllocHGlobal((int)NumChannels * Marshal.SizeOf(typeof(IntPtr)));
-
-            T** bufferPtrs = (T**)backingAudioBufferPtrs;
-
-            for (int i = 0; i < NumChannels; i++)
-            {
-                bufferPtrs[i] = (T*)Marshal.AllocHGlobal((int)numSamples * sizeof(T));
-            }
+            backingAudioBufferPtrs = IntPtr.Zero;
+            ownsBackingBuffer = false;
         }
 
         /// <summary>

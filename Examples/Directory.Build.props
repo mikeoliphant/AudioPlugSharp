@@ -1,0 +1,4 @@
+<Project>
+  <!-- Plugin projects here get what the AudioPlugSharpBridge package gives a plugin (see the imported file). -->
+  <Import Project="../AudioPlugSharpBridge/build/InRepo.props" />
+</Project>

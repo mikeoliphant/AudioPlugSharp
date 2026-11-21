@@ -1,0 +1,338 @@
+using AudioIOSharp;
+using AudioPlugSharpUILayout;
+using AudioPlugSharpWindowing;
+using Microsoft.Xna.Framework;
+using UILayout;
+
+namespace AudioPlugSharpStandalone;
+
+/// <summary>One thing the status strip shows. A warning is drawn in amber.</summary>
+public readonly record struct StatusItem(string Text, bool Warning = false);
+
+/// <summary>
+/// The strip along the bottom of the standalone's window: the audio device and how it's running, and an Audio button at
+/// the right that opens the audio settings below the strip (the window grows downward). A child window below the
+/// editor's, with a UILayout layout of the host's own: the plugin's UILayout, if it has one, is another copy (the
+/// plugin's load context), so neither changes the other's fonts, colors or settings. Items are shown in priority
+/// order, as many as fit beside the button. Runs on the UI thread.
+/// </summary>
+public class StatusStrip : IDisposable
+{
+    /// <summary>The strip's height in logical units (the default font is 26 high).</summary>
+    public const int Height = 36;
+
+    static readonly UIColor Background = new(36, 38, 44), TextColor = new(196, 200, 208), WarningColor = new(255, 180, 60);
+    const float Spacing = 18, Margin = 8;
+
+    // The Audio button's room above and below it in the strip.
+    const int ButtonInset = 3;
+    const int DividerHeight = 1;
+
+    readonly NativeWindow window;
+    readonly MonoGameHost host;
+    readonly MonoGameLayout layout;
+    readonly HorizontalStack row;
+    readonly AudioSettingsPanel? panel;
+    readonly FrameButton? audioButton;
+    readonly UIElement? divider;
+    IReadOnlyList<StatusItem> items = [];
+    float fittedWidth = -1;
+    readonly int panelHeight;
+    bool disposed, open;
+    bool? pendingOpen;
+
+    /// <summary>Creates the strip's window in <paramref name="parent"/>'s client area (pixels). With a panel (made
+    /// once the strip's layout exists), the strip has an Audio button that opens the panel below it, set off from the
+    /// strip by a divider line.</summary>
+    public StatusStrip(NativeWindow parent, int y, int width, int height, double scale, Func<StatusStrip, AudioSettingsPanel>? createPanel = null)
+    {
+        window = parent.CreateChild(0, y, width, height);
+
+        try
+        {
+            host = new MonoGameHost(window.Handle, window.ClientWidth, window.ClientHeight) { ClearColor = new Color(Background.R, Background.G, Background.B) };
+        }
+        catch
+        {
+            window.Dispose();
+            throw;
+        }
+
+        try
+        {
+            layout = new MonoGameLayout { DisplayScale = (float)scale };
+            host.SetLayout(layout);
+
+            AudioTextures.Load();
+
+            row = new HorizontalStack
+            {
+                HorizontalAlignment = EHorizontalAlignment.Stretch,
+                VerticalAlignment = EVerticalAlignment.Center,
+                ChildSpacing = Spacing,
+            };
+
+            var stripRow = new Dock
+            {
+                HorizontalAlignment = EHorizontalAlignment.Stretch,
+                DesiredHeight = Height,
+                Padding = new LayoutPadding(Margin, 0),
+            };
+            stripRow.Children.Add(row);
+
+            var root = new VerticalStack
+            {
+                HorizontalAlignment = EHorizontalAlignment.Stretch,
+                VerticalAlignment = EVerticalAlignment.Stretch,
+                BackgroundColor = Background,
+            };
+            root.Children.Add(stripRow);
+
+            if (createPanel != null)
+            {
+                // A toggle: pressed while the panel is open.
+                audioButton = new FrameButton("Audio", () => SetOpen(audioButton!.IsPressed))
+                {
+                    IsToggleButton = true,
+                    HorizontalAlignment = EHorizontalAlignment.Right,
+                    DesiredHeight = Height - 2 * ButtonInset,
+                };
+                stripRow.Children.Add(audioButton);
+
+                divider = new UIElement
+                {
+                    HorizontalAlignment = EHorizontalAlignment.Stretch,
+                    DesiredHeight = DividerHeight,
+                    BackgroundColor = Layout.Current.Theme.Border,
+                    Visible = false,
+                };
+                root.Children.Add(divider);
+
+                panel = createPanel(this);
+
+                panel.GetSize(out _, out float measured);
+                panelHeight = DividerHeight + (int)Math.Ceiling(measured);
+
+                panel.Visible = false;
+                root.Children.Add(panel);
+            }
+
+            layout.RootUIElement = root;
+            layout.UpdateLayout();
+        }
+        catch
+        {
+            host.Dispose();
+            window.Dispose();
+            throw;
+        }
+
+        window.KeepControl(); // after SDL wrapped the window
+        window.Resized += host.Resize;
+        window.Input += OnInput;
+    }
+
+    /// <summary>The strip was clicked.</summary>
+    public event Action? Clicked;
+
+    /// <summary>The panel opened or closed: the strip's window needs <see cref="TotalHeight"/> now.</summary>
+    public event Action? OpenChanged;
+
+    /// <summary>Whether the settings panel is open.</summary>
+    public bool IsOpen => open;
+
+    /// <summary>The settings panel, if the strip has one.</summary>
+    public AudioSettingsPanel? Panel => panel;
+
+    /// <summary>The height the strip's window needs, in logical units: the strip, and the panel when it's open.</summary>
+    public int TotalHeight => Height + (open ? panelHeight : 0);
+
+    /// <summary>Opens or closes the panel, at the start of the next tick (not while the layout handles input).</summary>
+    public void SetOpen(bool value)
+    {
+        if (panel != null) pendingOpen = value;
+    }
+
+    /// <summary>Moves and resizes the strip in its parent (pixels).</summary>
+    public void SetBounds(int y, int width, int height)
+    {
+        window.SetPosition(0, y);
+        window.SetClientSize(Math.Max(width, 1), Math.Max(height, 1));
+    }
+
+    /// <summary>The window moved to a monitor with another display scale.</summary>
+    public void SetScale(double scale)
+    {
+        layout.DisplayScale = (float)scale;
+        host.Resize(window.ClientWidth, window.ClientHeight); // lays out again at the new scale
+
+        fittedWidth = -1;
+    }
+
+    /// <summary>What to show, most important first.</summary>
+    public void Show(IReadOnlyList<StatusItem> newItems)
+    {
+        if (newItems.SequenceEqual(items)) return;
+
+        items = newItems;
+        fittedWidth = -1;
+    }
+
+    /// <summary>Draws the strip. Call regularly.</summary>
+    public void Tick(double secondsElapsed)
+    {
+        if (disposed) return;
+
+        if (pendingOpen is bool next)
+        {
+            pendingOpen = null;
+
+            if (next != open)
+            {
+                open = next;
+
+                if (open) panel!.Refresh();
+                else panel!.StopTest();
+
+                panel.Visible = divider!.Visible = open;
+                audioButton!.SetPressed(open);
+                if (!open) host.ReleaseAllInput();
+
+                layout.UpdateLayout();
+
+                OpenChanged?.Invoke();
+            }
+        }
+
+        // Open or not: device work started while it was open finishes.
+        panel?.Tick(secondsElapsed);
+
+        float width = window.ClientWidth / layout.TotalScale - 2 * Margin;
+
+        if (audioButton != null)
+        {
+            audioButton.GetSize(out float buttonWidth, out _);
+            width -= buttonWidth + Spacing;
+        }
+
+        if (width != fittedWidth) Fit(width);
+
+        host.Tick((float)secondsElapsed);
+    }
+
+    // As many items as fit, in order; the rest are left out.
+    void Fit(float width)
+    {
+        fittedWidth = width;
+        row.Children.Clear();
+
+        float used = 0;
+
+        foreach (StatusItem item in items)
+        {
+            layout.DefaultFont.MeasureString(item.Text, out float itemWidth, out _);
+            float needed = (row.Children.Count > 0 ? Spacing : 0) + itemWidth;
+
+            if (used + needed > width) break;
+
+            used += needed;
+            row.Children.Add(new TextBlock(item.Text) { TextColor = item.Warning ? WarningColor : TextColor });
+        }
+
+        layout.UpdateLayout();
+    }
+
+    // The mouse is the layout's (the Audio button, the panel).
+    bool OnInput(in WindowInputEvent e)
+    {
+        switch (e.Type)
+        {
+            case WindowInputEventType.MouseMove:
+                host.MouseMove(e.X, e.Y);
+
+                return true;
+
+            case WindowInputEventType.MouseDown:
+            case WindowInputEventType.MouseUp:
+                host.MouseButton((int)e.Button, e.Type == WindowInputEventType.MouseDown, e.X, e.Y);
+
+                // On the strip itself (not the panel): the host gives the keys back to the editor.
+                if (e.Type == WindowInputEventType.MouseDown && e.Y < Height * layout.TotalScale) Clicked?.Invoke();
+
+                return true;
+
+            case WindowInputEventType.MouseWheel:
+                host.MouseMove(e.X, e.Y);
+                host.MouseWheel(e.WheelDelta);
+
+                return true;
+
+            case WindowInputEventType.MouseLeave:
+                host.MouseLeave();
+
+                return false;
+        }
+
+        return false;
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+
+        disposed = true;
+
+        // The plugin back on the device, and nothing left to run after the engine stops.
+        panel?.StopTest();
+        panel?.FinishWork();
+
+        host.Dispose();
+        window.Dispose();
+    }
+
+    /// <summary>
+    /// The audio engine's state as status items, most important first: a warning when the configured device isn't the
+    /// one running, the device, its rate, buffer size and latency, the plugin's load (percent of each block's time; NaN
+    /// if not known yet) and dropouts.
+    /// </summary>
+    public static List<StatusItem> Describe(AudioState state, AudioConfig config, double loadPercent, long dropouts)
+    {
+        var result = new List<StatusItem>();
+        bool onClock = state.Driver == ClockDriver.Name;
+
+        if (state.Fallback)
+            result.Add(new StatusItem($"{config.Driver} device unavailable: on the internal clock", Warning: true));
+        else if (onClock && state.Error != null)
+            result.Add(new StatusItem("Audio device stopped: on the internal clock", Warning: true));
+
+        if (onClock)
+        {
+            if (!state.Fallback && state.Error == null) result.Add(new StatusItem("No audio device"));
+        }
+        else
+        {
+            result.Add(new StatusItem(state.Device != null ? $"{state.Driver}: {state.Device}" : state.Driver));
+        }
+
+        double rate = state.Format?.SampleRate ?? 0;
+
+        if (rate > 0)
+        {
+            result.Add(new StatusItem($"{rate / 1000:0.#} kHz"));
+
+            if (state.BufferSize > 0)
+                result.Add(new StatusItem($"{state.BufferSize / rate * 1000:0.0} ms buffer"));
+
+            int latency = state.InputLatency + state.OutputLatency;
+            if (!onClock && latency > 0)
+                result.Add(new StatusItem($"latency {latency / rate * 1000:0.0} ms"));
+        }
+
+        if (state.Running && !double.IsNaN(loadPercent))
+            result.Add(new StatusItem($"load {loadPercent:0}%", Warning: loadPercent >= 80));
+        if (dropouts > 0)
+            result.Add(new StatusItem(dropouts == 1 ? "1 dropout" : $"{dropouts} dropouts", Warning: true));
+
+        return result;
+    }
+}

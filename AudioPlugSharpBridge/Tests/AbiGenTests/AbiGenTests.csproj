@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Tools/AbiGen/AbiGen.csproj" />
+    <!-- The real attribute definitions and contract, compiled into test contracts as source text. -->
+    <EmbeddedResource Include="../../Contract/AbiAttributes.cs" LogicalName="AbiAttributes.cs" />
+    <EmbeddedResource Include="../../Contract/Contract.cs" LogicalName="Contract.cs" />
+  </ItemGroup>
+
+</Project>

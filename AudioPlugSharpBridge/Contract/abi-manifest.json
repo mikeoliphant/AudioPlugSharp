@@ -1,0 +1,310 @@
+{
+  "abiVersion": 2,
+  "enums": {
+    "aps_audio_event_type": {
+      "underlying": "uint32_t",
+      "members": {
+        "ControlChange": 4,
+        "NoteOff": 2,
+        "NoteOn": 1,
+        "ParamChange": 5,
+        "PolyPressure": 3
+      }
+    },
+    "aps_editor_flags": {
+      "underlying": "uint32_t",
+      "members": {
+        "Embedded": 2,
+        "HasEditor": 1,
+        "None": 0,
+        "Resizable": 4
+      }
+    },
+    "aps_editor_input_event_type": {
+      "underlying": "int32_t",
+      "members": {
+        "FocusGained": 9,
+        "FocusLost": 10,
+        "KeyDown": 6,
+        "KeyUp": 7,
+        "MouseDown": 2,
+        "MouseLeave": 5,
+        "MouseMove": 1,
+        "MouseUp": 3,
+        "MouseWheel": 4,
+        "None": 0,
+        "Text": 8
+      }
+    },
+    "aps_editor_window_type": {
+      "underlying": "int32_t",
+      "members": {
+        "Cocoa": 3,
+        "None": 0,
+        "Win32": 1,
+        "X11": 2
+      }
+    },
+    "aps_log_level": {
+      "underlying": "int32_t",
+      "members": {
+        "Debug": 0,
+        "Error": 3,
+        "Info": 1,
+        "Warning": 2
+      }
+    },
+    "aps_sample_format": {
+      "underlying": "uint32_t",
+      "members": {
+        "Float32": 1,
+        "Float64": 2,
+        "None": 0
+      }
+    },
+    "aps_transport_flags": {
+      "underlying": "uint32_t",
+      "members": {
+        "None": 0,
+        "Playing": 1
+      }
+    }
+  },
+  "structs": {
+    "aps_audio_event": [
+      "aps_audio_event_type type",
+      "uint32_t sample_offset",
+      "uint32_t index",
+      "int32_t channel",
+      "double value"
+    ],
+    "aps_audio_port_buffers": [
+      "void** channels",
+      "uint32_t num_channels",
+      "uint32_t reserved"
+    ],
+    "aps_editor_info": [
+      "uint32_t width",
+      "uint32_t height",
+      "aps_editor_flags flags",
+      "uint32_t window_types"
+    ],
+    "aps_editor_input_event": [
+      "aps_editor_input_event_type type",
+      "int32_t modifiers",
+      "int32_t x",
+      "int32_t y",
+      "int32_t button",
+      "int32_t wheel_delta",
+      "int32_t key",
+      "int32_t character"
+    ],
+    "aps_host_info": [
+      "char name[64]"
+    ],
+    "aps_param_info": [
+      "uint32_t index",
+      "uint32_t flags",
+      "char key[64]",
+      "char name[64]",
+      "double default_normalized"
+    ],
+    "aps_param_text": [
+      "char text[128]"
+    ],
+    "aps_plugin_info": [
+      "char company[64]",
+      "char website[256]",
+      "char contact[128]",
+      "char name[64]",
+      "char category[128]",
+      "char version[64]",
+      "uint64_t plugin_id",
+      "aps_sample_format sample_formats",
+      "uint32_t num_input_ports",
+      "uint32_t num_output_ports",
+      "uint32_t reserved"
+    ],
+    "aps_port_info": [
+      "char name[64]",
+      "uint32_t num_channels"
+    ],
+    "aps_process_data": [
+      "const aps_audio_port_buffers* inputs",
+      "aps_audio_port_buffers* outputs",
+      "const aps_audio_event* events",
+      "aps_audio_event* output_events",
+      "uint32_t num_input_ports",
+      "uint32_t num_output_ports",
+      "uint32_t num_frames",
+      "aps_sample_format sample_format",
+      "uint32_t num_events",
+      "uint32_t output_event_capacity",
+      "uint32_t num_output_events",
+      "aps_transport_flags transport_flags",
+      "int64_t project_sample",
+      "double tempo"
+    ]
+  },
+  "interfaces": {
+    "aps_host_api": [
+      {
+        "name": "get_info",
+        "signature": "aps_result(void* ctx, aps_host_info* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "log",
+        "signature": "aps_result(void* ctx, aps_log_level level, const char* message)",
+        "thread": "main"
+      },
+      {
+        "name": "begin_edit",
+        "signature": "aps_result(void* ctx, uint32_t param_index)",
+        "thread": "main"
+      },
+      {
+        "name": "perform_edit",
+        "signature": "aps_result(void* ctx, uint32_t param_index, double normalized)",
+        "thread": "main"
+      },
+      {
+        "name": "end_edit",
+        "signature": "aps_result(void* ctx, uint32_t param_index)",
+        "thread": "main"
+      },
+      {
+        "name": "set_editor_cursor_visible",
+        "signature": "aps_result(void* ctx, uint8_t visible)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "set_editor_fullscreen",
+        "signature": "aps_result(void* ctx, uint8_t fullscreen, uint8_t* out_value)",
+        "thread": "main",
+        "optional": true
+      }
+    ],
+    "aps_plugin_api": [
+      {
+        "name": "destroy",
+        "signature": "void(void* self)",
+        "thread": "main"
+      },
+      {
+        "name": "get_info",
+        "signature": "aps_result(void* self, aps_plugin_info* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "get_input_port",
+        "signature": "aps_result(void* self, uint32_t index, aps_port_info* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "get_output_port",
+        "signature": "aps_result(void* self, uint32_t index, aps_port_info* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "get_param_count",
+        "signature": "aps_result(void* self, uint32_t* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "get_param_info",
+        "signature": "aps_result(void* self, uint32_t index, aps_param_info* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "get_param_normalized",
+        "signature": "aps_result(void* self, uint32_t index, double* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "set_param_normalized",
+        "signature": "aps_result(void* self, uint32_t index, double value)",
+        "thread": "main"
+      },
+      {
+        "name": "format_param",
+        "signature": "aps_result(void* self, uint32_t index, double normalized, aps_param_text* out_value)",
+        "thread": "main"
+      },
+      {
+        "name": "setup_processing",
+        "signature": "aps_result(void* self, double sample_rate, uint32_t max_frames, aps_sample_format format)",
+        "thread": "main"
+      },
+      {
+        "name": "set_active",
+        "signature": "aps_result(void* self, uint8_t active)",
+        "thread": "main"
+      },
+      {
+        "name": "save_state",
+        "signature": "aps_result(void* self, uint8_t* buffer, uint32_t capacity, uint32_t* out_count)",
+        "thread": "main"
+      },
+      {
+        "name": "load_state",
+        "signature": "aps_result(void* self, const uint8_t* data, uint32_t data_count)",
+        "thread": "main"
+      },
+      {
+        "name": "process",
+        "signature": "aps_result(void* self, const aps_process_data* data)",
+        "thread": "audio"
+      },
+      {
+        "name": "get_editor_info",
+        "signature": "aps_result(void* self, aps_editor_info* out_value)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "open_editor",
+        "signature": "aps_result(void* self, intptr_t window, aps_editor_window_type window_type, double scale)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "editor_idle",
+        "signature": "aps_result(void* self, double seconds_elapsed)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "editor_input",
+        "signature": "aps_result(void* self, const aps_editor_input_event* input_event, uint8_t* out_value)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "set_editor_size",
+        "signature": "aps_result(void* self, uint32_t width, uint32_t height, uint8_t* out_value)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "close_editor",
+        "signature": "aps_result(void* self)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "get_midi_controller_param",
+        "signature": "aps_result(void* self, uint32_t controller, int32_t* out_value)",
+        "thread": "main",
+        "optional": true
+      },
+      {
+        "name": "set_editor_scale",
+        "signature": "aps_result(void* self, double scale)",
+        "thread": "main",
+        "optional": true
+      }
+    ]
+  }
+}

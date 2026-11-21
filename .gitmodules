@@ -1,3 +1,6 @@
-[submodule "vst3sdk"]
-	path = vst3sdk
-	url = https://github.com/steinbergmedia/vst3sdk
+[submodule "Dependencies/UILayout"]
+	path = Dependencies/UILayout
+	url = https://github.com/mikeoliphant/UILayout.git
+[submodule "Dependencies/AudioIOSharp"]
+	path = Dependencies/AudioIOSharp
+	url = https://github.com/mikeoliphant/AudioIOSharp
