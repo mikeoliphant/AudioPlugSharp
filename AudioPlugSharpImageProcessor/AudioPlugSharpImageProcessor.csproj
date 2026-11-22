@@ -2,8 +2,8 @@
 
 	<!--
 		Renders AudioPlugSharpUILayout's textures (SrcTextures/*.svg) into a sheet and manifest in its Textures folder,
-		which it embeds. An offline tool: run it by hand after changing a source image or Program.cs, and commit the
-		output. Windows only at run time (SVGs are drawn with System.Drawing).
+		which it embeds. Not committed: run it by hand before building and after changing a source image or Program.cs,
+		until image processing is part of the build. Windows only at run time (SVGs are drawn with System.Drawing).
 	-->
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
