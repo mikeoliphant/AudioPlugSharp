@@ -1,4 +1,5 @@
 using AudioIOSharp;
+using AudioPlugSharp;
 using AudioPlugSharpUILayout;
 using AudioPlugSharpWindowing;
 using Microsoft.Xna.Framework;
@@ -15,6 +16,9 @@ public readonly record struct StatusItem(string Text, bool Warning = false);
 /// editor's, with a UILayout layout of the host's own: the plugin's UILayout, if it has one, is another copy (the
 /// plugin's load context), so neither changes the other's fonts, colors or settings. Items are shown in priority
 /// order, as many as fit beside the button. Runs on the UI thread.
+/// <para>For a plugin without an editor of its own, the strip's window also shows an editor generated from the
+/// plugin's parameters (a <see cref="ParameterPanel"/>) above the strip: one layout for both, since a copy of UILayout
+/// has one layout.</para>
 /// </summary>
 public class StatusStrip : IDisposable
 {
@@ -33,6 +37,7 @@ public class StatusStrip : IDisposable
     readonly MonoGameLayout layout;
     readonly HorizontalStack row;
     readonly AudioSettingsPanel? panel;
+    readonly ParameterPanel? parameterPanel;
     readonly FrameButton? audioButton;
     readonly UIElement? divider;
     IReadOnlyList<StatusItem> items = [];
@@ -43,9 +48,19 @@ public class StatusStrip : IDisposable
 
     /// <summary>Creates the strip's window in <paramref name="parent"/>'s client area (pixels). With a panel (made
     /// once the strip's layout exists), the strip has an Audio button that opens the panel below it, set off from the
-    /// strip by a divider line.</summary>
-    public StatusStrip(NativeWindow parent, int y, int width, int height, double scale, Func<StatusStrip, AudioSettingsPanel>? createPanel = null)
+    /// strip by a divider line. With parameters, a generated editor for them is above the strip (<see cref="EditorSize"/>
+    /// gives its size).</summary>
+    public StatusStrip(NativeWindow parent, int y, int width, int height, double scale, Func<StatusStrip, AudioSettingsPanel>? createPanel = null,
+        IReadOnlyList<AudioPluginParameter>? parameters = null)
     {
+        if ((parameters != null) && (parameters.Count > 0))
+        {
+            EditorSize(parameters, out uint editorWidth, out uint editorHeight);
+
+            EditorWidth = (int)editorWidth;
+            EditorHeight = (int)editorHeight;
+        }
+
         window = parent.CreateChild(0, y, width, height);
 
         try
@@ -86,6 +101,18 @@ public class StatusStrip : IDisposable
                 VerticalAlignment = EVerticalAlignment.Stretch,
                 BackgroundColor = Background,
             };
+
+            if (EditorHeight > 0)
+            {
+                // Its own height (its cells and padding: EditorHeight)
+                parameterPanel = new ParameterPanel(parameters!)
+                {
+                    VerticalAlignment = EVerticalAlignment.Top,
+                };
+
+                root.Children.Add(parameterPanel);
+            }
+
             root.Children.Add(stripRow);
 
             if (createPanel != null)
@@ -144,8 +171,17 @@ public class StatusStrip : IDisposable
     /// <summary>The settings panel, if the strip has one.</summary>
     public AudioSettingsPanel? Panel => panel;
 
-    /// <summary>The height the strip's window needs, in logical units: the strip, and the panel when it's open.</summary>
-    public int TotalHeight => Height + (open ? panelHeight : 0);
+    /// <summary>The height the strip's window needs, in logical units: the generated editor (if any), the strip, and
+    /// the panel when it's open.</summary>
+    public int TotalHeight => EditorHeight + Height + (open ? panelHeight : 0);
+
+    /// <summary>The generated editor's size in logical units, or 0 without one.</summary>
+    public int EditorWidth { get; }
+    public int EditorHeight { get; }
+
+    /// <summary>The size of the editor generated for the parameters, in logical units.</summary>
+    public static void EditorSize(IReadOnlyList<AudioPluginParameter> parameters, out uint width, out uint height) =>
+        ParameterPanel.GetSize(parameters.Count, 0, out width, out height);
 
     /// <summary>Opens or closes the panel, at the start of the next tick (not while the layout handles input).</summary>
     public void SetOpen(bool value)
@@ -217,6 +253,9 @@ public class StatusStrip : IDisposable
 
         if (width != fittedWidth) Fit(width);
 
+        // The generated editor follows the parameters' values (restored state, the plugin changing them)
+        parameterPanel?.Update();
+
         host.Tick((float)secondsElapsed);
     }
 
@@ -256,8 +295,10 @@ public class StatusStrip : IDisposable
             case WindowInputEventType.MouseUp:
                 host.MouseButton((int)e.Button, e.Type == WindowInputEventType.MouseDown, e.X, e.Y);
 
-                // On the strip itself (not the panel): the host gives the keys back to the editor.
-                if (e.Type == WindowInputEventType.MouseDown && e.Y < Height * layout.TotalScale) Clicked?.Invoke();
+                // On the strip itself (not the generated editor or the panel): the host gives the keys back to the
+                // editor.
+                if (e.Type == WindowInputEventType.MouseDown && e.Y >= EditorHeight * layout.TotalScale &&
+                    e.Y < (EditorHeight + Height) * layout.TotalScale) Clicked?.Invoke();
 
                 return true;
 

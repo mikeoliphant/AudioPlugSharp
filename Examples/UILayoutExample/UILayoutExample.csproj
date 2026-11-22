@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<!--
-		Stereo gain with an embedded UILayout editor (AudioPluginUILayout). Cross-platform.
+		Gain, mono in and stereo out, with an embedded UILayout editor (AudioPluginUILayout). Cross-platform.
 	-->
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>

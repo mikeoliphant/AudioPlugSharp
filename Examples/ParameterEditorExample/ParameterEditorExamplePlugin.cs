@@ -13,7 +13,7 @@ namespace ParameterEditorExample
     }
 
     /// <summary>
-    /// A stereo drive whose editor is generated from its parameters: it derives from AudioPluginUILayout and doesn't
+    /// A drive, mono in and stereo out, whose editor is generated from its parameters: it derives from AudioPluginUILayout and doesn't
     /// override CreateEditorUI, so each parameter gets the control that suits it (knobs for Drive, Tone and Output, a
     /// drop-down for the Mode choices, a switch for Bypass), and the editor is sized to fit them.
     /// </summary>
@@ -27,8 +27,8 @@ namespace ParameterEditorExample
         BoolParameter bypass;
         DecibelParameter outputGain;
 
-        // The tone filter's state per channel (a one-pole low-pass)
-        float[] lowPass = new float[2];
+        // The tone filter's state (a one-pole low-pass)
+        float lowPass;
 
         public ParameterEditorExamplePlugin()
         {
@@ -49,7 +49,7 @@ namespace ParameterEditorExample
         {
             base.Initialize();
 
-            InputPorts = new AudioIOPort[] { input = new FloatAudioIOPort("Stereo Input", EAudioChannelConfiguration.Stereo) };
+            InputPorts = new AudioIOPort[] { input = new FloatAudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
             OutputPorts = new AudioIOPort[] { output = new FloatAudioIOPort("Stereo Output", EAudioChannelConfiguration.Stereo) };
 
             AddParameter(drive = new AudioPluginParameter
@@ -98,38 +98,67 @@ namespace ParameterEditorExample
         {
             base.Process();
 
-            // Parameter changes in the block (one value per block is enough for this example)
-            Host.ProcessAllEvents();
+            ReadOnlySpan<float> inSamples = input.GetAudioBuffer(0);
+            Span<float> outLeft = output.GetAudioBuffer(0);
+            Span<float> outRight = output.GetAudioBuffer(1);
 
-            for (int channel = 0; channel < 2; channel++)
+            float driveGain = (float)AudioPluginParameter.DBToLinear(drive.ProcessValue);
+            float outGain = (float)AudioPluginParameter.DBToLinear(outputGain.ProcessValue);
+            float toneCoefficient = ToneCoefficient(tone.ProcessValue);
+            float state = lowPass;
+
+            // Sample-accurate parameters: each stretch runs up to the host's next change point, and the continuous
+            // parameters ramp toward it (a value that jumps once per block while a control moves is heard as crackle)
+            int currentSample = 0;
+            int nextSample;
+
+            do
             {
-                ReadOnlySpan<float> inSamples = input.GetAudioBuffer(channel);
-                Span<float> outSamples = output.GetAudioBuffer(channel);
+                nextSample = Host.ProcessEvents();
 
-                if (bypass.IsOn)
-                {
-                    inSamples.CopyTo(outSamples);
+                bool driveRamp = drive.NeedInterpolationUpdate;
+                bool toneRamp = tone.NeedInterpolationUpdate;
+                bool outputRamp = outputGain.NeedInterpolationUpdate;
 
-                    continue;
-                }
-
-                float driveGain = (float)AudioPluginParameter.DBToLinear(drive.ProcessValue);
-                float outGain = (float)AudioPluginParameter.DBToLinear(outputGain.ProcessValue);
-                float toneCoefficient = 1 - MathF.Exp(-2 * MathF.PI * (float)tone.ProcessValue / (float)Host.SampleRate);
+                // The switches take their value for the stretch
                 DriveMode shape = mode.Value;
-                float state = lowPass[channel];
+                bool bypassed = bypass.IsOn;
 
-                for (int i = 0; i < inSamples.Length; i++)
+                for (int i = currentSample; i < nextSample; i++)
                 {
-                    float driven = Shape(inSamples[i] * driveGain, shape);
+                    if (driveRamp)
+                        driveGain = (float)AudioPluginParameter.DBToLinear(drive.GetInterpolatedProcessValue(i));
 
-                    state += toneCoefficient * (driven - state);
+                    if (toneRamp)
+                        toneCoefficient = ToneCoefficient(tone.GetInterpolatedProcessValue(i));
 
-                    outSamples[i] = state * outGain;
+                    if (outputRamp)
+                        outGain = (float)AudioPluginParameter.DBToLinear(outputGain.GetInterpolatedProcessValue(i));
+
+                    // The same on both sides
+                    if (bypassed)
+                    {
+                        outLeft[i] = outRight[i] = inSamples[i];
+
+                        continue;
+                    }
+
+                    state += toneCoefficient * (Shape(inSamples[i] * driveGain, shape) - state);
+
+                    outLeft[i] = outRight[i] = state * outGain;
                 }
 
-                lowPass[channel] = state;
+                currentSample = nextSample;
             }
+            while (nextSample < inSamples.Length);
+
+            lowPass = state;
+        }
+
+        // The one-pole low-pass's coefficient for a cutoff frequency
+        float ToneCoefficient(double frequency)
+        {
+            return 1 - MathF.Exp(-2 * MathF.PI * (float)frequency / (float)Host.SampleRate);
         }
 
         static float Shape(float sample, DriveMode shape)

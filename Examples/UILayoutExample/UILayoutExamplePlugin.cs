@@ -7,10 +7,10 @@ using UILayout;
 namespace UILayoutExample
 {
     /// <summary>
-    /// Stereo gain and mute with an embedded UILayout editor showing AudioPlugSharpUILayout's parameter controls: the
-    /// gain as a knob, a vertical slider and a horizontal slider, the mute as a switch (each sends edit gestures to the
-    /// host, pops its value in while it changes, and follows the parameter's edit value, so the gain controls follow
-    /// each other and host automation), and an output level meter fed from the audio thread.
+    /// Gain and mute, mono in and stereo out, with an embedded UILayout editor showing AudioPlugSharpUILayout's
+    /// parameter controls: the gain as a knob, a vertical slider and a horizontal slider, the mute as a switch (each
+    /// sends edit gestures to the host, pops its value in while it changes, and follows the parameter's edit value, so
+    /// the gain controls follow each other and host automation), and an output level meter fed from the audio thread.
     /// </summary>
     public class UILayoutExamplePlugin : AudioPluginUILayout
     {
@@ -47,7 +47,7 @@ namespace UILayoutExample
         {
             base.Initialize();
 
-            InputPorts = new AudioIOPort[] { input = new FloatAudioIOPort("Stereo Input", EAudioChannelConfiguration.Stereo) };
+            InputPorts = new AudioIOPort[] { input = new FloatAudioIOPort("Mono Input", EAudioChannelConfiguration.Mono) };
             OutputPorts = new AudioIOPort[] { output = new FloatAudioIOPort("Stereo Output", EAudioChannelConfiguration.Stereo) };
 
             AddParameter(gain = new DecibelParameter
@@ -77,8 +77,7 @@ namespace UILayoutExample
 
             // Sample-accurate gain: ramp between the host's change points (one value per block would step at every
             // block boundary while the control moves - audible as crackle)
-            ReadOnlySpan<float> inLeft = input.GetAudioBuffer(0);
-            ReadOnlySpan<float> inRight = input.GetAudioBuffer(1);
+            ReadOnlySpan<float> inSamples = input.GetAudioBuffer(0);
             Span<float> outLeft = output.GetAudioBuffer(0);
             Span<float> outRight = output.GetAudioBuffer(1);
 
@@ -100,18 +99,18 @@ namespace UILayoutExample
                     if (ramp)
                         linearGain = (float)AudioPluginParameter.DBToLinear(gain.GetInterpolatedProcessValue(i));
 
-                    float left = inLeft[i] * linearGain * muteGain;
-                    float right = inRight[i] * linearGain * muteGain;
+                    float sample = inSamples[i] * linearGain * muteGain;
 
-                    outLeft[i] = left;
-                    outRight[i] = right;
+                    // The same on both sides
+                    outLeft[i] = sample;
+                    outRight[i] = sample;
 
-                    peak = Math.Max(peak, Math.Max(Math.Abs(left), Math.Abs(right)));
+                    peak = Math.Max(peak, Math.Abs(sample));
                 }
 
                 currentSample = nextSample;
             }
-            while (nextSample < inLeft.Length);
+            while (nextSample < inSamples.Length);
 
             // Keep the highest peak until the editor takes it
             int bits = BitConverter.SingleToInt32Bits(peak);

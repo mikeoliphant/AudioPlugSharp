@@ -458,8 +458,9 @@ public class StandaloneHost : IAudioHost
     // ---- window and editor (UI thread) --------------------------------------------------------------------------
     //
     // The window's client area is the editor with the status strip below it, the full width. The editor keeps the
-    // size it asks for; the window is sized around the two. Without an editor (or editor support), the window is the
-    // strip alone. If the strip can't be created (no OpenGL), the window is the editor alone.
+    // size it asks for; the window is sized around the two. Without an editor (or editor support), the strip's window
+    // shows an editor generated from the plugin's parameters above the strip (the strip alone for a plugin without
+    // parameters). If the strip can't be created (no OpenGL), the window is the editor alone.
 
     NativeWindow? window, editorWindow;
     StatusStrip? strip;
@@ -467,25 +468,37 @@ public class StandaloneHost : IAudioHost
     double scale = 1;
     int uiThreadId;
     const uint NoEditorWidth = 400;
+    uint windowWidthWithoutEditor = NoEditorWidth;   // At least as wide as the generated editor
 
     void RunWindow()
     {
         uiThreadId = Environment.CurrentManagedThreadId;
         NativeWindowType? type = NativeWindow.PlatformWindowType;
         bool showEditor = editor != null && editor.HasUserInterface && type != null && editor.IsEditorWindowTypeSupported((EditorWindowType)type.Value);
-        uint width = showEditor ? editor!.EditorWidth : NoEditorWidth, height = showEditor ? editor!.EditorHeight : 0;
 
-        window = NativeWindow.CreateTopLevel(plugin.PluginName, (int)width, (int)height + StatusStrip.Height, showEditor && editor!.CanResizeEditor);
+        // Without an editor, one generated from the parameters, in the strip's window
+        IReadOnlyList<AudioPluginParameter>? generated = (!showEditor && (processor.Parameters?.Count > 0)) ? processor.Parameters : null;
+        uint generatedWidth = 0, generatedHeight = 0;
+
+        if (generated != null)
+            StatusStrip.EditorSize(generated, out generatedWidth, out generatedHeight);
+
+        windowWidthWithoutEditor = Math.Max(NoEditorWidth, generatedWidth);
+
+        uint width = showEditor ? editor!.EditorWidth : windowWidthWithoutEditor, height = showEditor ? editor!.EditorHeight : 0;
+        int stripHeight = (int)generatedHeight + StatusStrip.Height;
+
+        window = NativeWindow.CreateTopLevel(plugin.PluginName, (int)width, (int)height + stripHeight, showEditor && editor!.CanResizeEditor);
 
         scale = window.Scale;
-        window.SetClientSize(Pixels(width), Pixels(height) + Pixels(StatusStrip.Height));
+        window.SetClientSize(Pixels(width), Pixels(height) + Pixels(stripHeight));
 
         // Before the editor's window: a window gives keyboard focus to the child created last, which should be the
         // editor's.
         try
         {
-            strip = new StatusStrip(window, Pixels(height), window.ClientWidth, Pixels(StatusStrip.Height), scale,
-                s => new AudioSettingsPanel(engine!, mainClient!, AudioConfigApplied, () => s.SetOpen(false)));
+            strip = new StatusStrip(window, Pixels(height), window.ClientWidth, Pixels(stripHeight), scale,
+                s => new AudioSettingsPanel(engine!, mainClient!, AudioConfigApplied, () => s.SetOpen(false)), generated);
 
             strip.Clicked += () =>
             {
@@ -565,7 +578,7 @@ public class StandaloneHost : IAudioHost
     // ArrangeChildren).
     void SizeWindowToContent()
     {
-        int width = editorOpen ? Pixels(editor!.EditorWidth) : Pixels(NoEditorWidth);
+        int width = editorOpen ? Pixels(editor!.EditorWidth) : Pixels(windowWidthWithoutEditor);
 
         if (PanelOpen)
         {

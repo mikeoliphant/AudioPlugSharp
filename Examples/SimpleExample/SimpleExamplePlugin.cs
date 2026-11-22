@@ -43,8 +43,10 @@ namespace SimpleExample
         {
             base.Process();
 
-            // This will trigger all Midi note events and parameter changes that happened during this process window
-            // For sample-accurate tracking, see the WPFExample or MidiExample plugins
+            // This will trigger all Midi note events and parameter changes that happened during this process window.
+            // The gain then changes once per block, in a step at each block's start: while it's changing (a control
+            // moving, automation) that is heard as crackle. For sample-accurate parameters, which ramp smoothly between
+            // the host's change points, see the UILayoutExample, MidiExample or WPFExample plugins.
             Host.ProcessAllEvents();
 
             double gainDb = GetParameter("gain").ProcessValue;

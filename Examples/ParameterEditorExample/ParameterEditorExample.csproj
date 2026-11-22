@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<!--
-		A stereo drive whose editor is generated from its parameters (AudioPluginUILayout without CreateEditorUI).
+		A drive (mono in, stereo out) whose editor is generated from its parameters (AudioPluginUILayout without CreateEditorUI).
 		Cross-platform.
 	-->
 	<PropertyGroup>
