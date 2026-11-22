@@ -42,4 +42,4 @@ Knobs and sliders should now call the parameter's **BeginEdit()** and **EndEdit(
 
 ## Stand-Alone Applications
 
-**AudioPlugSharpHost** and **AudioPlugSharpJack** are replaced by **AudioPlugSharpStandalone**, which runs your plugin as an application on Windows and Linux, with ASIO or JACK audio - either your plugin's DLL as it is, or an application of your own with a one-line program (`StandaloneHost.ForPlugin<MyPlugin>().Run()`). See [Creating a Stand-Alone Application](../README.md#creating-a-stand-alone-application). It has no MIDI yet: stay on 0.7 if you need it.
+**AudioPlugSharpHost** and **AudioPlugSharpJack** are replaced by **AudioPlugSharpStandalone**, which runs your plugin as an application on Windows and Linux, with ASIO, ALSA or JACK audio - either your plugin's DLL as it is, or an application of your own with a one-line program (`StandaloneHost.ForPlugin<MyPlugin>().Run()`). See [Creating a Stand-Alone Application](../README.md#creating-a-stand-alone-application). It has no MIDI yet: stay on 0.7 if you need it.

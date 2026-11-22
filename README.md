@@ -71,7 +71,7 @@ dotnet build AudioPlugSharpStandalone -c Release
 AudioPlugSharpStandalone/bin/Release/net10.0/AudioPlugSharpStandalone path/to/MyPlugin.dll
 ```
 
-Audio goes through ASIO (Windows) or JACK (where it is installed). Click **Audio** in the status bar to choose the driver, device, channels, sample rate and buffer size, and to test them with a tone or by looping the inputs back. Your choices and the plugin's state are saved, in a folder named after the plugin in your application data folder.
+Audio goes through ASIO (Windows), ALSA (Linux) or JACK (where it is installed). Click **Audio** in the status bar to choose the driver, device, channels, sample rate and buffer size, and to test them with a tone or by looping the inputs back. Your choices and the plugin's state are saved, in a folder named after the plugin in your application data folder.
 
 Options:
 

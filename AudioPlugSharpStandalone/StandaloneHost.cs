@@ -19,7 +19,7 @@ namespace AudioPlugSharpStandalone;
 /// bar has its own UILayout, and UILayout supports one layout per copy.
 ///
 /// The plugin's state is restored when it starts and saved when it closes (<see cref="SaveFolder"/>). Audio runs
-/// through AudioIOSharp: ASIO, JACK, or its internal clock (no device, the default). The audio configuration is saved
+/// through AudioIOSharp: ASIO, ALSA, JACK, or its internal clock (no device, the default). The audio configuration is saved
 /// in the save folder too, with the last one used with each driver; <see cref="AudioDriver"/>,
 /// <see cref="AudioDevice"/>, <see cref="AudioSampleRate"/> and <see cref="AudioBufferSize"/> change it for a run (and
 /// from then on).
@@ -76,7 +76,7 @@ public class StandaloneHost : IAudioHost
     /// audio settings.</summary>
     public string SaveFolder { get; set; }
 
-    /// <summary>The audio driver to use instead of the saved one (None, ASIO, JACK). Another driver starts from the
+    /// <summary>The audio driver to use instead of the saved one (None, ASIO, ALSA, JACK). Another driver starts from the
     /// configuration last used with it. Set before <see cref="Run"/>.</summary>
     public string? AudioDriver { get; set; }
 

@@ -9,7 +9,7 @@ namespace AudioPlugSharpStandalone;
 /// AudioPlugSharpStandalone [options] &lt;plugin.dll&gt;
 ///   --save-folder &lt;folder&gt;   where the plugin's state and audio settings are kept (default: a folder named after
 ///                             the plugin in the user's application data)
-///   --audio &lt;driver&gt;         None (the internal clock), ASIO or JACK
+///   --audio &lt;driver&gt;         None (the internal clock), ASIO, ALSA or JACK
 ///   --audio-device &lt;name&gt;    the driver's device
 ///   --sample-rate &lt;hz&gt;       the device's sample rate
 ///   --buffer-size &lt;frames&gt;   the device's buffer size
@@ -22,7 +22,7 @@ static class Program
     const string Usage = """
         Usage: AudioPlugSharpStandalone [options] <plugin.dll>
           --save-folder <folder>   where the plugin's state and audio settings are kept
-          --audio <driver>         None (the internal clock), ASIO or JACK
+          --audio <driver>         None (the internal clock), ASIO, ALSA or JACK
           --audio-device <name>    the driver's device
           --sample-rate <hz>       the device's sample rate
           --buffer-size <frames>   the device's buffer size
