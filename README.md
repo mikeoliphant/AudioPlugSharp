@@ -51,7 +51,7 @@ The [Examples](Examples) folder has a project for each of these:
 
 - **[SimpleExample](Examples/SimpleExample/SimpleExamplePlugin.cs)**: a stereo gain with no editor of its own. The simplest plugin.
 - **[MidiExample](Examples/MidiExample/MidiExamplePlugin.cs)**: a simple sine-wave synthesizer, playing MIDI notes.
-- **[ParameterEditorExample](Examples/ParameterEditorExample/ParameterEditorExamplePlugin.cs)**: a stereo drive whose editor is generated from its parameters, with no custom editor code.
+- **[ParameterEditorExample](Examples/ParameterEditorExample/ParameterEditorExamplePlugin.cs)**: a stereo drive whose editor is generated automatically from its parameters.
 - **[UILayoutExample](Examples/UILayoutExample/UILayoutExamplePlugin.cs)**: a stereo gain and mute with an editor of its own built with UILayout.
 - **[WPFExample](Examples/WPFExample/WPFExamplePlugin.cs)**: a stereo gain and pan with a WPF editor. Windows only.
 
