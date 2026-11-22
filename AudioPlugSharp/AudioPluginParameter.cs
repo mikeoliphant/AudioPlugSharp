@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace AudioPlugSharp
 {
@@ -262,7 +264,42 @@ namespace AudioPlugSharp
         /// <summary>
         /// True between BeginEdit() and EndEdit().
         /// </summary>
-        public bool IsEditing { get; private set; }
+        public bool IsEditing
+        {
+            get { return isEditing; }
+
+            private set
+            {
+                isEditing = value;
+
+                MarkEdited();
+            }
+        }
+
+        volatile bool isEditing;
+
+        // When the editor last changed the value or began or ended a gesture (Stopwatch ticks; 0: never). The audio
+        // thread smooths change points while the user edits and for a moment after: a wheel notch or a double-click is
+        // a whole gesture on the UI thread, over before its change point reaches the audio thread.
+        long lastEdited;
+
+        static readonly long EditedWindow = Stopwatch.Frequency / 4;
+
+        void MarkEdited() => Volatile.Write(ref lastEdited, Stopwatch.GetTimestamp());
+
+        // Whether the user is editing the parameter from the editor, or just did (the audio thread)
+        bool BeingEdited
+        {
+            get
+            {
+                if (isEditing)
+                    return true;
+
+                long edited = Volatile.Read(ref lastEdited);
+
+                return (edited != 0) && ((Stopwatch.GetTimestamp() - edited) < EditedWindow);
+            }
+        }
 
         /// <summary>
         /// Starts an edit gesture (for example on mouse down on a knob). The edits until EndEdit() reach the host as
@@ -311,6 +348,8 @@ namespace AudioPlugSharp
             if (reportToHost && (Editor?.Host != null)) // Editor is null before the parameter has been added
             {
                 IAudioHost host = Editor.Host;
+
+                MarkEdited();
 
                 if (IsEditing)
                 {
@@ -367,81 +406,154 @@ namespace AudioPlugSharp
             return MinValue + ((MaxValue - MinValue) * rangeVal);
         }
 
-        double prevParamValue;
-        double slope;
-        int prevParamChangeSample;
-        int nextParamChangeSample;
+        // ---- Interpolation (the audio thread) ------------------------------------------------------------------------
+        //
+        // A change point ramps the value used in processing from where it is to the new value, reaching it exactly on
+        // the point's sample: host automation is sample-accurate. While the user edits the parameter from the plugin's
+        // own editor (a drag, a wheel turn, a double-click; and a moment after), points glide over SmoothingTime
+        // instead: the editor sends one edit per frame, which would otherwise jump within one block and hold until the
+        // next (heard as stepping). Times
+        // are samples of the parameter's own clock, which the host advances at every block's end
+        // (ResetParameterChange(int)), so a glide carries on across blocks.
+
+        long clock;                 // The current block's first sample
+        long lastPointTime = -1;    // The latest change point's sample (where the next ramp can start)
+        long rampStart, rampEnd;    // The ramp's samples (the value is rampFrom up to rampStart, rampTo from rampEnd)
+        double rampFrom, rampTo;    // Plain values, or normalized ones for a ramp with an infinite end (-inf dB)
+        bool rampNormalized;
+        bool ramping;
+
+        // A stepped parameter's switch, in the current block: the value before it, and its sample
+        double steppedFrom;
+        long switchTime;
+
         bool needInterpolationUpdate = false;
 
-        // Interpolation of the normalized value, used when a plain value is infinite (a DecibelParameter's -inf dB
-        // minimum), where interpolating plain values gives NaN (-inf + k * inf) or an instant jump.
-        bool interpolateNormalized;
-        double prevNormalizedValue;
-        double normalizedSlope;
+        /// <summary>
+        /// How long the value takes to glide to a new value while the user edits it from the plugin's editor, in
+        /// seconds (default 0.02), so a control's edits (one per editor frame) are smooth. Host automation isn't
+        /// smoothed: it stays sample-accurate. 0: edits ramp within their block, like automation.
+        /// </summary>
+        public double SmoothingTime { get; set; } = 0.02;
 
+        /// <summary>
+        /// For hosts: a change point at a sample of the current block (from the host, or an edit), which the value used
+        /// in processing ramps to (or, for a stepped parameter, switches to there). <see cref="ProcessValue"/> is the new
+        /// value at once; <see cref="GetInterpolatedProcessValue"/> gives the ramp.
+        /// </summary>
         public void AddParameterChangePoint(double newNormalizedValue, int sampleOffset)
         {
-            prevParamChangeSample = nextParamChangeSample;
-            prevParamValue = processValue;
+            long time = clock + sampleOffset;
 
-            nextParamChangeSample = sampleOffset;
+            // The ramp starts where the value is now: at the previous point, or this block's start if that was earlier
+            // (the samples before it are processed already)
+            long start = Math.Max(lastPointTime, clock - 1);
+            double from = ValueAt(start);
+
+            lastPointTime = time;
+
             NormalizedProcessValue = newNormalizedValue;
 
-            // No need to update if the parameter isn't changing
-            needInterpolationUpdate = processValue != prevParamValue;
-            interpolateNormalized = false;
-
-            // A stepped parameter switches at the change point (GetInterpolatedProcessValue): no slope
-            if (needInterpolationUpdate && !IsStepped)
+            if (IsStepped)
             {
-                double samples = nextParamChangeSample - prevParamChangeSample;
+                ramping = false;
+                steppedFrom = from;
+                switchTime = time;
+                needInterpolationUpdate = from != processValue;
 
-                slope = (processValue - prevParamValue) / samples;
+                return;
+            }
 
-                if (!double.IsFinite(slope))
-                {
-                    interpolateNormalized = true;
-                    prevNormalizedValue = GetValueNormalized(prevParamValue);
-                    normalizedSlope = (newNormalizedValue - prevNormalizedValue) / samples;
-                }
+            if (from == processValue)
+            {
+                // Not changing: whatever ramp there was ends here
+                ramping = false;
+                needInterpolationUpdate = false;
+
+                return;
+            }
+
+            // On the point's sample; while the user edits, no sooner than SmoothingTime from where it starts
+            long smoothing = BeingEdited ? (long)(SmoothingTime * SampleRateForRamps) : 0;
+
+            rampStart = start;
+            rampEnd = Math.Max(time, start + smoothing);
+            rampNormalized = !double.IsFinite(from) || !double.IsFinite(processValue);
+            rampFrom = rampNormalized ? GetValueNormalized(from) : from;
+            rampTo = rampNormalized ? newNormalizedValue : processValue;
+            ramping = true;
+            needInterpolationUpdate = true;
+        }
+
+        // The host's rate, for SmoothingTime (48 kHz before the parameter is added)
+        double SampleRateForRamps
+        {
+            get
+            {
+                double rate = Editor?.Host?.SampleRate ?? 0;
+
+                return (rate > 0) ? rate : 48000;
             }
         }
 
+        /// <summary>
+        /// For hosts, at the end of every block: moves the parameter's clock on by the block's samples, carrying an
+        /// unfinished ramp into the next block.
+        /// </summary>
+        public void ResetParameterChange(int blockFrames)
+        {
+            clock += blockFrames;
+
+            if (IsStepped || !ramping || (rampEnd < clock))
+            {
+                ramping = false;
+                needInterpolationUpdate = false;
+            }
+        }
+
+        /// <summary>
+        /// Ends the parameter's interpolation at a block's end, for hosts that don't say how long their blocks are: each
+        /// block's points ramp within that block only (see <see cref="ResetParameterChange(int)"/>).
+        /// </summary>
         public void ResetParameterChange()
         {
-            prevParamValue = processValue;
-            prevParamChangeSample = -1;
-            nextParamChangeSample = -1;
+            clock = 0;
+            lastPointTime = -1;
+            ramping = false;
             needInterpolationUpdate = false;
         }
 
+        /// <summary>Whether the value used in processing is changing in this block: then read it per sample with
+        /// <see cref="GetInterpolatedProcessValue"/>.</summary>
         public bool NeedInterpolationUpdate
         {
             get { return needInterpolationUpdate; }
         }
 
+        /// <summary>The value used in processing at a sample of the current block, ramping between change points.</summary>
         public double GetInterpolatedProcessValue(int sampleOffset)
         {
-            if (!needInterpolationUpdate)
-                return prevParamValue;
-
-            // Past the last control point, the value stays at that point's value
-            if (sampleOffset > nextParamChangeSample)
-            {
-                needInterpolationUpdate = false;
-                prevParamValue = processValue;
-
-                return processValue;
-            }
+            long time = clock + sampleOffset;
 
             // Stepped: the previous value until the change point, then the new one (values between steps don't exist)
             if (IsStepped)
-                return (sampleOffset < nextParamChangeSample) ? prevParamValue : processValue;
+                return (needInterpolationUpdate && (time < switchTime)) ? steppedFrom : processValue;
 
-            if (interpolateNormalized)
-                return GetValueDenormalized(prevNormalizedValue + ((double)(sampleOffset - prevParamChangeSample) * normalizedSlope));
+            return ValueAt(time);
+        }
 
-            return prevParamValue + ((double)(sampleOffset - prevParamChangeSample) * slope);
+        // The value used in processing at a sample of the parameter's clock
+        double ValueAt(long time)
+        {
+            if (!ramping || (time >= rampEnd))
+                return processValue;
+
+            if (time <= rampStart)
+                return rampNormalized ? GetValueDenormalized(rampFrom) : rampFrom;
+
+            double value = rampFrom + ((rampTo - rampFrom) * (time - rampStart) / (rampEnd - rampStart));
+
+            return rampNormalized ? GetValueDenormalized(value) : value;
         }
 
         public void OnPropertyChanged(string name)

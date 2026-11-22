@@ -78,15 +78,13 @@ internal sealed unsafe class ManagedHost : IAudioHost
 
     public void EndBlock()
     {
-        // Like the C++/CLI bridge: parameters that changed in this block end their interpolation.
+        // Every parameter's clock moves on by the block, so a ramp that isn't finished carries on into the next block.
         var data = _data;
         var parameters = _processor.Parameters;
-        for (int i = 0; i < data->NumEvents; i++)
-        {
-            ref readonly var e = ref data->Events[i];
-            if (e.Type == AudioEventType.ParamChange && e.Index < (uint)parameters.Count)
-                parameters[(int)e.Index].ResetParameterChange();
-        }
+        int frames = (int)data->NumFrames;
+        if (parameters != null)
+            for (int i = 0; i < parameters.Count; i++)
+                parameters[i].ResetParameterChange(frames);
         _data = null;
     }
 

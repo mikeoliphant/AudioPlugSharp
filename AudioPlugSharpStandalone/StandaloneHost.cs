@@ -302,7 +302,6 @@ public class StandaloneHost : IAudioHost
         long blockStart = Stopwatch.GetTimestamp();
         CurrentAudioBufferSize = (uint)frames;
         blockEventsDispatched = false;
-        changedCount = 0;
 
         inputBinding.Bind(buffers, frames);
         outputBinding.Bind(buffers, frames);
@@ -321,10 +320,11 @@ public class StandaloneHost : IAudioHost
             buffers.ClearOutputs();
         }
 
-        // As in a DAW: parameters that changed in this block end their interpolation.
+        // As in a DAW: every parameter's clock moves on by the block, so an unfinished ramp carries on into the next.
         var parameters = processor.Parameters;
-        for (int i = 0; i < changedCount; i++)
-            parameters[changed[i]].ResetParameterChange();
+        if (parameters != null)
+            for (int i = 0; i < parameters.Count; i++)
+                parameters[i].ResetParameterChange(frames);
 
         CurrentProjectSample += frames;
         Volatile.Write(ref busyTicks, busyTicks + Stopwatch.GetTimestamp() - blockStart);
@@ -419,15 +419,12 @@ public class StandaloneHost : IAudioHost
     double[] pendingValue = [];
     int[] pending = [];
     int anyPending;
-    int[] changed = [];
-    int changedCount;
 
     void PrepareParameters()
     {
         int count = processor.Parameters?.Count ?? 0;
         pendingValue = new double[count];
         pending = new int[count];
-        changed = new int[count];
     }
 
     public void BeginEdit(int parameter) { }
@@ -451,7 +448,6 @@ public class StandaloneHost : IAudioHost
         {
             if (Interlocked.Exchange(ref pending[i], 0) == 0) continue;
             processor.HandleParameterChange(parameters[i], Volatile.Read(ref pendingValue[i]), Math.Max(last, 0));
-            changed[changedCount++] = i;
         }
     }
 
