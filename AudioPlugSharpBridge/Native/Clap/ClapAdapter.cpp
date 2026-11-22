@@ -483,7 +483,7 @@ private:
                     const auto* e = reinterpret_cast<const clap_event_param_value_t*>(h);
                     auto it = idToIndex_.find(e->param_id);
                     if (it != idToIndex_.end()) {
-                        const double v = std::clamp(e->value, 0.0, 1.0);
+                        const double v = fromClapValue(it->second, e->value);
                         add({APS_AUDIO_EVENT_TYPE_PARAM_CHANGE, h->time, it->second, 0, v});
                         hostChangedValue(it->second, v);
                     }
@@ -509,7 +509,7 @@ private:
                 ev.param_id = id;
                 ev.note_id = -1;
                 ev.port_index = ev.channel = ev.key = -1;
-                ev.value = edit.value;
+                ev.value = toClapValue(edit.index, edit.value);
                 if (out) out->try_push(out, &ev.header);
             } else {
                 clap_event_param_gesture_t ev{};
@@ -619,7 +619,19 @@ private:
         return true;
     }
 
-    // params: exposed normalized (0..1); text comes from the plugin's FormatValue.
+    // params: exposed normalized (0..1), except stepped ones, which CLAP wants as whole numbers: 0 to the step count
+    // (toClapValue/fromClapValue convert); text comes from the plugin's FormatValue.
+    double toClapValue(uint32_t index, double normalized) const {
+        const uint32_t steps = params_[index].info.stepCount;
+        if (steps == 0) return normalized;
+        return std::min<double>(steps, std::floor(std::clamp(normalized, 0.0, 1.0) * (steps + 1)));
+    }
+    double fromClapValue(uint32_t index, double value) const {
+        const uint32_t steps = params_[index].info.stepCount;
+        if (steps == 0) return std::clamp(value, 0.0, 1.0);
+        return std::clamp(std::round(value), 0.0, double(steps)) / steps;
+    }
+
     static uint32_t paramsCount(const clap_plugin_t* p) { return static_cast<uint32_t>(self(p)->params_.size()); }
     static bool paramsGetInfo(const clap_plugin_t* p, uint32_t index, clap_param_info_t* info) {
         {
@@ -632,7 +644,12 @@ private:
             aps::detail::writeFixed(param.info.name, info->name, sizeof(info->name));
             info->min_value = 0.0;
             info->max_value = 1.0;
-            info->default_value = std::clamp(param.info.defaultNormalized, 0.0, 1.0);
+            if (param.info.stepCount > 0) {
+                info->flags |= CLAP_PARAM_IS_STEPPED;
+                if (aps::hasFlag(param.info.flags, aps::ParamFlags::IsList)) info->flags |= CLAP_PARAM_IS_ENUM;
+                info->max_value = double(param.info.stepCount);
+            }
+            info->default_value = s->toClapValue(index, std::clamp(param.info.defaultNormalized, 0.0, 1.0));
             return true;
         }
     }
@@ -641,7 +658,7 @@ private:
             auto* s = self(p);
             auto it = s->idToIndex_.find(id);
             if (it == s->idToIndex_.end() || !value) return false;
-            *value = s->values_[it->second].load(std::memory_order_relaxed);
+            *value = s->toClapValue(it->second, s->values_[it->second].load(std::memory_order_relaxed));
             return true;
         }
     }
@@ -650,7 +667,7 @@ private:
             auto* s = self(p);
             auto it = s->idToIndex_.find(id);
             if (it == s->idToIndex_.end() || !buffer || capacity == 0) return false;
-            auto r = s->api_->formatParam(it->second, value);
+            auto r = s->api_->formatParam(it->second, s->fromClapValue(it->second, value));
             if (!r) return false;
             aps::detail::writeFixed(r.value.text, buffer, capacity);
             return true;
@@ -689,7 +706,7 @@ private:
                 ev.param_id = params_[edit.index].id;
                 ev.note_id = -1;
                 ev.port_index = ev.channel = ev.key = -1;
-                ev.value = edit.value;
+                ev.value = toClapValue(edit.index, edit.value);
                 out->try_push(out, &ev.header);
                 pending_[edit.index] = edit.value;
                 havePending_.store(true, std::memory_order_release);
@@ -702,7 +719,7 @@ private:
             const auto* e = reinterpret_cast<const clap_event_param_value_t*>(h);
             auto it = idToIndex_.find(e->param_id);
             if (it == idToIndex_.end()) continue;
-            const double v = std::clamp(e->value, 0.0, 1.0);
+            const double v = fromClapValue(it->second, e->value);
             api_->setParamNormalized(it->second, v);
             values_[it->second].store(v, std::memory_order_relaxed);
             pending_[it->second] = v;

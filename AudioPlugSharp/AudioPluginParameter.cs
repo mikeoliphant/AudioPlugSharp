@@ -18,6 +18,36 @@ namespace AudioPlugSharp
         public virtual double MaxValue { get; set; }
         public double RangePower { get; set; } = 0;
         public double DefaultValue { get; set; }
+
+        /// <summary>
+        /// The number of steps between MinValue and MaxValue: 0 (the default) for a continuous parameter, 1 for on/off,
+        /// N for N + 1 values spaced evenly from MinValue to MaxValue. A stepped parameter maps linearly (RangePower is
+        /// ignored), its values snap to the steps, and it changes at its change points in Process instead of ramping.
+        /// Hosts and generated editors show it as stepped (a switch for on/off).
+        /// </summary>
+        public int StepCount { get; set; }
+
+        /// <summary>
+        /// Names for a stepped parameter's values, from MinValue up (StepCount + 1 of them), shown instead of
+        /// numbers. Hosts and generated editors show the parameter as a list of choices. Null (the default): no
+        /// names. See <see cref="ChoiceParameter"/>.
+        /// </summary>
+        public string[] ValueNames { get; set; }
+
+        /// <summary>Whether the parameter has steps (StepCount above 0).</summary>
+        public bool IsStepped
+        {
+            get { return StepCount > 0; }
+        }
+
+        /// <summary>
+        /// The step (0 to StepCount) of a normalized value: the 0-1 range in StepCount + 1 equal parts (as VST3
+        /// divides it), so an on/off parameter is on from 0.5.
+        /// </summary>
+        public int GetStep(double normalizedValue)
+        {
+            return (int)Math.Min(StepCount, Math.Floor(Math.Clamp(normalizedValue, 0, 1) * (StepCount + 1)));
+        }
         public string ValueFormat
         {
             get { return valueFormat; }
@@ -81,7 +111,23 @@ namespace AudioPlugSharp
         /// </summary>
         public virtual string FormatValue(double value)
         {
+            string name = GetValueName(value);
+
+            if (name != null)
+                return name;
+
             return String.Format(ValueFormat, value);
+        }
+
+        // The name of a (plain) value's step, or null without names
+        string GetValueName(double value)
+        {
+            if ((ValueNames == null) || !IsStepped || (MaxValue == MinValue))
+                return null;
+
+            int step = (int)Math.Round(Math.Clamp((value - MinValue) / (MaxValue - MinValue), 0, 1) * StepCount);
+
+            return (step < ValueNames.Length) ? ValueNames[step] : null;
         }
 
         /// <summary>
@@ -105,6 +151,15 @@ namespace AudioPlugSharp
         /// </summary>
         protected virtual void AppendValue(double value, StringBuilder text)
         {
+            string name = GetValueName(value);
+
+            if (name != null)
+            {
+                text.Append(name);
+
+                return;
+            }
+
             if (!valueFormatParsed)
                 ParseValueFormat();
 
@@ -296,11 +351,17 @@ namespace AudioPlugSharp
         {
             double rangeVal = (value - MinValue) / (MaxValue - MinValue);
 
+            if (IsStepped)
+                return Math.Round(Math.Clamp(rangeVal, 0, 1) * StepCount) / StepCount;
+
             return (RangePower > 0) ? Math.Pow(rangeVal, RangePower) : rangeVal;
         }
 
         public virtual double GetValueDenormalized(double value)
         {
+            if (IsStepped)
+                return MinValue + ((MaxValue - MinValue) * GetStep(value) / StepCount);
+
             double rangeVal = (RangePower > 0) ? Math.Pow(value, 1 / RangePower) : value;
 
             return MinValue + ((MaxValue - MinValue) * rangeVal);
@@ -330,7 +391,8 @@ namespace AudioPlugSharp
             needInterpolationUpdate = processValue != prevParamValue;
             interpolateNormalized = false;
 
-            if (needInterpolationUpdate)
+            // A stepped parameter switches at the change point (GetInterpolatedProcessValue): no slope
+            if (needInterpolationUpdate && !IsStepped)
             {
                 double samples = nextParamChangeSample - prevParamChangeSample;
 
@@ -371,6 +433,10 @@ namespace AudioPlugSharp
 
                 return processValue;
             }
+
+            // Stepped: the previous value until the change point, then the new one (values between steps don't exist)
+            if (IsStepped)
+                return (sampleOffset < nextParamChangeSample) ? prevParamValue : processValue;
 
             if (interpolateNormalized)
                 return GetValueDenormalized(prevNormalizedValue + ((double)(sampleOffset - prevParamChangeSample) * normalizedSlope));
@@ -462,6 +528,135 @@ namespace AudioPlugSharp
             double rangeVal = (RangePower > 0) ? Math.Pow(value, RangePower) : value;
 
             return LinearToDB(linearMin + ((linearMax - linearMin) * rangeVal));
+        }
+    }
+
+    /// <summary>
+    /// An on/off parameter (0 or 1, off by default), shown as "Off" and "On". Hosts and generated editors show it as
+    /// a switch.
+    /// </summary>
+    public class BoolParameter : AudioPluginParameter
+    {
+        public BoolParameter()
+        {
+            MinValue = 0;
+            MaxValue = 1;
+            DefaultValue = 0;
+            StepCount = 1;
+            ValueNames = new[] { "Off", "On" };
+        }
+
+        /// <summary>Whether the value used in processing is on.</summary>
+        public bool IsOn
+        {
+            get { return ProcessValue >= 0.5; }
+        }
+    }
+
+    /// <summary>
+    /// A parameter that is one of a list of choices: its value is the choice's index (0 to the number of choices - 1;
+    /// the first by default), shown as the choice's name. Hosts and generated editors show it as a list.
+    /// </summary>
+    public class ChoiceParameter : AudioPluginParameter
+    {
+        public ChoiceParameter()
+        {
+            DefaultValue = 0;
+        }
+
+        /// <summary>The choices' names. Setting them sets the range and steps.</summary>
+        public string[] Choices
+        {
+            get { return ValueNames; }
+
+            set
+            {
+                ValueNames = value;
+                MinValue = 0;
+                MaxValue = Math.Max(value.Length - 1, 1);
+                StepCount = Math.Max(value.Length - 1, 1);
+            }
+        }
+
+        /// <summary>The index of the choice used in processing.</summary>
+        public int ChoiceIndex
+        {
+            get { return (int)Math.Round(ProcessValue); }
+        }
+    }
+
+    /// <summary>
+    /// A list of choices from an enum's members, in the order of their values (declaration order for a plain enum).
+    /// A member's name is its [Description] if it has one, otherwise its name with words split ("HardClip": "Hard
+    /// Clip"). <see cref="Value"/> gives the member used in processing, without allocating. Saved state holds the
+    /// choice's position, so add members at the end: reordering them, or inserting one, changes what saved projects
+    /// load.
+    /// </summary>
+    public class EnumParameter<TEnum> : ChoiceParameter where TEnum : struct, Enum
+    {
+        static readonly TEnum[] values = Enum.GetValues<TEnum>();
+        static readonly string[] names = GetNames();
+
+        public EnumParameter()
+        {
+            Choices = names;
+        }
+
+        /// <summary>The member used in processing.</summary>
+        public TEnum Value
+        {
+            get { return values[Math.Clamp(ChoiceIndex, 0, values.Length - 1)]; }
+        }
+
+        /// <summary>The default member (the first by default).</summary>
+        public TEnum DefaultChoice
+        {
+            get { return values[Math.Clamp((int)Math.Round(DefaultValue), 0, values.Length - 1)]; }
+
+            set { DefaultValue = Math.Max(Array.IndexOf(values, value), 0); }
+        }
+
+        static string[] GetNames()
+        {
+            string[] memberNames = Enum.GetNames<TEnum>();
+            string[] shown = new string[memberNames.Length];
+
+            for (int i = 0; i < memberNames.Length; i++)
+            {
+                DescriptionAttribute description = (DescriptionAttribute)Attribute.GetCustomAttribute(
+                    typeof(TEnum).GetField(memberNames[i]), typeof(DescriptionAttribute));
+
+                shown[i] = description?.Description ?? SplitWords(memberNames[i]);
+            }
+
+            return shown;
+        }
+
+        // "HardClip": "Hard Clip", "LFOSpeed": "LFO Speed", "Mode2": "Mode 2"
+        static string SplitWords(string name)
+        {
+            StringBuilder text = new StringBuilder(name.Length + 4);
+
+            for (int i = 0; i < name.Length; i++)
+            {
+                char c = name[i];
+
+                if (i > 0)
+                {
+                    char previous = name[i - 1];
+                    bool nextIsLower = (i + 1 < name.Length) && char.IsLower(name[i + 1]);
+
+                    bool wordStart = (char.IsUpper(c) && (char.IsLower(previous) || (char.IsUpper(previous) && nextIsLower))) ||
+                        (char.IsDigit(c) && !char.IsDigit(previous));
+
+                    if (wordStart && (previous != '_'))
+                        text.Append(' ');
+                }
+
+                text.Append((c == '_') ? ' ' : c);
+            }
+
+            return text.ToString();
         }
     }
 }

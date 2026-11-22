@@ -10,7 +10,7 @@ namespace AudioPlugSharpBridge.Interop;
 
 internal static class AbiInfo
 {
-    public const uint Version = 2;
+    public const uint Version = 3;
 }
 
 internal static class AbiResult
@@ -48,10 +48,12 @@ internal unsafe struct HostInfoNative
 internal unsafe struct ParamInfoNative
 {
     public uint Index;
-    public uint Flags;
+    public global::AudioPlugSharpBridge.ParamFlags Flags;
     public fixed byte Key[64];
     public fixed byte Name[64];
     public double DefaultNormalized;
+    public uint StepCount;
+    public uint Reserved;
 }
 
 /// <summary>Native mirror of <see cref="global::AudioPlugSharpBridge.ParamText"/> (aps_param_text).</summary>
@@ -107,6 +109,8 @@ internal static unsafe class AbiMarshal
         AbiUtf8.WriteFixed(value.Key, native->Key, 64);
         AbiUtf8.WriteFixed(value.Name, native->Name, 64);
         native->DefaultNormalized = value.DefaultNormalized;
+        native->StepCount = value.StepCount;
+        native->Reserved = value.Reserved;
     }
 
     public static global::AudioPlugSharpBridge.ParamInfo FromNative(ParamInfoNative* native)
@@ -117,6 +121,8 @@ internal static unsafe class AbiMarshal
         value.Key = AbiUtf8.ReadFixed(native->Key, 64);
         value.Name = AbiUtf8.ReadFixed(native->Name, 64);
         value.DefaultNormalized = native->DefaultNormalized;
+        value.StepCount = native->StepCount;
+        value.Reserved = native->Reserved;
         return value;
     }
 
@@ -274,7 +280,7 @@ internal static unsafe class AbiLayout
             HostInfoNative v = default;
             if ((byte*)v.Name - (byte*)&v != 0) return "aps_host_info.Name: offset mismatch (expected 0)";
         }
-        if (sizeof(ParamInfoNative) != 144) return $"aps_param_info: size {sizeof(ParamInfoNative)}, expected 144";
+        if (sizeof(ParamInfoNative) != 152) return $"aps_param_info: size {sizeof(ParamInfoNative)}, expected 152";
         {
             ParamInfoNative v = default;
             if ((byte*)&v.Index - (byte*)&v != 0) return "aps_param_info.Index: offset mismatch (expected 0)";
@@ -282,6 +288,8 @@ internal static unsafe class AbiLayout
             if ((byte*)v.Key - (byte*)&v != 8) return "aps_param_info.Key: offset mismatch (expected 8)";
             if ((byte*)v.Name - (byte*)&v != 72) return "aps_param_info.Name: offset mismatch (expected 72)";
             if ((byte*)&v.DefaultNormalized - (byte*)&v != 136) return "aps_param_info.DefaultNormalized: offset mismatch (expected 136)";
+            if ((byte*)&v.StepCount - (byte*)&v != 144) return "aps_param_info.StepCount: offset mismatch (expected 144)";
+            if ((byte*)&v.Reserved - (byte*)&v != 148) return "aps_param_info.Reserved: offset mismatch (expected 148)";
         }
         if (sizeof(ParamTextNative) != 128) return $"aps_param_text: size {sizeof(ParamTextNative)}, expected 128";
         {

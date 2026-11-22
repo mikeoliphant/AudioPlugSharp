@@ -28,12 +28,33 @@ public static class ControlInput
         }
     }
 
-    /// <summary>The value after the wheel turned by the delta (120 per notch, positive away from the user).</summary>
-    public static double WheelValue(double value, int delta)
+    /// <summary>
+    /// The value after the wheel turned by the delta (120 per notch, positive away from the user). With steps, a
+    /// notch is one step.
+    /// </summary>
+    public static double WheelValue(double value, int delta, int stepCount = 0)
     {
+        if (stepCount > 0)
+        {
+            int notches = (delta > 0) ? Math.Max(1, delta / 120) : Math.Min(-1, delta / 120);
+
+            return Snap(value + ((double)notches / stepCount), stepCount);
+        }
+
         float step = WheelStep * (IsFine ? FineScale : 1);
 
         return Math.Clamp(value + ((delta / 120.0) * step), 0, 1);
+    }
+
+    /// <summary>The value at its nearest step (0, 1 / stepCount, ... 1), or just kept in 0-1 without steps.</summary>
+    public static double Snap(double value, int stepCount)
+    {
+        value = Math.Clamp(value, 0, 1);
+
+        if (stepCount <= 0)
+            return value;
+
+        return Math.Round(value * stepCount) / stepCount;
     }
 }
 
@@ -50,6 +71,12 @@ public interface IValueControl
 
     /// <summary>The value a double-click returns to.</summary>
     double DefaultValue { get; set; }
+
+    /// <summary>
+    /// Steps the user's changes snap to (0, the default: none; N: 0, 1 / N, ... 1), with a wheel notch moving one
+    /// step. A switch has its two values whatever this says.
+    /// </summary>
+    int StepCount { get; set; }
 
     /// <summary>Whether the user is changing the value (between EditStarted and EditEnded).</summary>
     bool IsEditing { get; }

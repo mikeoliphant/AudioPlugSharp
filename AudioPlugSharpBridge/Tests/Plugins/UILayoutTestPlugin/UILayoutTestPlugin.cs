@@ -74,6 +74,14 @@ namespace UILayoutTestPlugin
 
             // MIDI volume (CC 7) controls the gain
             AddMidiControllerMapping(gain, 7);
+
+            // A list of choices (unused by the DSP): the test hosts check that it reaches them as stepped, with names
+            AddParameter(new ChoiceParameter
+            {
+                ID = "mode",
+                Name = "Mode",
+                Choices = new[] { "Clean", "Crunch", "Lead" },
+            });
         }
 
         // ---- audio thread ----

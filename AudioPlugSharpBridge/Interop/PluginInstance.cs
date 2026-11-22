@@ -87,6 +87,8 @@ internal sealed unsafe class PluginInstance : IPluginContract, IAbiErrorHandler,
             Key = p.ID,
             Name = p.Name,
             DefaultNormalized = Math.Clamp(p.NormalizedDefaultValue, 0, 1),
+            StepCount = p.IsStepped ? (uint)p.StepCount : 0,
+            Flags = (p.IsStepped && (p.ValueNames != null)) ? ParamFlags.IsList : ParamFlags.None,
         };
     }
 

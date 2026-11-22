@@ -66,6 +66,16 @@ enum class LogLevel : int32_t {
     Error = 3,
 };
 
+// What kind of values a parameter has.
+enum class ParamFlags : uint32_t {
+    None = 0u,
+    IsList = 1u,
+};
+constexpr ParamFlags operator|(ParamFlags a, ParamFlags b) noexcept { return static_cast<ParamFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b)); }
+constexpr ParamFlags operator&(ParamFlags a, ParamFlags b) noexcept { return static_cast<ParamFlags>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b)); }
+constexpr ParamFlags operator^(ParamFlags a, ParamFlags b) noexcept { return static_cast<ParamFlags>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b)); }
+constexpr bool hasFlag(ParamFlags value, ParamFlags flag) noexcept { return (static_cast<uint32_t>(value) & static_cast<uint32_t>(flag)) != 0; }
+
 // Sample formats. Values match AudioPlugSharp's EAudioBitsPerSample.
 enum class SampleFormat : uint32_t {
     None = 0u,
@@ -121,29 +131,35 @@ struct HostInfo
 struct ParamInfo
 {
     uint32_t index{}; // Position in the plugin's parameter list.
-    uint32_t flags{}; // Reserved, 0.
+    ParamFlags flags{};
     std::string key{}; // The plugin's stable string id (AudioPluginParameter.ID).
     std::string name{};
     double defaultNormalized{};
+    uint32_t stepCount{}; // 0 for a continuous parameter, otherwise the number of steps (StepCount + 1 values; 1: on/off). A normalized value v is step min(StepCount, floor(v * (StepCount + 1))), as in VST3; step s is s / StepCount.
+    uint32_t reserved{}; // Reserved, 0.
 
     static ParamInfo fromNative(const aps_param_info& n)
     {
         ParamInfo r;
         r.index = n.index;
-        r.flags = n.flags;
+        r.flags = static_cast<ParamFlags>(n.flags);
         r.key = detail::readFixed(n.key, sizeof(n.key));
         r.name = detail::readFixed(n.name, sizeof(n.name));
         r.defaultNormalized = n.default_normalized;
+        r.stepCount = n.step_count;
+        r.reserved = n.reserved;
         return r;
     }
 
     void toNative(aps_param_info& n) const
     {
         n.index = index;
-        n.flags = flags;
+        n.flags = static_cast<aps_param_flags>(flags);
         detail::writeFixed(key, n.key, sizeof(n.key));
         detail::writeFixed(name, n.name, sizeof(n.name));
         n.default_normalized = defaultNormalized;
+        n.step_count = stepCount;
+        n.reserved = reserved;
     }
 };
 

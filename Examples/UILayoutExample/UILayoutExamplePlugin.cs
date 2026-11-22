@@ -17,7 +17,7 @@ namespace UILayoutExample
         FloatAudioIOPort input;
         FloatAudioIOPort output;
         AudioPluginParameter gain;
-        AudioPluginParameter mute;
+        BoolParameter mute;
 
         // Output peak, written by the audio thread (as float bits) and read by the editor
         int peakBits;
@@ -58,15 +58,11 @@ namespace UILayoutExample
                 ValueFormat = "{0:0.0}dB",
             });
 
-            // On or off: on at a normalized value of at least 0.5 (ParameterControl.Switch sets 1 or 0)
-            AddParameter(mute = new AudioPluginParameter
+            // On or off (hosts show it as Off and On)
+            AddParameter(mute = new BoolParameter
             {
                 ID = "mute",
                 Name = "Mute",
-                MinValue = 0,
-                MaxValue = 1,
-                DefaultValue = 0,
-                ValueFormat = "{0:0}",
             });
 
             // MIDI volume (CC 7) controls the gain
@@ -87,7 +83,7 @@ namespace UILayoutExample
             Span<float> outRight = output.GetAudioBuffer(1);
 
             float linearGain = (float)AudioPluginParameter.DBToLinear(gain.ProcessValue);
-            float muteGain = (mute.ProcessValue >= 0.5) ? 0 : 1;
+            float muteGain = mute.IsOn ? 0 : 1;
             float peak = 0;
 
             int currentSample = 0;

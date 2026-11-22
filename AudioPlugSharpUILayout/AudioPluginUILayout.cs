@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Microsoft.Xna.Framework.Input;
 using AudioPlugSharp;
 using UILayout;
@@ -8,7 +9,8 @@ namespace AudioPlugSharpUILayout
     /// <summary>
     /// A plugin whose editor is a UILayout MonoGame (DesktopGL) layout, drawn into the editor window the host
     /// provides (IAudioPluginEditor), on Windows and Linux (X11). Derive from it, set EditorWidth/EditorHeight and
-    /// override CreateEditorUI.
+    /// override CreateEditorUI. Or don't override CreateEditorUI: the editor is then generated from the plugin's
+    /// parameters (a <see cref="ParameterPanel"/>: a knob, switch or drop-down each, sized to fit them).
     ///
     /// By default update, draw and present run in EditorIdle on the host's UI thread, without vsync (light
     /// editors). Heavy editors set UseEditorRenderThread: frames then run on a thread of the editor's own, with
@@ -19,6 +21,8 @@ namespace AudioPlugSharpUILayout
         MonoGameHost editorHost;
         EditorRenderThread renderThread;
         double editorScale = 1.0;
+        ParameterPanel generatedEditor;
+        bool? usesGeneratedEditor;
 
         protected AudioPluginUILayout()
         {
@@ -93,9 +97,66 @@ namespace AudioPlugSharpUILayout
 
         /// <summary>
         /// Build the editor's root element. Called on open, after the graphics device, UILayout's default textures and
-        /// <see cref="AudioTextures"/> exist.
+        /// <see cref="AudioTextures"/> exist. By default, an editor generated from the parameters (a
+        /// <see cref="ParameterPanel"/>, kept up to date each frame), whose size EditorWidth and EditorHeight give.
         /// </summary>
-        protected abstract UIElement CreateEditorUI();
+        protected virtual UIElement CreateEditorUI()
+        {
+            generatedEditor = new ParameterPanel(Parameters, GeneratedEditorColumns);
+
+            return generatedEditor;
+        }
+
+        /// <summary>
+        /// The generated editor's columns (when CreateEditorUI isn't overridden): 0 (the default) for
+        /// <see cref="ParameterPanel.DefaultColumns"/>. Set it in the constructor or Initialize.
+        /// </summary>
+        protected int GeneratedEditorColumns { get; set; }
+
+        /// <summary>Whether the editor is generated from the parameters: CreateEditorUI isn't overridden.</summary>
+        protected bool UsesGeneratedEditor
+        {
+            get
+            {
+                if (usesGeneratedEditor == null)
+                {
+                    MethodInfo method = GetType().GetMethod(nameof(CreateEditorUI), BindingFlags.Instance | BindingFlags.NonPublic,
+                        null, Type.EmptyTypes, null);
+
+                    usesGeneratedEditor = method.DeclaringType == typeof(AudioPluginUILayout);
+                }
+
+                return usesGeneratedEditor.Value;
+            }
+        }
+
+        /// <summary>The editor's width: the generated editor's (fitting the parameters) if it is used.</summary>
+        public override uint EditorWidth
+        {
+            get
+            {
+                if (!UsesGeneratedEditor)
+                    return base.EditorWidth;
+
+                ParameterPanel.GetSize(Parameters.Count, GeneratedEditorColumns, out uint width, out _);
+
+                return width;
+            }
+        }
+
+        /// <summary>The editor's height: the generated editor's (fitting the parameters) if it is used.</summary>
+        public override uint EditorHeight
+        {
+            get
+            {
+                if (!UsesGeneratedEditor)
+                    return base.EditorHeight;
+
+                ParameterPanel.GetSize(Parameters.Count, GeneratedEditorColumns, out _, out uint height);
+
+                return height;
+            }
+        }
 
         /// <summary>
         /// Create the layout. Override to use a MonoGameLayout subclass.
@@ -158,6 +219,8 @@ namespace AudioPlugSharpUILayout
 
                 AudioTextures.Load();
 
+                generatedEditor = null;
+
                 layout.RootUIElement = CreateEditorUI();
                 layout.UpdateLayout();
             }
@@ -192,6 +255,8 @@ namespace AudioPlugSharpUILayout
         void RenderFrame(float secondsElapsed)
         {
             long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+
+            generatedEditor?.Update();
 
             EditorUpdate(secondsElapsed);
 
@@ -441,6 +506,7 @@ namespace AudioPlugSharpUILayout
             finally
             {
                 editorHost = null;
+                generatedEditor = null;
 
                 host.Dispose();
             }

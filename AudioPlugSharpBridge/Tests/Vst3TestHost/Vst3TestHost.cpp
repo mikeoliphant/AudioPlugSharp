@@ -603,6 +603,19 @@ bool testPlugin(const fs::path& bundle, Tested& t) {
                     (p.flags & ParameterInfo::kCanAutomate) ? ", automatable" : "");
     }
     check(idsOk, "parameter IDs are index + 128 (as with the C++/CLI bridge)");
+    // A list of choices (UILayout Test's "Mode": Clean, Crunch, Lead): two steps, a list, names, steps as plain values.
+    if (t.name == "UILayout Test") {
+        check(paramCount == 2, "UILayout Test has two parameters");
+        if (paramCount == 2) {
+            const ParameterInfo& mode = params[1];
+            check(mode.stepCount == 2 && (mode.flags & ParameterInfo::kIsList), "a list of choices has 2 steps and is a list");
+            String128 text{};
+            inst->controller->getParamStringByValue(mode.id, 0.5, text);
+            check(narrow(text) == "Crunch", "its values have the choices' names");
+            check(inst->controller->normalizedParamToPlain(mode.id, 1.0) == 2 &&
+                  inst->controller->plainParamToNormalized(mode.id, 1) == 0.5, "its plain values are the steps");
+        }
+    }
     if (paramCount > 0) {
         const ParamID id = params[0].id;
         inst->controller->setParamNormalized(id, 0.5);
@@ -626,6 +639,8 @@ bool testPlugin(const fs::path& bundle, Tested& t) {
 
     // Processing, 32 bit, then 64 bit if supported.
     const bool hasInput = inst->component->getBusCount(kAudio, kInput) > 0;
+    // The exact checks below need a gain (to +12 dB) as the first parameter, as most examples have
+    const bool gainFirst = paramCount > 0 && narrow(params[0].title) == "Gain";
     for (int32 size : {int32(kSample32), int32(kSample64)}) {
         const bool is64 = size == kSample64;
         if (inst->processor->canProcessSampleSize(size) != kResultTrue) {
@@ -643,7 +658,7 @@ bool testPlugin(const fs::path& bundle, Tested& t) {
             Processing proc;
             proc.attach(audio, kFrames, size);
             audio.sine(220, 48000, 0.5);
-            if (hasInput && paramCount > 0) {
+            if (hasInput && gainFirst) {
                 proc.params.add(params[0].id, 0, 0.5);
                 check(proc.run(inst->processor, 10), "process");
                 const double p1 = audio.peak();
@@ -657,6 +672,11 @@ bool testPlugin(const fs::path& bundle, Tested& t) {
                 proc.params.add(params[0].id, 128, 0.5);
                 proc.run(inst->processor, 3);
                 check(std::fabs(audio.peak() - 0.249) < 0.01, "a mid-block change point holds afterwards");
+            } else if (hasInput) {
+                // Another effect (ParameterEditorExample): it passes sound
+                check(proc.run(inst->processor, 10), "process");
+                std::printf("    peak: %.3f\n", audio.peak());
+                check(audio.peak() > 0.01, "the effect passes sound");
             } else {
                 proc.inEvents.events.push_back(noteEvent(true, 0, 60, 0.8f));
                 check(proc.run(inst->processor, 100), "process");
@@ -1079,7 +1099,8 @@ int main(int argc, char** argv) {
     if (paths.empty()) {
         const auto dir = executableDir() / "vst3";
         // The examples (generic checks) and the test plugins (detailed checks: UILayoutTestPlugin).
-        std::vector<std::string> names = {"SimpleExample", "MidiExample", "UILayoutExample", "UILayoutTestPlugin"};
+        std::vector<std::string> names = {"SimpleExample", "MidiExample", "UILayoutExample", "ParameterEditorExample",
+                                          "UILayoutTestPlugin"};
 #ifdef _WIN32
         names.push_back("WPFExample");
 #endif

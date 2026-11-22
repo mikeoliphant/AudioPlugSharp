@@ -9,7 +9,7 @@ using AudioPlugSharpBridge;
 // The contract is a schema: many fields are only written by generated code or by native code.
 #pragma warning disable CS0649
 
-[assembly: AbiConfig(Version = 2, CPrefix = "aps", CppNamespace = "aps", CSharpNamespace = "AudioPlugSharpBridge.Interop")]
+[assembly: AbiConfig(Version = 3, CPrefix = "aps", CppNamespace = "aps", CSharpNamespace = "AudioPlugSharpBridge.Interop")]
 
 namespace AudioPlugSharpBridge;
 
@@ -135,18 +135,33 @@ internal struct PortInfo
     public uint NumChannels;
 }
 
+/// <summary>What kind of values a parameter has.</summary>
+[Flags]
+internal enum ParamFlags : uint
+{
+    None = 0,
+    /// <summary>The values are a list of named choices (AudioPluginParameter.ValueNames): VST3 kIsList, CLAP IS_ENUM.</summary>
+    IsList = 1,
+}
+
 /// <summary>Description of one parameter. Values cross the ABI normalized (0-1).</summary>
 [AbiRecord]
 internal struct ParamInfo
 {
     /// <summary>Position in the plugin's parameter list.</summary>
     public uint Index;
-    /// <summary>Reserved, 0.</summary>
-    public uint Flags;
+    public ParamFlags Flags;
     /// <summary>The plugin's stable string id (AudioPluginParameter.ID).</summary>
     [FixedString(64)] public string Key;
     [FixedString(64)] public string Name;
     public double DefaultNormalized;
+    /// <summary>
+    /// 0 for a continuous parameter, otherwise the number of steps (StepCount + 1 values; 1: on/off). A normalized
+    /// value v is step min(StepCount, floor(v * (StepCount + 1))), as in VST3; step s is s / StepCount.
+    /// </summary>
+    public uint StepCount;
+    /// <summary>Reserved, 0.</summary>
+    public uint Reserved;
 }
 
 /// <summary>A parameter value formatted for display.</summary>

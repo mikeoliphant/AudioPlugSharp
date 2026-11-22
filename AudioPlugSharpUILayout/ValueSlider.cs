@@ -137,6 +137,8 @@ public class ValueSlider : Dock, IValueControl
 
     public double DefaultValue { get; set; } = 0.5;
 
+    public int StepCount { get; set; }
+
     public bool IsEditing { get; private set; }
 
     public Action EditStarted { get; set; }
@@ -219,7 +221,7 @@ public class ValueSlider : Dock, IValueControl
     {
         double before = value;
 
-        Value = newValue;
+        Value = ControlInput.Snap(newValue, StepCount);
 
         if ((value != before) && (ValueChanged != null))
             ValueChanged();
@@ -332,7 +334,7 @@ public class ValueSlider : Dock, IValueControl
         if (EditStarted != null)
             EditStarted();
 
-        Change(ControlInput.WheelValue(value, delta));
+        Change(ControlInput.WheelValue(value, delta, StepCount));
 
         if (EditEnded != null)
             EditEnded();

@@ -378,6 +378,30 @@ const clap_plugin_t* testPlugin(const fs::path& path, TestHost& host, const clap
                     infos[i].name, infos[i].min_value, infos[i].max_value, infos[i].default_value, defText, value, text);
     }
 
+    // A list of choices (UILayout Test's "Mode": Clean, Crunch, Lead) is stepped, as whole numbers 0 to 2 with names.
+    if (std::strcmp(desc->name, "UILayout Test") == 0) {
+        check(paramCount == 2, "UILayout Test has two parameters");
+        if (paramCount == 2) {
+            const clap_param_info_t& mode = infos[1];
+            check((mode.flags & CLAP_PARAM_IS_STEPPED) && (mode.flags & CLAP_PARAM_IS_ENUM),
+                  "a list of choices is stepped and an enum");
+            check(mode.min_value == 0 && mode.max_value == 2 && mode.default_value == 0, "its range is 0 to 2, default 0");
+            char text[64] = {};
+            params->value_to_text(plugin, mode.id, 1, text, sizeof(text));
+            check(std::strcmp(text, "Crunch") == 0, "its values have the choices' names");
+            InEvents in;
+            OutEvents out;
+            in.add(paramEvent(0, mode.id, 2));
+            params->flush(plugin, &in.list, &out.list);
+            double value = -1;
+            params->get_value(plugin, mode.id, &value);
+            check(value == 2, "a host value of 2 reads back as 2");
+            in.clear();
+            in.add(paramEvent(0, mode.id, 0));
+            params->flush(plugin, &in.list, &out.list);
+        }
+    }
+
     // Parameters set while inactive must reach the DSP once processing starts.
     if (paramCount > 0) {
         InEvents in;
@@ -417,10 +441,12 @@ const clap_plugin_t* testPlugin(const fs::path& path, TestHost& host, const clap
     };
 
     const bool hasInput = !audio.inBufs.empty();
+    // The exact checks below need a gain (to +12 dB) as the first parameter, as most examples have
+    const bool gainFirst = paramCount > 0 && std::strcmp(infos[0].name, "Gain") == 0;
     check(run(10), "process");
     const float p1 = audio.peak();
     std::printf("    peak after inactive flush to 0.5: %.3f\n", p1);
-    if (hasInput && paramCount > 0) {
+    if (hasInput && gainFirst) {
         check(std::fabs(p1 - 0.249f) < 0.01f, "inactive flush value reached the DSP (0.5 -> -6.1 dB)");
         in.add(paramEvent(0, infos[0].id, 1.0));
         run(10);
@@ -436,6 +462,9 @@ const clap_plugin_t* testPlugin(const fs::path& path, TestHost& host, const clap
         params->value_to_text(plugin, infos[0].id, v, text, sizeof(text));
         std::printf("    get_value after the event: %.3f (%s)\n", v, text);
         check(std::fabs(v - 1.0) < 1e-9 && std::string(text) == "12.0dB", "get_value follows host parameter events");
+    } else if (hasInput) {
+        // Another effect (ParameterEditorExample): it passes sound
+        check(p1 > 0.01f, "the effect passes sound");
     } else {
         in.add(noteEvent(CLAP_EVENT_NOTE_ON, 0, 60, 0.8));
         run(100);
@@ -866,7 +895,8 @@ int main(int argc, char** argv) {
     if (paths.empty()) {
         const auto dir = executableDir() / "clap";
         // The examples (generic checks) and the test plugins (detailed checks: UILayoutTestPlugin).
-        std::vector<std::string> names = {"SimpleExample", "MidiExample", "UILayoutExample", "UILayoutTestPlugin"};
+        std::vector<std::string> names = {"SimpleExample", "MidiExample", "UILayoutExample", "ParameterEditorExample",
+                                          "UILayoutTestPlugin"};
 #ifdef _WIN32
         names.push_back("WPFExample");
 #endif

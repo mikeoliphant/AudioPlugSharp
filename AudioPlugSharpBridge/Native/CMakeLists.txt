@@ -91,7 +91,7 @@ message(STATUS "AudioPlugSharpBridge: RID ${APS_RID}, nethost from ${APS_NETHOST
 # ---------------------------------------------------------------------------
 # Managed projects (the bridge, the example plugins and the test plugins), built with the dotnet CLI.
 # ---------------------------------------------------------------------------
-set(APS_EXAMPLES SimpleExample MidiExample UILayoutExample)
+set(APS_EXAMPLES SimpleExample MidiExample UILayoutExample ParameterEditorExample)
 if(WIN32)
     list(APPEND APS_EXAMPLES WPFExample) # net10.0-windows
 endif()

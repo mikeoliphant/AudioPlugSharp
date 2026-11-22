@@ -16,7 +16,7 @@ extern "C" {
 #define APS_CALL
 #endif
 
-#define APS_ABI_VERSION 2u
+#define APS_ABI_VERSION 3u
 
 typedef int32_t aps_result;
 #define APS_OK ((aps_result)0) /* Success. */
@@ -69,6 +69,11 @@ typedef int32_t aps_log_level;
 #define APS_LOG_LEVEL_INFO ((aps_log_level)1)
 #define APS_LOG_LEVEL_WARNING ((aps_log_level)2)
 #define APS_LOG_LEVEL_ERROR ((aps_log_level)3)
+
+/* What kind of values a parameter has. */
+typedef uint32_t aps_param_flags;
+#define APS_PARAM_FLAGS_NONE ((aps_param_flags)0u)
+#define APS_PARAM_FLAGS_IS_LIST ((aps_param_flags)1u) /* The values are a list of named choices (AudioPluginParameter.ValueNames): VST3 kIsList, CLAP IS_ENUM. */
 
 /* Sample formats. Values match AudioPlugSharp's EAudioBitsPerSample. */
 typedef uint32_t aps_sample_format;
@@ -125,10 +130,12 @@ typedef struct aps_host_info {
 /* Description of one parameter. Values cross the ABI normalized (0-1). */
 typedef struct aps_param_info {
     uint32_t index; /* Position in the plugin's parameter list. */
-    uint32_t flags; /* Reserved, 0. */
+    aps_param_flags flags;
     char key[64]; /* The plugin's stable string id (AudioPluginParameter.ID). */
     char name[64];
     double default_normalized;
+    uint32_t step_count; /* 0 for a continuous parameter, otherwise the number of steps (StepCount + 1 values; 1: on/off). A normalized value v is step min(StepCount, floor(v * (StepCount + 1))), as in VST3; step s is s / StepCount. */
+    uint32_t reserved; /* Reserved, 0. */
 } aps_param_info;
 
 /* A parameter value formatted for display. */
@@ -311,12 +318,14 @@ APS_ABI_ASSERT(offsetof(aps_editor_input_event, key) == 24, "aps_editor_input_ev
 APS_ABI_ASSERT(offsetof(aps_editor_input_event, character) == 28, "aps_editor_input_event.character offset");
 APS_ABI_ASSERT(sizeof(aps_host_info) == 64, "aps_host_info size");
 APS_ABI_ASSERT(offsetof(aps_host_info, name) == 0, "aps_host_info.name offset");
-APS_ABI_ASSERT(sizeof(aps_param_info) == 144, "aps_param_info size");
+APS_ABI_ASSERT(sizeof(aps_param_info) == 152, "aps_param_info size");
 APS_ABI_ASSERT(offsetof(aps_param_info, index) == 0, "aps_param_info.index offset");
 APS_ABI_ASSERT(offsetof(aps_param_info, flags) == 4, "aps_param_info.flags offset");
 APS_ABI_ASSERT(offsetof(aps_param_info, key) == 8, "aps_param_info.key offset");
 APS_ABI_ASSERT(offsetof(aps_param_info, name) == 72, "aps_param_info.name offset");
 APS_ABI_ASSERT(offsetof(aps_param_info, default_normalized) == 136, "aps_param_info.default_normalized offset");
+APS_ABI_ASSERT(offsetof(aps_param_info, step_count) == 144, "aps_param_info.step_count offset");
+APS_ABI_ASSERT(offsetof(aps_param_info, reserved) == 148, "aps_param_info.reserved offset");
 APS_ABI_ASSERT(sizeof(aps_param_text) == 128, "aps_param_text size");
 APS_ABI_ASSERT(offsetof(aps_param_text, text) == 0, "aps_param_text.text offset");
 APS_ABI_ASSERT(sizeof(aps_plugin_info) == 728, "aps_plugin_info size");

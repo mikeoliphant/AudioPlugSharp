@@ -58,6 +58,9 @@ public class LampSwitch : Button, IValueControl
 
     public double DefaultValue { get; set; }
 
+    /// <summary>Ignored: a switch is off or on.</summary>
+    public int StepCount { get; set; } = 1;
+
     /// <summary>Always false: a click is over at once.</summary>
     public bool IsEditing => false;
 

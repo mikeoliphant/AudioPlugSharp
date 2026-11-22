@@ -48,8 +48,8 @@ namespace AudioPlugSharp
         //
 
         public bool HasUserInterface { get; protected set; }
-        public uint EditorWidth { get; protected set; }
-        public uint EditorHeight { get; protected set; }
+        public virtual uint EditorWidth { get; protected set; }
+        public virtual uint EditorHeight { get; protected set; }
         public virtual bool CanResizeEditor => false;
 
         public AudioPluginBase()

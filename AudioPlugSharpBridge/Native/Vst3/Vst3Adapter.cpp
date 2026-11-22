@@ -41,6 +41,7 @@
 #include "pluginterfaces/vst/vstspeaker.h"
 
 #include <algorithm>
+#include <cmath>
 #include <array>
 #include <atomic>
 #include <cstdio>
@@ -677,10 +678,11 @@ public:
         info.id = kParamBase + ParamID(index);
         toUtf16(p.name, info.title, 128);
         toUtf16(p.name, info.shortTitle, 128);
-        info.stepCount = 0;
+        info.stepCount = int32(p.stepCount);
         info.defaultNormalizedValue = std::clamp(p.defaultNormalized, 0.0, 1.0);
         info.unitId = kRootUnitId;
         info.flags = ParameterInfo::kCanAutomate;
+        if (aps::hasFlag(p.flags, aps::ParamFlags::IsList)) info.flags |= ParameterInfo::kIsList;
         return kResultOk;
     }
 
@@ -694,8 +696,17 @@ public:
     }
 
     tresult PLUGIN_API getParamValueByString(ParamID, TChar*, ParamValue&) override { return kResultFalse; }
-    ParamValue PLUGIN_API normalizedParamToPlain(ParamID, ParamValue value) override { return value; }
-    ParamValue PLUGIN_API plainParamToNormalized(ParamID, ParamValue value) override { return value; }
+    // Plain values: the step for a stepped parameter (as VST3 defines discrete values), else the normalized value.
+    ParamValue PLUGIN_API normalizedParamToPlain(ParamID id, ParamValue value) override {
+        const uint32_t steps = stepCount(id);
+        if (steps == 0) return value;
+        return std::min<double>(steps, std::floor(std::clamp(value, 0.0, 1.0) * (steps + 1)));
+    }
+    ParamValue PLUGIN_API plainParamToNormalized(ParamID id, ParamValue value) override {
+        const uint32_t steps = stepCount(id);
+        if (steps == 0) return value;
+        return std::clamp(value / steps, 0.0, 1.0);
+    }
 
     ParamValue PLUGIN_API getParamNormalized(ParamID id) override {
         const int32 index = indexOf(id);
@@ -938,6 +949,11 @@ private:
     int32 indexOf(ParamID id) const {
         if (id < kParamBase || id - kParamBase >= params_.size() || !api_) return -1;
         return int32(id - kParamBase);
+    }
+
+    uint32_t stepCount(ParamID id) const {
+        const int32 index = indexOf(id);
+        return index < 0 ? 0 : params_[size_t(index)].stepCount;
     }
 
     void shutdown() {

@@ -1,5 +1,5 @@
 {
-  "abiVersion": 2,
+  "abiVersion": 3,
   "enums": {
     "aps_audio_event_type": {
       "underlying": "uint32_t",
@@ -54,6 +54,13 @@
         "Warning": 2
       }
     },
+    "aps_param_flags": {
+      "underlying": "uint32_t",
+      "members": {
+        "IsList": 1,
+        "None": 0
+      }
+    },
     "aps_sample_format": {
       "underlying": "uint32_t",
       "members": {
@@ -104,10 +111,12 @@
     ],
     "aps_param_info": [
       "uint32_t index",
-      "uint32_t flags",
+      "aps_param_flags flags",
       "char key[64]",
       "char name[64]",
-      "double default_normalized"
+      "double default_normalized",
+      "uint32_t step_count",
+      "uint32_t reserved"
     ],
     "aps_param_text": [
       "char text[128]"

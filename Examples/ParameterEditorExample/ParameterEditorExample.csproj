@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		A stereo drive whose editor is generated from its parameters (AudioPluginUILayout without CreateEditorUI).
+		Cross-platform.
+	-->
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\AudioPlugSharpUILayout\AudioPlugSharpUILayout.csproj" />
+		<ProjectReference Include="..\..\AudioPlugSharp\AudioPlugSharp.csproj" />
+	</ItemGroup>
+
+</Project>

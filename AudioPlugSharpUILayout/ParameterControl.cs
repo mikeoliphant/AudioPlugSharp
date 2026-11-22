@@ -6,7 +6,8 @@ namespace AudioPlugSharpUILayout;
 
 /// <summary>
 /// A parameter's control as a plugin editor shows it: the parameter's name above a value control (<see cref="Knob"/>,
-/// <see cref="ValueSlider"/>, <see cref="LampSwitch"/>, or any <see cref="IValueControl"/>), with its formatted value
+/// <see cref="ValueSlider"/>, <see cref="LampSwitch"/>, <see cref="ChoiceDropDown"/>, or any
+/// <see cref="IValueControl"/>; a stepped parameter's control snaps to its steps), with its formatted value
 /// popping in over the control while the user changes it (<see cref="ValuePopup"/>). Binds the control to the
 /// parameter: each user edit is one edit gesture (BeginEdit/EndEdit) setting the normalized edit value, and
 /// <see cref="Update"/> (call it each frame, for example in EditorUpdate) makes the control follow the parameter's edit
@@ -17,7 +18,7 @@ public class ParameterControl : VerticalStack
 {
     AudioPluginParameter parameter;
     IValueControl control;
-    TextBlock nameText;
+    FittedTextBlock nameText;
     ValuePopup popup;
     ControlArea area;
 
@@ -58,11 +59,33 @@ public class ParameterControl : VerticalStack
     }
 
     /// <summary>
-    /// The control that suits the parameter. A knob for now: parameters don't yet say whether they are on/off,
-    /// stepped or a list of choices.
+    /// A drop-down of the parameter's value names (<see cref="AudioPluginParameter.ValueNames"/>, as a
+    /// ChoiceParameter has), in a knob-sized space so it lines up with knobs in a row.
+    /// </summary>
+    public static ParameterControl Choice(AudioPluginParameter parameter)
+    {
+        if (parameter.ValueNames == null)
+            throw new ArgumentException("The parameter has no value names", nameof(parameter));
+
+        return new ParameterControl(parameter, new ChoiceDropDown(parameter.ValueNames))
+        {
+            ShowValuePopup = false,
+            MinControlHeight = Layout.Current.GetImage(AudioTextures.KnobBody).LogicalHeight
+        };
+    }
+
+    /// <summary>
+    /// The control that suits the parameter: a switch for on/off (a BoolParameter, or one step without names), a
+    /// drop-down for a list of choices (value names), otherwise a knob (snapping to the steps of a stepped parameter).
     /// </summary>
     public static ParameterControl For(AudioPluginParameter parameter)
     {
+        if ((parameter is BoolParameter) || ((parameter.StepCount == 1) && (parameter.ValueNames == null)))
+            return Switch(parameter);
+
+        if (parameter.IsStepped && (parameter.ValueNames != null))
+            return Choice(parameter);
+
         return Knob(parameter);
     }
 
@@ -81,11 +104,14 @@ public class ParameterControl : VerticalStack
         VerticalAlignment = EVerticalAlignment.Top;
         ChildSpacing = 4;
 
-        nameText = new TextBlock(parameter.Name)
+        // Cut short with "..." when the control is given less width than the name needs (a ParameterPanel cell)
+        nameText = new FittedTextBlock
         {
+            Text = parameter.Name,
             TextColor = theme.MutedText,
             TextFont = Layout.Current.DefaultSmallFont ?? Layout.Current.DefaultFont,
-            HorizontalAlignment = EHorizontalAlignment.Center
+            HorizontalAlignment = EHorizontalAlignment.Stretch,
+            TextAlignment = EHorizontalAlignment.Center
         };
         Children.Add(nameText);
 
@@ -100,6 +126,7 @@ public class ParameterControl : VerticalStack
         area.Children.Add(popup = new ValuePopup());
         Children.Add(area);
 
+        control.StepCount = parameter.StepCount;
         control.DefaultValue = parameter.NormalizedDefaultValue;
         control.Value = parameter.NormalizedEditValue;
 
