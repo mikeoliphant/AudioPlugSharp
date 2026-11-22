@@ -36,7 +36,7 @@ public class ContractTests
         Assert.Equal(16, Size("AudioPortBuffers"));
         Assert.Equal(80, Size("ProcessData"));
         Assert.Equal(728, Size("PluginInfo"));
-        Assert.Equal(144, Size("ParamInfo"));
+        Assert.Equal(152, Size("ParamInfo"));
     }
 
     [Fact]

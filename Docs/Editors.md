@@ -5,7 +5,7 @@ A plugin's editor (its user interface) is drawn into a window that the DAW provi
 - **UILayout** ([UILayout](https://github.com/mikeoliphant/UILayout)), through **AudioPluginUILayout**: works on Windows and Linux. Recommended.
 - **WPF**, through **AudioPluginWPF**: Windows only.
 
-Plugins without an editor can skip all of this: the DAW shows its own controls for their parameters.
+Plugins without an editor can skip all of this: the DAW shows its own controls for their parameters. Or let AudioPlugSharp make an editor from your parameters, with no editor code at all (see [Automatic Editors](#automatic-editors)).
 
 # UILayout Editors
 
@@ -35,9 +35,45 @@ The editor is created when the DAW opens it and discarded when the DAW closes it
 
 See the [UILayoutExample](../Examples/UILayoutExample/UILayoutExamplePlugin.cs) for a complete example.
 
-## Parameters
+## Automatic Editors
 
-Setting a parameter's **EditValue** or **NormalizedEditValue** from your editor reports the change to the DAW.
+If you don't override **CreateEditorUI**, your plugin gets an editor made from its parameters: a knob for each, a switch for an on/off parameter and a drop-down for a list of choices, in a grid. The editor's size fits the parameters, so you don't set **EditorWidth** and **EditorHeight** either:
+
+```csharp
+public class MyPlugin : AudioPluginUILayout
+{
+    // No CreateEditorUI: the editor is made from the parameters added in Initialize
+}
+```
+
+Parameters appear in the order you add them, up to six in a row. Set **GeneratedEditorColumns** in your constructor for another number of columns. See the [ParameterEditorExample](../Examples/ParameterEditorExample/ParameterEditorExamplePlugin.cs).
+
+## Parameter Types
+
+The kind of parameter decides how editors and DAWs show it:
+
+- **AudioPluginParameter**: a value from **MinValue** to **MaxValue**, shown with **ValueFormat**. Set **StepCount** for values in steps (7 steps from 1 to 8 gives the whole numbers 1 to 8).
+- **DecibelParameter**: a gain in dB, down to -inf dB.
+- **BoolParameter**: on or off. Read **IsOn** in your processing.
+- **ChoiceParameter**: one of a list of **Choices**, by name. Read **ChoiceIndex** in your processing.
+- **EnumParameter&lt;T&gt;**: the choices are the members of an enum, named after them (or after their **[Description]**). Read **Value** in your processing. Add new members at the end: projects save the choice's position.
+
+DAWs show stepped parameters as steps and choices by name, in their own controls and automation.
+
+## Parameter Controls
+
+**ParameterControl** shows one parameter in your own editor: its name above a control, with the value popping up while the user changes it. It reports the user's changes to the DAW as gestures, so automation modes such as touch and latch work.
+
+- **ParameterControl.For(parameter)**: the control that suits the parameter, as the automatic editor uses: a switch, a drop-down or a knob.
+- **ParameterControl.Knob**, **Slider** (horizontal or vertical), **Switch** and **Choice**: a particular control.
+
+Call each control's **Update()** in **EditorUpdate**, so it follows the DAW's changes to its parameter (automation). Knobs and sliders also take the mouse wheel, Shift for fine adjustment, and a double-click for the default value.
+
+**ParameterPanel** is the automatic editor's grid of controls, which you can also put in an editor of your own. Call its **Update()** in **EditorUpdate** too.
+
+## Your Own Controls
+
+For controls of your own, setting a parameter's **EditValue** or **NormalizedEditValue** from your editor reports the change to the DAW.
 
 For knobs and sliders, call the parameter's **BeginEdit()** when the user grabs the control and **EndEdit()** when they let go. The DAW then records the movement as one gesture, which automation modes such as touch and latch need.
 
