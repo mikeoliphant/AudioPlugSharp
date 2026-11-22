@@ -19,42 +19,10 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  # Renders AudioPlugSharpUILayout's sheet and manifest, which aren't tracked. Windows only: the processor draws SVGs
-  # with System.Drawing. By hand for now, until image processing is part of the build.
-  textures:
-    name: Audio textures
-    runs-on: windows-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 10.0.x
-
-    - name: Render
-      run: dotnet run --project AudioPlugSharpImageProcessor -c Release
-
-    - name: Upload
-      uses: actions/upload-artifact@v4
-      with:
-        name: audio-textures
-        path: AudioPlugSharpUILayout/Textures/
-        if-no-files-found: error
-
   # Builds the native project (core, CLAP and VST3 adapters, test hosts; it also builds the managed bridge, the
   # examples and the test plugins) on each platform, tests it, and uploads the platform's adapters.
   native:
     name: Build and test (${{ matrix.rid }})
-    needs: textures
     strategy:
       fail-fast: false
       matrix:
@@ -90,16 +58,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libx11-dev xvfb libgl1-mesa-dri libglx-mesa0 binutils libfreetype6
 
-    - name: UILayout default textures
-      # The default sheet and manifest aren't tracked: render them before anything embeds them (FreeType for the
-      # fonts). By hand for now, until image processing is part of the build.
-      run: dotnet run --project Dependencies/UILayout/DefaultTexturesProcessor -c Release
-
-    - name: Audio textures
-      uses: actions/download-artifact@v4
-      with:
-        name: audio-textures
-        path: AudioPlugSharpUILayout/Textures
+    - name: Image sheets
+      # The sheets and manifests aren't tracked: render UILayout's defaults and AudioPlugSharpUILayout's textures
+      # before anything embeds them (FreeType for the fonts). By hand for now, until image processing is part of the
+      # build.
+      run: |
+        dotnet run --project Dependencies/UILayout/DefaultTexturesProcessor -c Release
+        dotnet run --project AudioPlugSharpImageProcessor -c Release
 
     - name: Build
       run: |

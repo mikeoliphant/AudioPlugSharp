@@ -3,7 +3,7 @@
 	<!--
 		Renders AudioPlugSharpUILayout's textures (SrcTextures/*.svg) into a sheet and manifest in its Textures folder,
 		which it embeds. Not committed: run it by hand before building and after changing a source image or Program.cs,
-		until image processing is part of the build. Windows only at run time (SVGs are drawn with System.Drawing).
+		until image processing is part of the build.
 	-->
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
