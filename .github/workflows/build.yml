@@ -56,7 +56,12 @@ jobs:
       # X11 for the editor windows; Xvfb and Mesa (llvmpipe) for the editor tests; binutils for the binary check
       run: |
         sudo apt-get update
-        sudo apt-get install -y libx11-dev xvfb libgl1-mesa-dri libglx-mesa0 binutils
+        sudo apt-get install -y libx11-dev xvfb libgl1-mesa-dri libglx-mesa0 binutils libfreetype6
+
+    - name: UILayout default textures
+      # The default sheet and manifest aren't tracked: render them before anything embeds them (FreeType for the
+      # fonts). By hand for now, until image processing is part of the build.
+      run: dotnet run --project Dependencies/UILayout/DefaultTexturesProcessor -c Release
 
     - name: Build
       run: |
