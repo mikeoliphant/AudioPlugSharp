@@ -33,9 +33,4 @@
 		<ProjectReference Include="$(UILayoutDir)UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />
 		<ProjectReference Include="..\AudioPlugSharp\AudioPlugSharp.csproj" />
 	</ItemGroup>
-
-	<Target Name="BuildSubmoduleSolution" BeforeTargets="BeforeBuild">
-		<Message Text="Building submodule solution..." Importance="high" />
-		<Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)\..\Dependencies\UILayout\UILayout.sln&quot; -c $(Configuration)" />
-	</Target>
 </Project>
