@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<!--
 		Renders AudioPlugSharpUILayout's textures (SrcTextures/*.svg) into a sheet and manifest in its Textures folder,
@@ -14,5 +14,13 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Dependencies\UILayout\ImageSheetProcessor\ImageSheetProcessor.csproj" />
 	</ItemGroup>
+
+	<Target Name="RunImageProcessor"
+		AfterTargets="Build"
+		Inputs="Program.cs"
+		Outputs="..\AudoPlugSharpUILayout\Textures\ImageManifest.xml">
+		<Message Text="Running DefaultTexturesProcessor" Importance="High" />
+		<Exec Command="dotnet &quot;$(TargetPath)&quot;" />
+	</Target>
 
 </Project>
