@@ -11,16 +11,13 @@
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Dependencies\UILayout\ImageSheetProcessor\ImageSheetProcessor.csproj" />
-	</ItemGroup>
-
-	<Target Name="RunImageProcessor"
-		AfterTargets="Build"
-		Inputs="Program.cs"
-		Outputs="..\AudoPlugSharpUILayout\Textures\ImageManifest.xml">
+	<Target Name="RunImageProcessor" AfterTargets="Build" Inputs="Program.cs" Outputs="..\AudoPlugSharpUILayout\Textures\ImageManifest.xml">
 		<Message Text="Running DefaultTexturesProcessor" Importance="High" />
 		<Exec Command="dotnet &quot;$(TargetPath)&quot;" />
 	</Target>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Dependencies\UILayout\ImageSheetProcessor\ImageSheetProcessor.csproj" />
+	</ItemGroup>
 
 </Project>

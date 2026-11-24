@@ -69,6 +69,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JackSharp", "Dependencies\A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AudioPlugSharpImageProcessor", "AudioPlugSharpImageProcessor\AudioPlugSharpImageProcessor.csproj", "{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageSheetProcessor", "Dependencies\UILayout\ImageSheetProcessor\ImageSheetProcessor.csproj", "{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -245,6 +247,14 @@ Global
 		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Release|x64.ActiveCfg = Release|Any CPU
 		{6D1E4B7A-2F93-4C58-8A0E-5B7C3D9F1E26}.Release|x64.Build.0 = Release|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Debug|x64.Build.0 = Debug|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Release|x64.ActiveCfg = Release|Any CPU
+		{84B2C72B-7C2C-AB36-36FB-C3D9CC647A80}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -269,6 +279,10 @@ Global
 		SolutionGuid = {80717CF5-9E50-46E6-8E47-04E88EB429BD}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Dependencies\UILayout\UILayout.DefaultTextures\UILayout.DefaultTextures.projitems*{84b2c72b-7c2c-ab36-36fb-c3d9cc647a80}*SharedItemsImports = 5
+		Dependencies\UILayout\UILayout.MonoGame.Game\UILayout.MonoGame.Game.projitems*{84b2c72b-7c2c-ab36-36fb-c3d9cc647a80}*SharedItemsImports = 5
+		Dependencies\UILayout\UILayout.MonoGame\UILayout.MonoGame.projitems*{84b2c72b-7c2c-ab36-36fb-c3d9cc647a80}*SharedItemsImports = 5
+		Dependencies\UILayout\UILayout\UILayout.projitems*{84b2c72b-7c2c-ab36-36fb-c3d9cc647a80}*SharedItemsImports = 5
 		Dependencies\UILayout\UILayout.CrossPlatform\UILayout.CrossPlatform.projitems*{e8c6c04f-7a30-4bef-8b01-7cb3e5c31a69}*SharedItemsImports = 5
 		Dependencies\UILayout\UILayout.DefaultTextures\UILayout.DefaultTextures.projitems*{e8c6c04f-7a30-4bef-8b01-7cb3e5c31a69}*SharedItemsImports = 5
 		Dependencies\UILayout\UILayout.MonoGame\UILayout.MonoGame.projitems*{e8c6c04f-7a30-4bef-8b01-7cb3e5c31a69}*SharedItemsImports = 5
