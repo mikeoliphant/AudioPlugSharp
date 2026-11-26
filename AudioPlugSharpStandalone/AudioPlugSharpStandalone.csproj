@@ -2,8 +2,8 @@
 
   <!--
     Runs an AudioPlugSharp plugin as an application. StandaloneHost implements IAudioHost, owns the plugin and its
-    window, and drives its editor as the DAW adapters do. Managed only. Audio through AudioIOSharp
-    (Dependencies/AudioIOSharp): ASIO, ALSA, JACK, or its internal clock when there's no device. The status strip
+    window, and drives its editor as the DAW adapters do. Managed only. Audio through AudioIOSharp (its NuGet
+    package): ASIO, ALSA, JACK, or its internal clock when there's no device. The status strip
     below the editor is a UILayout layout of the host's own (Dependencies/UILayout): a plugin's UILayout is a separate
     copy, in the plugin's load context.
 
@@ -41,13 +41,13 @@
     <!-- The audio controls (LevelMeter, AudioTextures). Plugins load their own copy in their own context. -->
     <ProjectReference Include="..\AudioPlugSharpUILayout\AudioPlugSharpUILayout.csproj" />
     <ProjectReference Include="..\AudioPlugSharpWindowing\AudioPlugSharpWindowing.csproj" />
-    <ProjectReference Include="..\Dependencies\AudioIOSharp\AudioIOSharp\AudioIOSharp.csproj" />
     <ProjectReference Include="$(UILayoutDir)UILayout.MonoGame.Embedded\UILayout.MonoGame.Embedded.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- The UILayout project keeps its MonoGame reference private; the strip uses MonoGame types (colors). -->
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.6.1" />
+    <PackageReference Include="AudioIOSharp" Version="0.1.0" />
   </ItemGroup>
 
 </Project>
