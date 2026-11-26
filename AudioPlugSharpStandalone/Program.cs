@@ -127,6 +127,7 @@ static class Program
                     Console.WriteLine($"    outputs:      {(info.Outputs.Count > 0 ? string.Join(", ", info.Outputs) : "(none)")}");
                     Console.WriteLine($"    sample rates: {string.Join(", ", info.SampleRates)} (now {info.DefaultSampleRate})");
                     Console.WriteLine($"    buffer sizes: {string.Join(", ", info.BufferSizes)} (preferred {info.DefaultBufferSize})");
+                    Console.WriteLine($"    MIDI inputs:  {(info.MidiInputs.Count > 0 ? string.Join(", ", info.MidiInputs) : "(none)")}");
                 }
                 catch (Exception ex)
                 {

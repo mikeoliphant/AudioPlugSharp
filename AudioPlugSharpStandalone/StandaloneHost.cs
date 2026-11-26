@@ -284,12 +284,19 @@ public class StandaloneHost : IAudioHost
         for (int g = 0; g < 3; g++)
             startCollections[g] = GC.CollectionCount(g);
         startPauseTicks = GC.GetTotalPauseDuration().Ticks;
-        Logger.Log($"Audio: {format.SampleRate} Hz, {format.MaxFrames} frames, inputs [{string.Join(", ", format.Inputs)}], outputs [{string.Join(", ", format.Outputs)}]");
+        Logger.Log($"Audio: {format.SampleRate} Hz, {format.MaxFrames} frames, inputs [{string.Join(", ", format.Inputs)}], outputs [{string.Join(", ", format.Outputs)}], " +
+                   $"MIDI inputs [{string.Join(", ", format.MidiInputs)}]");
     }
 
     // ---- audio thread -------------------------------------------------------------------------------------------
 
     bool blockEventsDispatched;
+
+    // The block's MIDI, copied from the device's (its span lasts only for the callback, and can't be kept in a field)
+    // for ProcessEvents to dispatch at its offsets; and where in the block ProcessEvents has got to.
+    const int MaxMidiEvents = 1024;
+    readonly MidiEvent[] midi = new MidiEvent[MaxMidiEvents];
+    int midiCount, midiNext, eventCursor;
 
     void ProcessBlock(in AudioBuffers buffers)
     {
@@ -302,6 +309,11 @@ public class StandaloneHost : IAudioHost
         long blockStart = Stopwatch.GetTimestamp();
         CurrentAudioBufferSize = (uint)frames;
         blockEventsDispatched = false;
+
+        midiCount = Math.Min(buffers.Midi.Length, MaxMidiEvents);
+        buffers.Midi[..midiCount].CopyTo(midi);
+        midiNext = 0;
+        eventCursor = 0;
 
         inputBinding.Bind(buffers, frames);
         outputBinding.Bind(buffers, frames);
@@ -391,6 +403,8 @@ public class StandaloneHost : IAudioHost
         pluginAllocatedBytes = 0;
     }
 
+    // As in the bridge: the events due by the current position are dispatched (MIDI at its own offsets), and the
+    // segment ends where the next MIDI event is due, or at the block's end. Parameter edits all come in the first call.
     public int ProcessEvents()
     {
         if (!blockEventsDispatched)
@@ -398,10 +412,55 @@ public class StandaloneHost : IAudioHost
             blockEventsDispatched = true;
             DispatchParameterChanges();
         }
-        return (int)CurrentAudioBufferSize;
+
+        int frames = (int)CurrentAudioBufferSize;
+
+        while ((midiNext < midiCount) && (midi[midiNext].Offset <= eventCursor))
+            DispatchMidi(midi[midiNext++]);
+
+        eventCursor = (midiNext < midiCount) ? Math.Min(midi[midiNext].Offset, frames) : frames;
+
+        return eventCursor;
     }
 
-    public void ProcessAllEvents() => ProcessEvents();
+    public void ProcessAllEvents()
+    {
+        int frames = (int)CurrentAudioBufferSize;
+        int next;
+
+        do
+        {
+            next = ProcessEvents();
+        }
+        while (next < frames);
+    }
+
+    // A MIDI message as the plugin's events, as a DAW adapter passes them on: notes (a note on at velocity 0 is a note
+    // off), poly pressure, and controllers mapped to parameters (AudioPluginBase.AddMidiControllerMapping).
+    void DispatchMidi(in MidiEvent e)
+    {
+        int offset = e.Offset;
+
+        switch (e.Command)
+        {
+            case 0x90 when e.Data2 > 0:
+                processor.HandleNoteOn(e.Channel, e.Data1, e.Data2 / 127f, offset);
+                break;
+            case 0x90:
+                processor.HandleNoteOff(e.Channel, e.Data1, 0, offset);
+                break;
+            case 0x80:
+                processor.HandleNoteOff(e.Channel, e.Data1, e.Data2 / 127f, offset);
+                break;
+            case 0xA0:
+                processor.HandlePolyPressure(e.Channel, e.Data1, e.Data2 / 127f, offset);
+                break;
+            case 0xB0:
+                if (processor.GetParameterByMidiController(e.Data1) is { } mapped)
+                    processor.HandleParameterChange(mapped, e.Data2 / 127.0, offset);
+                break;
+        }
+    }
 
     // No MIDI output yet.
     public void SendNoteOn(int channel, int noteNumber, float velocity, int sampleOffset) { }

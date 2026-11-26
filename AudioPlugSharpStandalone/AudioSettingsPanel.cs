@@ -8,7 +8,7 @@ namespace AudioPlugSharpStandalone;
 /// <summary>
 /// The audio settings, shown above the status strip when it's opened (the strip stays below as the panel's status
 /// bar), laid out as SpiceForge's audio dialog, in outlined sections: the driver, the device and its control panel, and
-/// the input and output channels; rate and buffer size; a test (a tone or the inputs looped back) with a level meter
+/// the input and output channels; the MIDI inputs; rate and buffer size; a test (a tone or the inputs looped back) with a level meter
 /// per chosen channel; then Cancel/OK. OK and Test apply the settings (and save them).
 ///
 /// Device work (looking for devices, reading one, applying, the test, the control panel) runs off the UI thread, one
@@ -20,7 +20,7 @@ public class AudioSettingsPanel : VerticalStack
     /// <summary>The narrowest the panel lays out well, in logical units: the window widens to it while it's open.</summary>
     public const int MinWidth = 520;
 
-    const int RowHeight = 34, HeaderHeight = 28, ChannelsHeight = 4 * 29, LineHeight = 28, ButtonsHeight = 36;
+    const int RowHeight = 34, HeaderHeight = 28, ChannelsHeight = 4 * 29, MidiHeight = 3 * 29, LineHeight = 28, ButtonsHeight = 36;
     const int Spacing = 8, LabelWidth = 90, LabelIndent = 6, MeterWidth = 40, MeterHeight = 10;
 
     readonly AudioEngine engine;
@@ -33,6 +33,7 @@ public class AudioSettingsPanel : VerticalStack
     readonly DropDown<AudioTestSignal> signal = new();
     readonly FrameButton controlPanel, test;
     readonly CheckList<string> inputs = new(StringComparer.OrdinalIgnoreCase), outputs = new(StringComparer.OrdinalIgnoreCase);
+    readonly CheckList<string> midiInputs = new(StringComparer.OrdinalIgnoreCase);
     readonly MeterRow inputMeters = new(), outputMeters = new();
     readonly TextBlock message;
 
@@ -89,7 +90,7 @@ public class AudioSettingsPanel : VerticalStack
             headers.Children.Add(text);
         }
 
-        foreach (CheckList<string> list in new[] { inputs, outputs })
+        foreach (CheckList<string> list in new[] { inputs, outputs, midiInputs })
         {
             list.HorizontalAlignment = EHorizontalAlignment.Stretch;
             list.VerticalAlignment = EVerticalAlignment.Stretch;
@@ -101,6 +102,17 @@ public class AudioSettingsPanel : VerticalStack
         channels.Children.Add(new InputFrame(outputs) { Margin = new LayoutPadding(0, 0, Spacing, 0) });
 
         Children.Add(Section(Row("Driver", driver), Row("Device", device, controlPanel), headers, channels));
+
+        // The MIDI inputs: JACK's MIDI ports, or the system's for the other drivers.
+        TextBlock midiHeader = Text("MIDI inputs", Layout.Current.Theme.MutedText);
+        midiHeader.DesiredHeight = HeaderHeight;
+        midiHeader.Margin = new LayoutPadding(LabelIndent, 0, 0, 0);
+
+        midiInputs.EmptyText = "No MIDI inputs";
+
+        var midiList = new InputFrame(midiInputs) { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = MidiHeight };
+
+        Children.Add(Section(midiHeader, midiList));
 
         // The format.
         Children.Add(Section(Row("Rate", rate), Row("Buffer", buffer)));
@@ -286,20 +298,33 @@ public class AudioSettingsPanel : VerticalStack
     {
         error = "";
 
-        ShowConfig(engine.ConfigFor(driver.Value!));
+        AudioConfig config = engine.ConfigFor(driver.Value!);
+
+        // MIDI inputs never chosen with this driver: the ones chosen now, where it has them too (the system's MIDI
+        // inputs are the same for every driver but JACK).
+        ShowConfig(config, config.MidiInputs == null ? new MidiChoice(midiInputs.Checked, ShowMissing: false) : null);
     }
+
+    // The MIDI inputs to show checked, and whether the ones the device doesn't have are shown too (as not connected),
+    // so a configuration's choice isn't dropped when a keyboard is unplugged.
+    record MidiChoice(IReadOnlyList<string>? Chosen, bool ShowMissing);
+
+    // The MIDI inputs checked now, kept as they are.
+    MidiChoice CurrentMidi() => new(midiInputs.Checked, ShowMissing: true);
 
     void DeviceChanged()
     {
         error = "";
 
-        LoadDeviceInfo(null, null, null, null);
+        LoadDeviceInfo(null, null, null, null, CurrentMidi());
     }
 
     // The driver's devices, then the chosen one's channels and formats. A result for a driver no longer chosen is
     // dropped (a newer one is on its way).
-    void ShowConfig(AudioConfig config)
+    void ShowConfig(AudioConfig config, MidiChoice? midi = null)
     {
+        midi ??= new MidiChoice(config.MidiInputs, ShowMissing: true);
+
         string queried = driver.Value!;
 
         Run(() => engine.Driver(queried).Devices(), "Looking for devices", task =>
@@ -315,19 +340,19 @@ public class AudioSettingsPanel : VerticalStack
             // Channels are kept only for the device they were chosen on.
             bool sameDevice = config.Device != null && string.Equals(device.Value, config.Device, StringComparison.OrdinalIgnoreCase);
 
-            LoadDeviceInfo(sameDevice ? config.Inputs : null, sameDevice ? config.Outputs : null, config.SampleRate, config.BufferSize);
+            LoadDeviceInfo(sameDevice ? config.Inputs : null, sameDevice ? config.Outputs : null, config.SampleRate, config.BufferSize, midi);
         });
     }
 
     // The device's channels, rates and buffer sizes, with the given ones chosen (null: the device's defaults). A result
     // for a device no longer chosen is dropped.
-    void LoadDeviceInfo(IReadOnlyList<string>? chosenInputs, IReadOnlyList<string>? chosenOutputs, int? wantedRate, int? wantedBuffer)
+    void LoadDeviceInfo(IReadOnlyList<string>? chosenInputs, IReadOnlyList<string>? chosenOutputs, int? wantedRate, int? wantedBuffer, MidiChoice midi)
     {
         string? queriedDriver = driver.Value, queriedDevice = device.Value;
 
         if (queriedDevice == null)
         {
-            ShowDeviceInfo(null, chosenInputs, chosenOutputs, wantedRate, wantedBuffer);
+            ShowDeviceInfo(null, chosenInputs, chosenOutputs, wantedRate, wantedBuffer, midi);
 
             return;
         }
@@ -340,11 +365,12 @@ public class AudioSettingsPanel : VerticalStack
             // ASIO: another driver is running (OK still applies).
             AudioDeviceInfo? read = Failed(task) ? null : task.Result;
 
-            ShowDeviceInfo(read, chosenInputs, chosenOutputs, wantedRate, wantedBuffer);
+            ShowDeviceInfo(read, chosenInputs, chosenOutputs, wantedRate, wantedBuffer, midi);
         });
     }
 
-    void ShowDeviceInfo(AudioDeviceInfo? read, IReadOnlyList<string>? chosenInputs, IReadOnlyList<string>? chosenOutputs, int? wantedRate, int? wantedBuffer)
+    void ShowDeviceInfo(AudioDeviceInfo? read, IReadOnlyList<string>? chosenInputs, IReadOnlyList<string>? chosenOutputs, int? wantedRate, int? wantedBuffer,
+        MidiChoice midi)
     {
         info = read;
 
@@ -354,6 +380,8 @@ public class AudioSettingsPanel : VerticalStack
 
         inputMeters.SetChannels(inputs.Checked);
         outputMeters.SetChannels(outputs.Checked);
+
+        ShowMidiInputs(info?.MidiInputs ?? [], midi);
 
         controlPanel.Visible = info?.ControlPanel ?? false;
 
@@ -365,6 +393,22 @@ public class AudioSettingsPanel : VerticalStack
         rate.SelectValue(r => r == wantedRate);
 
         ShowBufferSizes(wantedBuffer);
+    }
+
+    // The device's MIDI inputs, the chosen ones checked; chosen ones it doesn't have are shown as not connected, if asked
+    // for, or else dropped.
+    void ShowMidiInputs(IReadOnlyList<string> available, MidiChoice midi)
+    {
+        IReadOnlyList<string> chosen = midi.Chosen ?? [];
+
+        var missing = chosen.Where(c => !available.Contains(c, StringComparer.OrdinalIgnoreCase)).ToList();
+
+        IEnumerable<(string, string)> items = Channels(available);
+
+        if (midi.ShowMissing)
+            items = items.Concat(missing.Select(m => ($"{m} (not connected)", m)));
+
+        midiInputs.SetItems(items, midi.ShowMissing ? chosen : chosen.Except(missing, StringComparer.OrdinalIgnoreCase));
     }
 
     // A device's channels as check list items (the name is the value).
@@ -399,6 +443,7 @@ public class AudioSettingsPanel : VerticalStack
         Outputs = info != null && info.Outputs.Count > 0 ? outputs.Checked : null,
         SampleRate = rate.Value,
         BufferSize = buffer.Value,
+        MidiInputs = midiInputs.Checked.Count > 0 ? midiInputs.Checked : null,
     };
 
     // Moves the engine to the settings shown, then (if it took) carries on with tookEffect, or else with failed.
@@ -457,7 +502,7 @@ public class AudioSettingsPanel : VerticalStack
                 return;
 
             // The driver may have changed its rate or buffer sizes.
-            LoadDeviceInfo(inputs.Checked, outputs.Checked, rate.Value, buffer.Value);
+            LoadDeviceInfo(inputs.Checked, outputs.Checked, rate.Value, buffer.Value, CurrentMidi());
         });
     }
 
