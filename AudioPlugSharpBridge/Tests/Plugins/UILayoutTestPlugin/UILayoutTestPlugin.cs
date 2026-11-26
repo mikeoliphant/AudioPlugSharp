@@ -15,7 +15,7 @@ namespace UILayoutTestPlugin
     /// Beyond the UILayoutExample it starts from, it exercises what the hosts check: the editor is resizable (resize
     /// and DPI checks), Alt+Enter or F11 toggles fullscreen (editor window services, IAudioHost), and while
     /// fullscreen the mouse cursor hides after a second without movement. A "0 dB" button (an input-style
-    /// FrameButton) shows hover, for checking mouse-leave by hand. The editor claims only the keys it maps
+    /// TextButton) shows hover, for checking mouse-leave by hand. The editor claims only the keys it maps
     /// (AudioPluginUILayout.EditorWantsKey), so the others, such as the space bar, stay host shortcuts.
     ///
     /// The hosts look for the layout as it is (slider row, meter colours, sizes): change both together.
@@ -174,7 +174,7 @@ namespace UILayoutTestPlugin
 
             // Hover: the border takes the accent color while the mouse is over it, and drops it when the mouse
             // leaves the editor window
-            header.Children.Add(new FrameButton("0 dB", ResetGain)
+            header.Children.Add(new TextButton("0 dB", ResetGain)
             {
                 HorizontalAlignment = EHorizontalAlignment.Center,
                 DesiredHeight = 26,

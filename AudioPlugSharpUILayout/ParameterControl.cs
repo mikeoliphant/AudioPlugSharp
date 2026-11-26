@@ -109,7 +109,7 @@ public class ParameterControl : VerticalStack
         {
             Text = parameter.Name,
             TextColor = theme.MutedText,
-            TextFont = Layout.Current.DefaultSmallFont ?? Layout.Current.DefaultFont,
+            TextFont = Layout.Current.Theme.SmallFont ?? Layout.Current.Theme.Font,
             HorizontalAlignment = EHorizontalAlignment.Stretch,
             TextAlignment = EHorizontalAlignment.Center
         };

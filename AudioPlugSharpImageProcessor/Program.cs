@@ -30,14 +30,6 @@ class AudioImageProcessor : ImageSheetProcessor.ImageSheetProcessor
         AddSvg("KnobRing");
         AddSvg("KnobPointer");
 
-        // Sliders: the track (also the fill), stretched only lengthwise, and a thumb layered as a knob.
-        AddSvg("SliderTrack");
-        AddSvg("SliderTrackVertical");
-        AddSvg("ThumbShadow");
-        AddSvg("ThumbBody");
-        AddSvg("ThumbHighlight");
-        AddSvg("ThumbRing");
-
         // Switches: lamps shaded in gray, so the shading is kept (the lamp color tints it).
         ForceWhite = false;
 

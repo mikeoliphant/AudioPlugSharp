@@ -21,7 +21,7 @@ public class ChoiceDropDown : DropDown<int>, IValueControl
         SetItems(items);
 
         // The small font, as parameter names have, so choices fit a knob-sized cell
-        Font = Layout.Current.DefaultSmallFont ?? Layout.Current.DefaultFont;
+        Font = Layout.Current.Theme.SmallFont ?? Layout.Current.Theme.Font;
 
         StepCount = Math.Max(names.Count - 1, 1);
 

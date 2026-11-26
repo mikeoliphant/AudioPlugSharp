@@ -25,17 +25,6 @@ public static class AudioTextures
     public const string KnobRing = "Audio.KnobRing";
     public const string KnobPointer = "Audio.KnobPointer";
 
-    /// <summary>
-    /// A slider's track (also its fill; nine-patches stretched only lengthwise), horizontal and vertical, and its
-    /// thumb's shadow, body, highlight and ring (same-size images, layered as a knob's; white).
-    /// </summary>
-    public const string SliderTrack = "Audio.SliderTrack";
-    public const string SliderTrackVertical = "Audio.SliderTrackVertical";
-    public const string ThumbShadow = "Audio.ThumbShadow";
-    public const string ThumbBody = "Audio.ThumbBody";
-    public const string ThumbHighlight = "Audio.ThumbHighlight";
-    public const string ThumbRing = "Audio.ThumbRing";
-
     /// <summary>A switch's lamp, lit and unlit: shaded in gray, tinted with the lamp color.</summary>
     public const string SwitchOn = "Audio.SwitchOn";
     public const string SwitchOff = "Audio.SwitchOff";

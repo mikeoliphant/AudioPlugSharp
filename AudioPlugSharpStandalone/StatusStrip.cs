@@ -38,7 +38,7 @@ public class StatusStrip : IDisposable
     readonly HorizontalStack row;
     readonly AudioSettingsPanel? panel;
     readonly ParameterPanel? parameterPanel;
-    readonly FrameButton? audioButton;
+    readonly TextButton? audioButton;
     readonly UIElement? divider;
     IReadOnlyList<StatusItem> items = [];
     float fittedWidth = -1;
@@ -120,7 +120,7 @@ public class StatusStrip : IDisposable
             if (createPanel != null)
             {
                 // A toggle: pressed while the panel is open.
-                audioButton = new FrameButton("Audio", () => SetOpen(audioButton!.IsPressed))
+                audioButton = new TextButton("Audio", () => SetOpen(audioButton!.IsPressed))
                 {
                     IsToggleButton = true,
                     HorizontalAlignment = EHorizontalAlignment.Right,
@@ -300,7 +300,7 @@ public class StatusStrip : IDisposable
 
         foreach (StatusItem item in items)
         {
-            layout.DefaultFont.MeasureString(item.Text, out float itemWidth, out _);
+            layout.Theme.Font.MeasureString(item.Text, out float itemWidth, out _);
             float needed = (row.Children.Count > 0 ? Spacing : 0) + itemWidth;
 
             if (used + needed > width) break;

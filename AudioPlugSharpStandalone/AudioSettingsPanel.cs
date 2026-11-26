@@ -31,7 +31,7 @@ public class AudioSettingsPanel : VerticalStack
     readonly DropDown<string> driver = new(), device = new();
     readonly DropDown<int?> rate = new(), buffer = new();
     readonly DropDown<AudioTestSignal> signal = new();
-    readonly FrameButton controlPanel, test;
+    readonly TextButton controlPanel, test;
     readonly CheckList<string> inputs = new(StringComparer.OrdinalIgnoreCase), outputs = new(StringComparer.OrdinalIgnoreCase);
     readonly CheckList<string> midiInputs = new(StringComparer.OrdinalIgnoreCase);
     readonly MeterRow inputMeters = new(), outputMeters = new();
@@ -98,8 +98,8 @@ public class AudioSettingsPanel : VerticalStack
         }
 
         var channels = new HorizontalStack { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = ChannelsHeight, ChildrenEqualSize = true };
-        channels.Children.Add(new InputFrame(inputs) { Margin = new LayoutPadding(0, 0, Spacing, 0) });
-        channels.Children.Add(new InputFrame(outputs) { Margin = new LayoutPadding(0, 0, Spacing, 0) });
+        channels.Children.Add(new Frame(inputs) { Margin = new LayoutPadding(0, 0, Spacing, 0) });
+        channels.Children.Add(new Frame(outputs) { Margin = new LayoutPadding(0, 0, Spacing, 0) });
 
         Children.Add(Section(Row("Driver", driver), Row("Device", device, controlPanel), headers, channels));
 
@@ -110,7 +110,7 @@ public class AudioSettingsPanel : VerticalStack
 
         midiInputs.EmptyText = "No MIDI inputs";
 
-        var midiList = new InputFrame(midiInputs) { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = MidiHeight };
+        var midiList = new Frame(midiInputs) { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = MidiHeight };
 
         Children.Add(Section(midiHeader, midiList));
 
@@ -130,7 +130,7 @@ public class AudioSettingsPanel : VerticalStack
 
         var buttons = new HorizontalStack { HorizontalAlignment = EHorizontalAlignment.Right, DesiredHeight = ButtonsHeight, ChildSpacing = Spacing };
         buttons.Children.Add(Button("Cancel", Cancel));
-        buttons.Children.Add(new FrameButton("OK", Ok) { Primary = true });
+        buttons.Children.Add(new TextButton("OK", Ok) { Primary = true });
         Children.Add(buttons);
     }
 
@@ -166,7 +166,7 @@ public class AudioSettingsPanel : VerticalStack
     static TextBlock Text(string text, UIColor color) =>
         new(text) { TextColor = color, VerticalAlignment = EVerticalAlignment.Center };
 
-    static FrameButton Button(string text, Action click) => new(text, click);
+    static TextButton Button(string text, Action click) => new(text, click);
 
     // ---- device work, off the UI thread ----------------------------------------------------------------------------
 
