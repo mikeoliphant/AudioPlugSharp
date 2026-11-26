@@ -8,7 +8,8 @@ namespace AudioPlugSharpUILayout;
 /// <summary>
 /// An editor generated from parameters: a grid of <see cref="ParameterControl.For"/> cells (a knob, switch or
 /// drop-down per parameter, as its metadata suits) on the theme's background. Cells are a fixed size, so the panel's
-/// size follows from the number of parameters and columns alone (<see cref="GetSize"/>), before any layout exists.
+/// size follows from the number of parameters and columns alone (<see cref="GetSize"/>), before any layout exists. Given
+/// a width other than that (a resized window), the cells flow into as many columns as fit it.
 /// <see cref="AudioPluginUILayout"/> shows one when a plugin doesn't build its own editor. Call <see cref="Update"/>
 /// each frame (the plugin base does for its generated editor).
 /// </summary>
@@ -24,6 +25,8 @@ public class ParameterPanel : Dock
     public const int MaxDefaultColumns = 6;
 
     ParameterControl[] controls;
+    Dock[] cells;
+    VerticalStack grid;
 
     /// <param name="parameters">The parameters, in order (left to right, then down).</param>
     /// <param name="columns">The number of columns, or 0 for <see cref="DefaultColumns"/>.</param>
@@ -53,7 +56,7 @@ public class ParameterPanel : Dock
         }
 
         // The grid at the top, centered across a panel wider than it (a window of another size)
-        VerticalStack grid = new VerticalStack
+        grid = new VerticalStack
         {
             HorizontalAlignment = EHorizontalAlignment.Center,
             VerticalAlignment = EVerticalAlignment.Top,
@@ -61,20 +64,10 @@ public class ParameterPanel : Dock
         };
         Children.Add(grid);
 
-        HorizontalStack row = null;
+        cells = new Dock[parameters.Count];
 
         for (int i = 0; i < parameters.Count; i++)
         {
-            if ((i % Columns) == 0)
-            {
-                row = new HorizontalStack
-                {
-                    HorizontalAlignment = EHorizontalAlignment.Left,
-                    ChildSpacing = CellSpacing
-                };
-                grid.Children.Add(row);
-            }
-
             ParameterControl control = ParameterControl.For(parameters[i]);
 
             // The cell's width, so long names and choices are cut short instead of widening the column
@@ -87,10 +80,65 @@ public class ParameterPanel : Dock
                 DesiredHeight = CellHeight
             };
             cell.Children.Add(control);
-            row.Children.Add(cell);
 
+            cells[i] = cell;
             controls[i] = control;
         }
+
+        ArrangeCells();
+    }
+
+    // The cells in rows of Columns
+    void ArrangeCells()
+    {
+        foreach (UIElement oldRow in grid.Children)
+            ((HorizontalStack)oldRow).Children.Clear();
+
+        grid.Children.Clear();
+
+        HorizontalStack row = null;
+
+        for (int i = 0; i < cells.Length; i++)
+        {
+            if ((i % Columns) == 0)
+            {
+                row = new HorizontalStack
+                {
+                    HorizontalAlignment = EHorizontalAlignment.Left,
+                    ChildSpacing = CellSpacing
+                };
+
+                grid.Children.Add(row);
+            }
+
+            row.Children.Add(cells[i]);
+        }
+    }
+
+    /// <summary>Lays out in the bounds given, first flowing the cells into as many columns as fit their width.</summary>
+    public override void SetBounds(in RectF bounds, UIElement parent)
+    {
+        if (cells?.Length > 0)
+        {
+            int fitting = ColumnsFitting(bounds.Width, cells.Length);
+
+            if (fitting != Columns)
+            {
+                Columns = fitting;
+
+                ArrangeCells();
+            }
+        }
+
+        base.SetBounds(bounds, parent);
+    }
+
+    /// <summary>The most columns of cells a width (in layout units) has room for, from 1 to the number of cells.</summary>
+    public static int ColumnsFitting(float width, int cellCount)
+    {
+        int fitting = (int)MathF.Floor((width - (PanelPadding * 2) + CellSpacing + 0.01f) / (CellWidth + CellSpacing));
+
+        return Math.Clamp(fitting, 1, Math.Max(cellCount, 1));
     }
 
     /// <summary>The number of columns.</summary>

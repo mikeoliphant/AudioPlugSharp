@@ -24,7 +24,7 @@ internal static unsafe class Win32Api
     public const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010,
         SWP_FRAMECHANGED = 0x0020, SWP_SHOWWINDOW = 0x0040;
 
-    public const int SW_HIDE = 0, SW_SHOW = 5, SW_SHOWNA = 8;
+    public const int SW_HIDE = 0, SW_SHOW = 5, SW_SHOWNA = 8, SW_RESTORE = 9;
     public const int GWL_STYLE = -16, GWLP_WNDPROC = -4;
     public const int CW_USEDEFAULT = unchecked((int)0x80000000);
     public const int SIZE_MINIMIZED = 1;
@@ -112,6 +112,7 @@ internal static unsafe class Win32Api
     [DllImport(User32)]
     public static extern int SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int cx, int cy, uint flags);
     [DllImport(User32)] public static extern int ShowWindow(nint hwnd, int cmd);
+    [DllImport(User32)] public static extern int IsZoomed(nint hwnd);
     [DllImport(User32)] public static extern int SetWindowTextW(nint hwnd, char* text);
     [DllImport(User32)] public static extern int GetClientRect(nint hwnd, RECT* rect);
     [DllImport(User32)] public static extern int AdjustWindowRectExForDpi(RECT* rect, uint style, int menu, uint exStyle, uint dpi);

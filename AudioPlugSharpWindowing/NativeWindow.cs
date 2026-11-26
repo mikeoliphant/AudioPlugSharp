@@ -51,6 +51,10 @@ public abstract class NativeWindow : IDisposable
     /// <summary>Resizes the client area. A fullscreen window takes the size when it leaves fullscreen.</summary>
     public abstract void SetClientSize(int width, int height);
 
+    /// <summary>Whether the user can resize a top-level window (see <see cref="CreateTopLevel"/>), keeping its client
+    /// size. A maximized window that stops being resizable is restored first. Child windows ignore it.</summary>
+    public abstract void SetResizable(bool resizable);
+
     /// <summary>Moves the window: within its parent's client area for a child window, on the screen otherwise.</summary>
     public abstract void SetPosition(int x, int y);
 

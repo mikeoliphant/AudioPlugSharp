@@ -12,6 +12,9 @@ namespace AudioPlugSharpUILayout
     /// override CreateEditorUI. Or don't override CreateEditorUI: the editor is then generated from the plugin's
     /// parameters (a <see cref="ParameterPanel"/>: a knob, switch or drop-down each, sized to fit them).
     ///
+    /// The editor is resizable by default (a UILayout layout fills whatever size it's given): override CanResizeEditor
+    /// to return false for one that only works at its own size.
+    ///
     /// By default update, draw and present run in EditorIdle on the host's UI thread, without vsync (light
     /// editors). Heavy editors set UseEditorRenderThread: frames then run on a thread of the editor's own, with
     /// vsync. The editor is built on open and discarded on close.
@@ -130,12 +133,19 @@ namespace AudioPlugSharpUILayout
             }
         }
 
-        /// <summary>The editor's width: the generated editor's (fitting the parameters) if it is used.</summary>
+        /// <summary>Whether the host may resize the editor: true by default.</summary>
+        public override bool CanResizeEditor
+        {
+            get { return true; }
+        }
+
+        /// <summary>The editor's width: the generated editor's (fitting the parameters) if it is used, until the host
+        /// resizes it.</summary>
         public override uint EditorWidth
         {
             get
             {
-                if (!UsesGeneratedEditor)
+                if (!UsesGeneratedEditor || (base.EditorWidth != 0))
                     return base.EditorWidth;
 
                 ParameterPanel.GetSize(Parameters.Count, GeneratedEditorColumns, out uint width, out _);
@@ -144,12 +154,13 @@ namespace AudioPlugSharpUILayout
             }
         }
 
-        /// <summary>The editor's height: the generated editor's (fitting the parameters) if it is used.</summary>
+        /// <summary>The editor's height: the generated editor's (fitting the parameters) if it is used, until the host
+        /// resizes it.</summary>
         public override uint EditorHeight
         {
             get
             {
-                if (!UsesGeneratedEditor)
+                if (!UsesGeneratedEditor || (base.EditorHeight != 0))
                     return base.EditorHeight;
 
                 ParameterPanel.GetSize(Parameters.Count, GeneratedEditorColumns, out _, out uint height);

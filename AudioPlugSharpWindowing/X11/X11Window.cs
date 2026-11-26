@@ -31,6 +31,7 @@ internal unsafe class X11Window : NativeWindow
     static int screen;
     static nuint root;
     static nuint wmProtocols, wmDeleteWindow, netWmName, utf8String, netWmState, netWmStateFullscreen;
+    static nuint netWmStateMaximizedVert, netWmStateMaximizedHorz;
     static readonly Dictionary<nuint, X11Window> windows = new();
     static int wakeRead = -1, wakeWrite = -1;
 
@@ -59,6 +60,8 @@ internal unsafe class X11Window : NativeWindow
         utf8String = Atom("UTF8_STRING");
         netWmState = Atom("_NET_WM_STATE");
         netWmStateFullscreen = Atom("_NET_WM_STATE_FULLSCREEN");
+        netWmStateMaximizedVert = Atom("_NET_WM_STATE_MAXIMIZED_VERT");
+        netWmStateMaximizedHorz = Atom("_NET_WM_STATE_MAXIMIZED_HORZ");
     }
 
     static nuint Atom(string name)
@@ -131,6 +134,39 @@ internal unsafe class X11Window : NativeWindow
         if (isChild || resizable) return;
         XSizeHints hints = new() { Flags = PMinSize | PMaxSize, MinWidth = width, MinHeight = height, MaxWidth = width, MaxHeight = height };
         XSetWMNormalHints(display, window, &hints);
+    }
+
+    // A resizable window's hints are cleared (no minimum or maximum); one that stops being resizable is unmaximized
+    // (_NET_WM_STATE, which the window manager applies) and fixed at its size.
+    public override void SetResizable(bool value)
+    {
+        if (isChild || (value == resizable))
+            return;
+
+        resizable = value;
+
+        if (resizable)
+        {
+            XSizeHints hints = new() { Flags = 0 };
+            XSetWMNormalHints(display, window, &hints);
+            XFlush(display);
+
+            return;
+        }
+
+        XEvent e = default;
+        e.Type = ClientMessage;
+        e.Window = window;
+        e.MessageType = netWmState;
+        e.Format = 32;
+        e.Data0 = 0; // remove
+        e.Data1 = (nint)netWmStateMaximizedVert;
+        e.Data2 = (nint)netWmStateMaximizedHorz;
+        e.Data3 = 1; // from an application
+        XSendEvent(display, root, 0, SubstructureRedirectMask | SubstructureNotifyMask, &e);
+
+        SetSizeHints(ClientWidth, ClientHeight);
+        XFlush(display);
     }
 
     // ---- NativeWindow ------------------------------------------------------------------------------------------

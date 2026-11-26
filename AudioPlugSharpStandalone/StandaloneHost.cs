@@ -523,7 +523,7 @@ public class StandaloneHost : IAudioHost
     double scale = 1;
     int uiThreadId;
     const uint NoEditorWidth = 400;
-    uint windowWidthWithoutEditor = NoEditorWidth;   // At least as wide as the generated editor
+    uint windowWidthWithoutEditor = NoEditorWidth;   // At least as wide as the generated editor, until resized
 
     void RunWindow()
     {
@@ -543,7 +543,8 @@ public class StandaloneHost : IAudioHost
         uint width = showEditor ? editor!.EditorWidth : windowWidthWithoutEditor, height = showEditor ? editor!.EditorHeight : 0;
         int stripHeight = (int)generatedHeight + StatusStrip.Height;
 
-        window = NativeWindow.CreateTopLevel(plugin.PluginName, (int)width, (int)height + stripHeight, showEditor && editor!.CanResizeEditor);
+        window = NativeWindow.CreateTopLevel(plugin.PluginName, (int)width, (int)height + stripHeight,
+            showEditor ? editor!.CanResizeEditor : (generated != null));
 
         scale = window.Scale;
         window.SetClientSize(Pixels(width), Pixels(height) + Pixels(stripHeight));
@@ -568,6 +569,7 @@ public class StandaloneHost : IAudioHost
 
             if (!showEditor) height = 100;
 
+            window.SetResizable(showEditor && editor!.CanResizeEditor); // nothing to resize without the strip's editor
             window.SetClientSize(Pixels(width), Pixels(height));
         }
 
@@ -628,6 +630,10 @@ public class StandaloneHost : IAudioHost
 
     bool PanelOpen => strip?.IsOpen == true;
 
+    // The user can resize the window for an editor that can take another size (the plugin's, or the generated one),
+    // and while the settings panel is open, whatever the editor (a fixed one keeps its size: ArrangeChildren).
+    bool WindowResizable => PanelOpen || (editorOpen ? editor!.CanResizeEditor : (strip?.HasEditor == true));
+
     // The window's client area for the editor at its size (or the strip alone), and the strip. The settings panel needs
     // a minimum width: the window widens to it while the panel is open, and the editor keeps its size (the reverse of
     // ArrangeChildren).
@@ -648,11 +654,13 @@ public class StandaloneHost : IAudioHost
         window!.SetClientSize(width, height + StripPixels);
     }
 
-    // The editor's size (pixels) when the settings panel opened.
+    // The editor's size (pixels) when the settings panel opened; the generated editor's height (units).
     int editorWidthAtOpen;
     int editorHeightAtOpen;
+    int generatedHeightAtOpen;
 
-    // The panel opened or closed: the window grows downward for it (and widens to its minimum), and back.
+    // The panel opened or closed: the window grows downward for it (and widens to its minimum), and back. The user can
+    // resize it while the panel is open.
     void PanelOpenChanged()
     {
         if (PanelOpen && editorWindow != null)
@@ -660,6 +668,11 @@ public class StandaloneHost : IAudioHost
             editorWidthAtOpen = editorWindow.ClientWidth;
             editorHeightAtOpen = editorWindow.ClientHeight;
         }
+
+        if (PanelOpen && strip != null)
+            generatedHeightAtOpen = strip.EditorHeight;
+
+        window!.SetResizable(WindowResizable);
 
         SizeWindowToContent();
     }
@@ -671,12 +684,48 @@ public class StandaloneHost : IAudioHost
     // editor keeps the width it had, the window's width beyond that and the panel's minimum goes to the editor, and a
     // window narrower than the editor narrows it. A window too short for the editor and the panel (Windows keeps a
     // window about as tall as the screen at most) cuts off the panel's bottom, not the editor.
+    //
+    // An editor that can't be resized keeps its size whatever the window's (resizable while the panel is open), with the
+    // strip below it. Without an editor of the plugin's, the generated one takes the window's width and what height the
+    // strip and panel leave, and the window's size then is the one it comes back to when the panel closes.
     void ArrangeChildren(int width, int height)
     {
+        if (!editorOpen)
+        {
+            if (strip?.HasEditor == true)
+            {
+                int units = (int)Units(height);
+                int generatedHeight = units - strip.HeightBelowEditor;
+
+                // As for the plugin's editor: a window too short for the editor and the panel cuts off the panel
+                if (PanelOpen)
+                    generatedHeight = Math.Max(generatedHeight, Math.Min(generatedHeightAtOpen, units));
+
+                strip.SetEditorHeight(generatedHeight);
+
+                if (!PanelOpen)
+                    windowWidthWithoutEditor = Units(width);
+            }
+
+            strip?.SetBounds(0, width, StripPixels);
+
+            return;
+        }
+
+        if (!editor!.CanResizeEditor)
+        {
+            int fixedHeight = Pixels(editor.EditorHeight);
+
+            editorWindow!.SetClientSize(Pixels(editor.EditorWidth), fixedHeight);
+            strip?.SetBounds(fixedHeight, width, StripPixels);
+
+            return;
+        }
+
         int editorHeight = Math.Max(1, height - StripPixels);
         int editorWidth = width;
 
-        if (PanelOpen && editorOpen)
+        if (PanelOpen)
         {
             int extra = width - Math.Max(Pixels(AudioSettingsPanel.MinWidth), editorWidthAtOpen);
 

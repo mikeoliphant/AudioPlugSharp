@@ -104,11 +104,13 @@ public class StatusStrip : IDisposable
 
             if (EditorHeight > 0)
             {
-                // Its own height (its cells and padding: EditorHeight)
+                // EditorHeight high (its cells and padding, until the window is resized: SetEditorHeight)
                 parameterPanel = new ParameterPanel(parameters!)
                 {
                     VerticalAlignment = EVerticalAlignment.Top,
                 };
+
+                SetPanelHeight();
 
                 root.Children.Add(parameterPanel);
             }
@@ -173,11 +175,40 @@ public class StatusStrip : IDisposable
 
     /// <summary>The height the strip's window needs, in logical units: the generated editor (if any), the strip, and
     /// the panel when it's open.</summary>
-    public int TotalHeight => EditorHeight + Height + (open ? panelHeight : 0);
+    public int TotalHeight => EditorHeight + HeightBelowEditor;
 
-    /// <summary>The generated editor's size in logical units, or 0 without one.</summary>
+    /// <summary>The height below the generated editor, in logical units: the strip, and the panel when it's open.</summary>
+    public int HeightBelowEditor => Height + (open ? panelHeight : 0);
+
+    /// <summary>Whether the strip's window shows an editor generated from the parameters.</summary>
+    public bool HasEditor => parameterPanel != null;
+
+    /// <summary>The generated editor's size in logical units, or 0 without one: its height is the one it was given last
+    /// (<see cref="SetEditorHeight"/>), its width the one it was made for.</summary>
     public int EditorWidth { get; }
-    public int EditorHeight { get; }
+    public int EditorHeight { get; private set; }
+
+    /// <summary>The generated editor's height, in logical units (at least 1): the window was resized. Its width is the
+    /// window's.</summary>
+    public void SetEditorHeight(int height)
+    {
+        if ((parameterPanel == null) || (height == EditorHeight))
+            return;
+
+        EditorHeight = Math.Max(1, height);
+
+        SetPanelHeight();
+
+        layout.UpdateLayout();
+    }
+
+    // The generated editor EditorHeight high: its desired height doesn't include its padding, which UILayout adds
+    void SetPanelHeight()
+    {
+        float padding = parameterPanel!.Padding.Top + parameterPanel.Padding.Bottom;
+
+        parameterPanel.DesiredHeight = Math.Max(1, EditorHeight - padding);
+    }
 
     /// <summary>The size of the editor generated for the parameters, in logical units.</summary>
     public static void EditorSize(IReadOnlyList<AudioPluginParameter> parameters, out uint width, out uint height) =>

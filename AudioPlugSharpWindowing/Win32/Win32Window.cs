@@ -177,6 +177,39 @@ internal unsafe class Win32Window : NativeWindow
         SetWindowPos(hwnd, 0, 0, 0, frame.Right - frame.Left, frame.Bottom - frame.Top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
+    // The sizing border and maximize button come and go; the client area keeps its size (the frame's thickness
+    // changes). While fullscreen, it's the style the window gets back.
+    public override void SetResizable(bool resizable)
+    {
+        if (isChild)
+            return;
+
+        const uint sizing = WS_THICKFRAME | WS_MAXIMIZEBOX;
+
+        if (fullscreen)
+        {
+            windowedStyle = (nint)(resizable ? ((uint)windowedStyle | sizing) : ((uint)windowedStyle & ~sizing));
+
+            return;
+        }
+
+        uint style = (uint)GetWindowLongPtrW(hwnd, GWL_STYLE);
+        uint wanted = resizable ? (style | sizing) : (style & ~sizing);
+
+        if (wanted == style)
+            return;
+
+        if (!resizable && (IsZoomed(hwnd) != 0))
+            ShowWindow(hwnd, SW_RESTORE);
+
+        int width = ClientWidth, height = ClientHeight;
+
+        SetWindowLongPtrW(hwnd, GWL_STYLE, (nint)wanted);
+        SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+        SetClientSize(width, height);
+    }
+
     public override void SetPosition(int x, int y) =>
         SetWindowPos(hwnd, 0, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 
