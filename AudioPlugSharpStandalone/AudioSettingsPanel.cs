@@ -98,8 +98,19 @@ public class AudioSettingsPanel : VerticalStack
         }
 
         var channels = new HorizontalStack { HorizontalAlignment = EHorizontalAlignment.Stretch, DesiredHeight = ChannelsHeight, ChildrenEqualSize = true };
-        channels.Children.Add(new Frame(inputs) { Margin = new LayoutPadding(0, 0, Spacing, 0) });
-        channels.Children.Add(new Frame(outputs) { Margin = new LayoutPadding(0, 0, Spacing, 0) });
+        // Each fills its half of the row
+        channels.Children.Add(new Frame(inputs)
+        {
+            HorizontalAlignment = EHorizontalAlignment.Stretch,
+            VerticalAlignment = EVerticalAlignment.Stretch,
+            Margin = new LayoutPadding(0, 0, Spacing, 0)
+        });
+        channels.Children.Add(new Frame(outputs)
+        {
+            HorizontalAlignment = EHorizontalAlignment.Stretch,
+            VerticalAlignment = EVerticalAlignment.Stretch,
+            Margin = new LayoutPadding(0, 0, Spacing, 0)
+        });
 
         Children.Add(Section(Row("Driver", driver), Row("Device", device, controlPanel), headers, channels));
 
