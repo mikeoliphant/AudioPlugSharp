@@ -15,7 +15,8 @@ public readonly record struct StatusItem(string Text, bool Warning = false);
 /// the right that opens the audio settings below the strip (the window grows downward). A child window below the
 /// editor's, with a UILayout layout of the host's own: the plugin's UILayout, if it has one, is another copy (the
 /// plugin's load context), so neither changes the other's fonts, colors or settings. Items are shown in priority
-/// order, as many as fit beside the button. Runs on the UI thread.
+/// order, as many as fit beside the button, the first that doesn't fit cut short (see <see cref="StatusRow"/>). Runs
+/// on the UI thread.
 /// <para>For a plugin without an editor of its own, the strip's window also shows an editor generated from the
 /// plugin's parameters (a <see cref="ParameterPanel"/>) above the strip: one layout for both, since a copy of UILayout
 /// has one layout.</para>
@@ -35,13 +36,12 @@ public class StatusStrip : IDisposable
     readonly NativeWindow window;
     readonly MonoGameHost host;
     readonly MonoGameLayout layout;
-    readonly HorizontalStack row;
+    readonly StatusRow row;
     readonly AudioSettingsPanel? panel;
     readonly ParameterPanel? parameterPanel;
     readonly TextButton? audioButton;
     readonly UIElement? divider;
     IReadOnlyList<StatusItem> items = [];
-    float fittedWidth = -1;
     readonly int panelHeight;
     bool disposed, open;
     bool? pendingOpen;
@@ -80,7 +80,7 @@ public class StatusStrip : IDisposable
 
             AudioTextures.Load();
 
-            row = new HorizontalStack
+            row = new StatusRow
             {
                 HorizontalAlignment = EHorizontalAlignment.Stretch,
                 VerticalAlignment = EVerticalAlignment.Center,
@@ -127,6 +127,10 @@ public class StatusStrip : IDisposable
                     DesiredHeight = Height - 2 * ButtonInset,
                 };
                 stripRow.Children.Add(audioButton);
+
+                // The row ends where the button begins, so the items fit in the room beside it.
+                audioButton.GetSize(out float buttonWidth, out _);
+                row.Margin = new LayoutPadding(0, 0, buttonWidth + Spacing, 0);
 
                 divider = new UIElement
                 {
@@ -232,8 +236,6 @@ public class StatusStrip : IDisposable
     {
         layout.DisplayScale = (float)scale;
         host.Resize(window.ClientWidth, window.ClientHeight); // lays out again at the new scale
-
-        fittedWidth = -1;
     }
 
     /// <summary>What to show, most important first.</summary>
@@ -242,7 +244,14 @@ public class StatusStrip : IDisposable
         if (newItems.SequenceEqual(items)) return;
 
         items = newItems;
-        fittedWidth = -1;
+
+        // All of them: the row decides, as it's laid out, which fit (and so follows resizes on its own).
+        row.Children.Clear();
+
+        foreach (StatusItem item in items)
+            row.Children.Add(new FittedTextBlock { Text = item.Text, TextColor = item.Warning ? WarningColor : TextColor });
+
+        layout.UpdateLayout();
     }
 
     /// <summary>Draws the strip. Call regularly.</summary>
@@ -274,42 +283,10 @@ public class StatusStrip : IDisposable
         // Open or not: device work started while it was open finishes.
         panel?.Tick(secondsElapsed);
 
-        float width = window.ClientWidth / layout.TotalScale - 2 * Margin;
-
-        if (audioButton != null)
-        {
-            audioButton.GetSize(out float buttonWidth, out _);
-            width -= buttonWidth + Spacing;
-        }
-
-        if (width != fittedWidth) Fit(width);
-
         // The generated editor follows the parameters' values (restored state, the plugin changing them)
         parameterPanel?.Update();
 
         host.Tick((float)secondsElapsed);
-    }
-
-    // As many items as fit, in order; the rest are left out.
-    void Fit(float width)
-    {
-        fittedWidth = width;
-        row.Children.Clear();
-
-        float used = 0;
-
-        foreach (StatusItem item in items)
-        {
-            layout.Theme.Font.MeasureString(item.Text, out float itemWidth, out _);
-            float needed = (row.Children.Count > 0 ? Spacing : 0) + itemWidth;
-
-            if (used + needed > width) break;
-
-            used += needed;
-            row.Children.Add(new TextBlock(item.Text) { TextColor = item.Warning ? WarningColor : TextColor });
-        }
-
-        layout.UpdateLayout();
     }
 
     // The mouse is the layout's (the Audio button, the panel).
@@ -406,5 +383,37 @@ public class StatusStrip : IDisposable
             result.Add(new StatusItem(dropouts == 1 ? "1 dropout" : $"{dropouts} dropouts", Warning: true));
 
         return result;
+    }
+}
+
+/// <summary>
+/// The strip's items in priority order: those that fit at their full width, then the first that doesn't, cut short with
+/// "..." in the room left (a <see cref="FittedTextBlock"/> does the cutting); the rest are hidden. Decided as the row is
+/// laid out, so it follows resizes and new items without being asked.
+/// </summary>
+class StatusRow : HorizontalStack
+{
+    public override void UpdateContentLayout()
+    {
+        float used = 0;
+        bool full = false;
+
+        foreach (UIElement child in children)
+        {
+            child.GetSize(out float width, out _);
+
+            float needed = (used > 0 ? ChildSpacing : 0) + width;
+            bool overflows = !full && (used + needed > ContentBounds.Width);
+
+            child.Visible = !full;
+
+            // Stretched, the cut item takes the room left: the stack gives it its width less the overflow.
+            child.HorizontalAlignment = overflows ? EHorizontalAlignment.Stretch : EHorizontalAlignment.Left;
+
+            full |= overflows;
+            used += needed;
+        }
+
+        base.UpdateContentLayout();
     }
 }
